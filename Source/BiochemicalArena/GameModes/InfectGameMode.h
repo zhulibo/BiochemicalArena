@@ -4,14 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "BiochemicalArenaGameModeBase.generated.h"
+#include "InfectGameMode.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class BIOCHEMICALARENA_API ABiochemicalArenaGameModeBase : public AGameModeBase
+class BIOCHEMICALARENA_API AInfectGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+
+private:
+	virtual void BeginPlay() override;
 };
