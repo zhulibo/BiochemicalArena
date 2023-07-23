@@ -1,59 +1,48 @@
 #include "HumanCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "BiochemicalArena/Components/CombatComponent.h"
+#include "BiochemicalArena/ControllerS/HumanController.h"
+#include "BiochemicalArena/Modes/InfectMode.h"
+#include "Net/UnrealNetwork.h"
+#include "Components/WidgetComponent.h"
 
-// Sets default values
 AHumanCharacter::AHumanCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 创建摄像机组件
+	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	// 将摄像机组件附加到胶囊体组件
 	CameraComponent->SetupAttachment(CastChecked<USceneComponent, UCapsuleComponent>(GetCapsuleComponent()));
-	// 将摄像机置于略高于眼睛上方的位置
-	CameraComponent->SetRelativeLocation(FVector(0.0f, 0.0f, 50.0f + BaseEyeHeight));
-	// 启用Pawn控制摄像机旋转
+	CameraComponent->SetRelativeLocation(FVector(15.0f, 10.0f, BaseEyeHeight + 10.0f));
 	CameraComponent->bUsePawnControlRotation = true;
 
-	// 创建手臂组件
-	ArmComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ArmComponent"));
-	// 仅所属玩家可见
-	ArmComponent->SetOnlyOwnerSee(true);
-	// 添加到摄像机
-	ArmComponent->SetupAttachment(CameraComponent);
-	// 禁用某些环境阴影
-	ArmComponent->bCastDynamicShadow = false;
-	ArmComponent->CastShadow = false;
-	// 对所属玩家隐藏全身网格体
-	GetMesh()->SetOwnerNoSee(true);
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidget->SetupAttachment(RootComponent);
+
+	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	Combat->SetIsReplicated(true);
 
 	// 设置CharacterMovementComponent可蹲下
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
-// Called every frame
 void AHumanCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// 旋转跳测试
-	// int32 Speed = FMath::RoundToInt(GetVelocity().Size2D());
-	// GEngine->AddOnScreenDebugMessage(-1, 3.f, Speed > 600 ? FColor::Red : FColor::Green, FString::Printf(TEXT("%d"), Speed));
+	CalculateAO_Pitch();
 }
 
-// Called when the game starts or when spawned
 void AHumanCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// 判断输入设备是键鼠还是手柄
-	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
-	CommonInputSubsystem = UCommonInputSubsystem::Get(LocalPlayer);
-	StartDetect();
 
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
@@ -65,9 +54,15 @@ void AHumanCharacter::BeginPlay()
 		}
 	}
 
+	UpdateHUDHealth();
+
+	if (HasAuthority())
+	{
+		OnTakeAnyDamage.AddDynamic(this, &AHumanCharacter::ReceiveDamage);
+	}
+
 }
 
-// Called to bind functionality to input
 void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -80,17 +75,49 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AHumanCharacter::JumpButtonPressed);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &AHumanCharacter::CrouchButtonPressed);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AHumanCharacter::CrouchButtonReleased);
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &AHumanCharacter::Fire);
+		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &AHumanCharacter::CrouchControllerButtonPressed);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AHumanCharacter::AimButtonPressed);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AHumanCharacter::AimButtonReleased);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AHumanCharacter::FireButtonPressed);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &AHumanCharacter::FireButtonReleased);
+		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Triggered, this, &AHumanCharacter::DropButtonPressed);
+	}
+}
+
+void AHumanCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+    DOREPLIFETIME(AHumanCharacter, Health);
+}
+
+void AHumanCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	if (Combat)
+	{
+		Combat->Character = this;
+	}
+}
+
+void AHumanCharacter::CalculateAO_Pitch()
+{
+	AO_Pitch = GetBaseAimRotation().Pitch;
+	if (AO_Pitch > 90.f && !IsLocallyControlled())
+	{
+		// map pitch from [360, 270) to [0, -90)
+		FVector2D InRange(360.f, 270.f);
+		FVector2D OutRange(0.f, -90.f);
+		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
 	}
 }
 
 void AHumanCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller != nullptr)
 	{
-		// add movement
 		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
 		AddMovementInput(GetActorRightVector(), MovementVector.X);
 	}
@@ -98,11 +125,9 @@ void AHumanCharacter::Move(const FInputActionValue& Value)
 
 void AHumanCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	if (Controller != nullptr)
 	{
-		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
@@ -110,101 +135,243 @@ void AHumanCharacter::Look(const FInputActionValue& Value)
 
 void AHumanCharacter::JumpButtonPressed(const FInputActionValue& Value)
 {
-	Jump();
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+	else
+	{
+		Jump();
+	}
 }
 
 void AHumanCharacter::CrouchButtonPressed(const FInputActionValue& Value)
 {
-	// 手柄
-	if (bController)
+	Crouch();
+}
+
+void AHumanCharacter::CrouchButtonReleased(const FInputActionValue& Value)
+{
+	UnCrouch();
+}
+
+void AHumanCharacter::CrouchControllerButtonPressed(const FInputActionValue& Value)
+{
+	if (bIsCrouched)
 	{
-		if (bIsCrouched)
-		{
-			UnCrouch();
-		}
-		else
-		{
-			Crouch();
-		}
+		UnCrouch();
 	}
-	// 键鼠
 	else
 	{
 		Crouch();
 	}
 }
 
-void AHumanCharacter::CrouchButtonReleased(const FInputActionValue& Value)
+void AHumanCharacter::AimButtonPressed(const FInputActionValue& Value)
 {
-	// 键鼠
-	if (!bController)
+	UE_LOG(LogTemp, Warning, TEXT("AimButtonPressed"));
+	// if (Combat)
+	// {
+	// 	Combat->SetAiming(true);
+	// }
+}
+
+void AHumanCharacter::AimButtonReleased(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("AimButtonReleased"));
+	// if (Combat)
+	// {
+	// 	Combat->SetAiming(false);
+	// }
+}
+
+void AHumanCharacter::FireButtonPressed(const FInputActionValue& Value)
+{
+	if (Combat)
 	{
-		UnCrouch();
+		Combat->FireButtonPressed(true);
 	}
 }
 
-void AHumanCharacter::Fire(const FInputActionValue& Value)
+void AHumanCharacter::FireButtonReleased(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Fire"));
-	// 试图发射发射物
-	if (ProjectileClass)
+	if (Combat)
 	{
-		// 获取摄像机变换
-		FVector CameraLocation;
-		FRotator CameraRotation;
-		GetActorEyesViewPoint(CameraLocation, CameraRotation);
-
-		// 设置MuzzleOffset，在略靠近摄像机前生成发射物
-		MuzzleOffset.Set(100.0f, 0.f, 0.f);
-
-		// 将MuzzleOffset从摄像机空间变换到世界空间
-		FVector MuzzleLocation = CameraLocation + FTransform(CameraRotation).TransformVector(MuzzleOffset);
-
-		// 使目标方向略向上倾斜
-		FRotator MuzzleRotation = CameraRotation;
-		MuzzleRotation.Pitch += 10.0f;
-
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this;
-			SpawnParams.Instigator = GetInstigator();
-
-			// 在枪口位置生成发射物
-			AProjectile* Projectile = World->SpawnActor<AProjectile>(ProjectileClass, MuzzleLocation, MuzzleRotation, SpawnParams);
-			if (Projectile)
-			{
-				// 设置发射物的初始轨迹。
-				FVector LaunchDirection = MuzzleRotation.Vector();
-				Projectile->FireInDirection(LaunchDirection);
-			}
-		}
+		Combat->FireButtonPressed(false);
 	}
 }
 
-void AHumanCharacter::StartDetect()
+void AHumanCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
-	GetWorldTimerManager().SetTimer(DetectTimer, this, &AHumanCharacter::DetectCurrentInputDeviceType, DetectDelay, true);
+	// todo 主动触发脚下的武器的SetOverlappingWeapon
+	UE_LOG(LogTemp, Warning, TEXT("SetOverlappingWeapon"));
+	// Weapon->GetVelocity().Z != 0判断武器是否在地上
+	if (bElimmed || IsWeaponEquipped() || Weapon->GetVelocity().Z != 0) return;
+	OverlappingWeapon = Weapon;
+	EquipWeaponHandle();
 }
 
-void AHumanCharacter::DetectCurrentInputDeviceType()
+void AHumanCharacter::EquipWeaponHandle()
 {
-	if (CommonInputSubsystem)
+	if (Combat)
 	{
-		CurrentInputType = CommonInputSubsystem->GetCurrentInputType();
-		if (CurrentInputType == ECommonInputType::Gamepad)
+		if (HasAuthority())
 		{
-			bController = true;
+			Combat->EquipWeapon(OverlappingWeapon);
 		}
 		else
 		{
-			bController = false;
+			ServerEquipWeaponHandle();
 		}
 	}
 }
 
-bool AHumanCharacter::CanJumpInternal_Implementation() const
+void AHumanCharacter::ServerEquipWeaponHandle_Implementation()
 {
-	return GetCharacterMovement()->IsFalling() ? false : true;
+	if (Combat)
+	{
+		Combat->EquipWeapon(OverlappingWeapon);
+	}
+}
+
+void AHumanCharacter::DropButtonPressed(const FInputActionValue& Value)
+{
+	if (Combat && Combat->EquippedWeapon)
+	{
+		if (HasAuthority())
+		{
+			Combat->EquippedWeapon->DropWeapon();
+			Combat->EquippedWeapon = nullptr;
+		}
+		else
+		{
+			ServerDropButtonPressed();
+		}
+	}
+}
+
+void AHumanCharacter::ServerDropButtonPressed_Implementation()
+{
+	if (Combat && Combat->EquippedWeapon)
+	{
+		Combat->EquippedWeapon->DropWeapon();
+		Combat->EquippedWeapon = nullptr;
+	}
+}
+
+void AHumanCharacter::PlayFireMontage(bool bAiming)
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && FireWeaponMontage)
+	{
+		AnimInstance->Montage_Play(FireWeaponMontage);
+	}
+}
+
+void AHumanCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatorController, AActor* DamageCauser)
+{
+	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+
+	if (Health == 0.f)
+	{
+		AInfectMode* InfectMode = GetWorld()->GetAuthGameMode<AInfectMode>();
+		if (InfectMode)
+		{
+			HumanController = HumanController == nullptr ? Cast<AHumanController>(Controller) : HumanController;
+			AHumanController* AttackerController = Cast<AHumanController>(InstigatorController);
+			InfectMode->PlayerEliminated(this, HumanController, AttackerController);
+		}
+	}
+}
+
+void AHumanCharacter::OnRep_Health()
+{
+	UpdateHUDHealth();
+	PlayHitReactMontage();
+}
+
+void AHumanCharacter::UpdateHUDHealth()
+{
+	HumanController = HumanController == nullptr ? Cast<AHumanController>(Controller) : HumanController;
+	if (HumanController)
+	{
+		HumanController->SetHUDHealth(Health, MaxHealth);
+	}
+}
+
+void AHumanCharacter::PlayHitReactMontage()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && HitReactMontage)
+	{
+		AnimInstance->Montage_Play(HitReactMontage);
+		FName SectionName("FromFront");
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
+void AHumanCharacter::Elim()
+{
+	bElimmed = true; // used to disable EquipWeaponHandle(Dropped may cause SetOverlappingWeapon, it execute before MulticastElim)
+	if (Combat && Combat->EquippedWeapon)
+	{
+		Combat->EquippedWeapon->DropWeapon();
+	}
+	MulticastElim();
+	GetWorldTimerManager().SetTimer(
+		ElimTimer,
+		this,
+		&AHumanCharacter::ElimTimerFinished,
+		ElimDelay
+	);
+}
+
+void AHumanCharacter::MulticastElim_Implementation()
+{
+	bElimmed = true;
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->StopMovementImmediately();
+	if (HumanController)
+	{
+		DisableInput(HumanController);
+	}
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AHumanCharacter::ElimTimerFinished()
+{
+	AInfectMode* InfectMode = GetWorld()->GetAuthGameMode<AInfectMode>();
+	if (InfectMode)
+	{
+		InfectMode->RequestRespawn(this, Controller);
+	}
+}
+
+bool AHumanCharacter::IsWeaponEquipped()
+{
+	return (Combat && Combat->EquippedWeapon);
+}
+
+bool AHumanCharacter::IsAiming()
+{
+	return (Combat && Combat->bAiming);
+}
+
+AWeapon* AHumanCharacter::GetEquippedWeapon()
+{
+	if (Combat == nullptr) return nullptr;
+	return Combat->EquippedWeapon;
+}
+
+FVector AHumanCharacter::GetHitTarget() const
+{
+	if (Combat == nullptr) return FVector();
+	return Combat->HitTarget;
 }

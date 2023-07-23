@@ -1,90 +1,70 @@
 #include "Projectile.h"
+#include "Components/BoxComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystem.h"
+#include "Sound/SoundCue.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 
-// Sets default values
 AProjectile::AProjectile()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
 
-	if(!RootComponent)
-	{
-		RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ProjectileSceneComponent"));
-	}
-	if(!CollisionComponent)
-	{
-		// 用球体进行简单的碰撞展示
-		CollisionComponent = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComponent"));
-		// 将球体的碰撞配置文件名称设置为Projectile
-		CollisionComponent->BodyInstance.SetCollisionProfileName(TEXT("Projectile"));
-		// 组件击中某物时调用的事件。
-		CollisionComponent->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
-		// 设置球体的碰撞半径
-		CollisionComponent->InitSphereRadius(2.0f);
-		// 将根组件设置为碰撞组件
-		RootComponent = CollisionComponent;
-	}
-	if(!ProjectileMovementComponent)
-	{
-		// 使用此组件驱动发射物的移动
-		ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
-		ProjectileMovementComponent->SetUpdatedComponent(CollisionComponent);
-		ProjectileMovementComponent->InitialSpeed = 3000.0f;
-		ProjectileMovementComponent->MaxSpeed = 3000.0f;
-		ProjectileMovementComponent->bRotationFollowsVelocity = true;
-		ProjectileMovementComponent->bShouldBounce = true;
-		ProjectileMovementComponent->Bounciness = 0.01f;
-		ProjectileMovementComponent->ProjectileGravityScale = 0.0f;
-	}
-	if(!ProjectileMeshComponent)
-	{
-		ProjectileMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMeshComponent"));
-		static ConstructorHelpers::FObjectFinder<UStaticMesh>Mesh(TEXT("'/Game/Assets/Weapons/Sphere.Sphere'"));
-		if(Mesh.Succeeded())
-		{
-			ProjectileMeshComponent->SetStaticMesh(Mesh.Object);
-		}
-	}
-	static ConstructorHelpers::FObjectFinder<UMaterial>Material(TEXT("'/Game/Assets/Materials/SphereMaterial.SphereMaterial'"));
-	if (Material.Succeeded())
-	{
-		ProjectileMaterialInstance = UMaterialInstanceDynamic::Create(Material.Object, ProjectileMeshComponent);
-	}
-	ProjectileMeshComponent->SetMaterial(0, ProjectileMaterialInstance);
-	ProjectileMeshComponent->SetRelativeScale3D(FVector(0.09f, 0.09f, 0.09f));
-	ProjectileMeshComponent->SetupAttachment(RootComponent);
+	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	SetRootComponent(CollisionBox);
+	CollisionBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	CollisionBox->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	CollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 
-	// 2秒后删除发射物
-	InitialLifeSpan = 2.0f;
+	CollisionBox->SetCollisionResponseToChannel(ECC_SkeletalMesh, ECollisionResponse::ECR_Block);
+
+	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
+	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 }
 
-// Called every frame
-void AProjectile::Tick(float DeltaTime)
+void AProjectile::BeginPlay()
 {
-	Super::Tick(DeltaTime);
+	Super::BeginPlay();
 
+	if (Tracer)
+	{
+		TracerComponent = UGameplayStatics::SpawnEmitterAttached(
+			Tracer,
+			CollisionBox,
+			FName(),
+			GetActorLocation(),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition
+		);
+	}
+
+	if (HasAuthority())
+	{
+		CollisionBox->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+	}
 }
 
-void AProjectile::FireInDirection(const FVector& ShootDirection)
-{
-	ProjectileMovementComponent->Velocity = ShootDirection * ProjectileMovementComponent->InitialSpeed;
-}
-
-void AProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent,
+void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor != this && OtherComponent->IsSimulatingPhysics())
+	if(HasAuthority())
 	{
-		OtherComponent->AddImpulseAtLocation(ProjectileMovementComponent->Velocity * 100.0f, Hit.ImpactPoint);
+		Multicast_OnHit();
 	}
 
 	Destroy();
 }
 
-// Called when the game starts or when spawned
-void AProjectile::BeginPlay()
+void AProjectile::Multicast_OnHit_Implementation()
 {
-	Super::BeginPlay();
-	
+	if (ImpactParticles)
+	{
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, GetActorTransform());
+	}
+	if (ImpactSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+	}
 }
-
-

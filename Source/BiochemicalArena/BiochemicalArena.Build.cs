@@ -18,7 +18,6 @@ public class BiochemicalArena : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[] {
 				"EnhancedInput",
-				"CommonInput",
 			}
 		);
 

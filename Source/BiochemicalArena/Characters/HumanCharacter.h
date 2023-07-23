@@ -3,93 +3,126 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "CommonInputSubsystem.h"
+#include "BiochemicalArena/Interfaces/CrosshairsInterface.h"
 #include "Camera/CameraComponent.h"
-#include "BiochemicalArena/Weapons/Projectile.h"
+#include "BiochemicalArena/Weapons/Weapon.h"
 #include "HumanCharacter.generated.h"
 
-class UInputComponent;
-
 UCLASS()
-class BIOCHEMICALARENA_API AHumanCharacter : public ACharacter
+class BIOCHEMICALARENA_API AHumanCharacter : public ACharacter, public ICrosshairsInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AHumanCharacter();
-
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// 是否是手柄
-	bool bController = false;
+	void SetOverlappingWeapon(AWeapon* Weapon);
 
-	// 摄像机
-	UPROPERTY(VisibleAnywhere)
-	UCameraComponent* CameraComponent;
-	// 手臂
-	UPROPERTY(VisibleDefaultsOnly, Category = "Mesh")
-	USkeletalMeshComponent* ArmComponent;
+	void PlayFireMontage(bool bAiming);
 
-	// 要生成的发射物类
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
-	TSubclassOf<class AProjectile> ProjectileClass;
-	// 枪口相对于摄像机位置的偏移
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
-	FVector MuzzleOffset;
+	void Elim();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastElim();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
-	// 移动
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override;
+
+	UPROPERTY(VisibleAnywhere)
+	UCameraComponent* CameraComponent;
+
+	void CalculateAO_Pitch();
+
 	void Move(const FInputActionValue& Value);
-	// 视角
 	void Look(const FInputActionValue& Value);
-	// 跳
 	void JumpButtonPressed(const FInputActionValue& Value);
-	// 蹲
 	void CrouchButtonPressed(const FInputActionValue& Value);
 	void CrouchButtonReleased(const FInputActionValue& Value);
-	// 开火
-	void Fire(const FInputActionValue& Value);
+	void CrouchControllerButtonPressed(const FInputActionValue& Value);
+	void AimButtonPressed(const FInputActionValue& Value);
+	void AimButtonReleased(const FInputActionValue& Value);
+	void FireButtonPressed(const FInputActionValue& Value);
+	void FireButtonReleased(const FInputActionValue& Value);
+	void EquipWeaponHandle();
+	void DropButtonPressed(const FInputActionValue& Value);
+
+	UFUNCTION()
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
+	void UpdateHUDHealth();
+	void PlayHitReactMontage();
 
 private:
-	// MappingContext
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* OverheadWidget;
+	UPROPERTY(VisibleAnywhere)
+	class UCombatComponent* Combat;
+
+	UPROPERTY()
+	class AWeapon* OverlappingWeapon;
+
+	float AO_Pitch;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
-	// Move Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
-	// Look Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
-	// Jump Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* JumpAction;
-	// Crouch Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* CrouchAction;
-	// MappingContext
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* CrouchControllerAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* WeaponsMappingContext;
-	// Fire Input Action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* AimAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	class UInputAction* DropAction;
 
-	// 实时检测输入设备类型
+	UFUNCTION(Server, Reliable)
+	void ServerEquipWeaponHandle();
+	UFUNCTION(Server, Reliable)
+	void ServerDropButtonPressed();
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	class UAnimMontage* FireWeaponMontage;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* HitReactMontage;
+
+	UPROPERTY(EditAnywhere, Category = "Player Stats")
+	float MaxHealth = 100.f;
+	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player Stats")
+	float Health = 100.f;
+	UFUNCTION()
+	void OnRep_Health();
+
 	UPROPERTY()
-	UCommonInputSubsystem* CommonInputSubsystem;
-	ECommonInputType CurrentInputType;
-	FTimerHandle DetectTimer;
-	float DetectDelay = 2.f;
-	void StartDetect();
-	void DetectCurrentInputDeviceType();
+	class AHumanController* HumanController;
 
-	// 重写CanJump()实现蹲跳，不知道有bug没
-	virtual bool CanJumpInternal_Implementation() const override;
+	bool bElimmed = false;
+	FTimerHandle ElimTimer;
+	UPROPERTY(EditDefaultsOnly)
+	float ElimDelay = 3.f;
+	void ElimTimerFinished();
+
+public:
+	FORCEINLINE UCameraComponent* GetCamera() const { return CameraComponent; }
+	bool IsWeaponEquipped();
+	bool IsAiming();
+	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
+	AWeapon* GetEquippedWeapon();
+	FORCEINLINE bool IsElimmed() const { return bElimmed; }
+	FVector GetHitTarget() const;
+	FORCEINLINE float GetHealth() const { return Health; }
+	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 
 };
