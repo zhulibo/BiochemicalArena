@@ -3,8 +3,6 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "BiochemicalArena/Weapons/Weapon.h"
-#include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
 
 void UHumanAnimation::NativeInitializeAnimation()
 {
@@ -59,50 +57,6 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 			FVector MuzzleX(FRotationMatrix(MuzzleTipTransform.GetRotation().Rotator()).GetUnitAxis(EAxis::X));
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), MuzzleTipTransform.GetLocation() + MuzzleX * 2000.f, FColor::Yellow);
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), HumanCharacter->GetHitTarget(), FColor::Red);
-		}
-	}
-}
-
-void UHumanAnimation::NotifySound()
-{
-	if (HumanCharacter == nullptr)
-	{
-		HumanCharacter = Cast<AHumanCharacter>(TryGetPawnOwner());
-	}
-	if (HumanCharacter == nullptr) return;
-
-	FHitResult HitResult;
-	FVector Start = HumanCharacter->GetActorLocation();
-	FVector End = Start - FVector(0.f, 0.f, 100.f);
-
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(HumanCharacter);
-	QueryParams.bReturnPhysicalMaterial = true;
-
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, QueryParams);
-
-	if (HitResult.bBlockingHit)
-	{
-		EPhysicalSurface HitSurface = UGameplayStatics::GetSurfaceType(HitResult);
-		FVector_NetQuantize HitLocation = HitResult.Location;
-
-		switch (HitSurface)
-		{
-		case EPhysicalSurface::SurfaceType1:
-			if (MetalSound) UGameplayStatics::PlaySoundAtLocation(this, MetalSound, HitLocation);
-			break;
-		case EPhysicalSurface::SurfaceType2:
-			if (WaterSound) UGameplayStatics::PlaySoundAtLocation(this, WaterSound, HitLocation);
-			break;
-		case EPhysicalSurface::SurfaceType3:
-			if (GrassSound) UGameplayStatics::PlaySoundAtLocation(this, GrassSound, HitLocation);
-			break;
-		case EPhysicalSurface::SurfaceType4:
-			if (MudSound) UGameplayStatics::PlaySoundAtLocation(this, MudSound, HitLocation);
-			break;
-		default:
-			if (CommonSound) UGameplayStatics::PlaySoundAtLocation(this, CommonSound, HitLocation);
-			break;
 		}
 	}
 }

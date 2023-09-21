@@ -5,12 +5,20 @@
 
 ACasing::ACasing()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+
 	CasingMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CasingMesh"));
 	SetRootComponent(CasingMesh);
-	CasingMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
+	CasingMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	CasingMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	CasingMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+
 	CasingMesh->SetSimulatePhysics(true);
 	CasingMesh->SetEnableGravity(true);
 	CasingMesh->SetNotifyRigidBodyCollision(true);
+
 	ShellEjectionImpulse = 6.f;
 	bFirstOnHit = true;
 }

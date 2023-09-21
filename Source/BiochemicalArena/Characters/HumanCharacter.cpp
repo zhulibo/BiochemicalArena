@@ -9,6 +9,8 @@
 #include "BiochemicalArena/Modes/InfectMode.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 AHumanCharacter::AHumanCharacter()
 {
@@ -20,7 +22,7 @@ AHumanCharacter::AHumanCharacter()
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComponent->SetupAttachment(CastChecked<USceneComponent, UCapsuleComponent>(GetCapsuleComponent()));
-	CameraComponent->SetRelativeLocation(FVector(15.0f, 10.0f, BaseEyeHeight + 10.0f));
+	CameraComponent->SetRelativeLocation(FVector(10.0f, 10.0f, BaseEyeHeight - 10.0f));
 	CameraComponent->bUsePawnControlRotation = true;
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
@@ -38,6 +40,44 @@ void AHumanCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	CalculateAO_Pitch();
+}
+
+void AHumanCharacter::PlayFootstepSound()
+{
+	FHitResult HitResult;
+	FVector Start = GetActorLocation();
+	FVector End = Start - FVector(0.f, 0.f, 100.f);
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.bReturnPhysicalMaterial = true;
+
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, QueryParams);
+
+	if (HitResult.bBlockingHit)
+	{
+		EPhysicalSurface HitSurface = UGameplayStatics::GetSurfaceType(HitResult);
+		FVector_NetQuantize HitLocation = HitResult.Location;
+
+		switch (HitSurface)
+		{
+		case EPhysicalSurface::SurfaceType1:
+			if (MetalSound) UGameplayStatics::PlaySoundAtLocation(this, MetalSound, HitLocation);
+			break;
+		case EPhysicalSurface::SurfaceType2:
+			if (WaterSound) UGameplayStatics::PlaySoundAtLocation(this, WaterSound, HitLocation);
+			break;
+		case EPhysicalSurface::SurfaceType3:
+			if (GrassSound) UGameplayStatics::PlaySoundAtLocation(this, GrassSound, HitLocation);
+			break;
+		case EPhysicalSurface::SurfaceType4:
+			if (MudSound) UGameplayStatics::PlaySoundAtLocation(this, MudSound, HitLocation);
+			break;
+		default:
+			if (CommonSound) UGameplayStatics::PlaySoundAtLocation(this, CommonSound, HitLocation);
+			break;
+		}
+	}
 }
 
 void AHumanCharacter::BeginPlay()
@@ -203,12 +243,20 @@ void AHumanCharacter::FireButtonReleased(const FInputActionValue& Value)
 
 void AHumanCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
-	// todo 主动触发脚下的武器的SetOverlappingWeapon
 	UE_LOG(LogTemp, Warning, TEXT("SetOverlappingWeapon"));
-	// Weapon->GetVelocity().Z != 0判断武器是否在地上
-	if (bElimmed || IsWeaponEquipped() || Weapon->GetVelocity().Z != 0) return;
+	// 打印Weapon->GetVelocity()
+	UE_LOG(LogTemp, Warning, TEXT("Weapon->GetVelocity(): %s"), *Weapon->GetVelocity().ToString());
+	if (bElimmed || IsWeaponEquipped()) return;
 	OverlappingWeapon = Weapon;
-	EquipWeaponHandle();
+	// HACK 延迟200ms执行，等待丢弃武器状态已同步
+	FTimerHandle EquipWeaponTimer;
+	GetWorldTimerManager().SetTimer(
+		EquipWeaponTimer,
+		this,
+		&AHumanCharacter::EquipWeaponHandle,
+		.2f
+	);
+	// TODO 主动触发脚下武器的SetOverlappingWeapon
 }
 
 void AHumanCharacter::EquipWeaponHandle()
@@ -318,7 +366,11 @@ void AHumanCharacter::PlayHitReactMontage()
 
 void AHumanCharacter::Elim()
 {
-	bElimmed = true; // used to disable EquipWeaponHandle(Dropped may cause SetOverlappingWeapon, it execute before MulticastElim)
+	// Pre set bElimmed, used to disable EquipWeaponHandle,
+	// Elim > cause DropWeapon > cause SetOverlappingWeapon > EquipWeaponHandle,
+	// EquipWeaponHandle may execute before MulticastElim.
+	bElimmed = true;
+
 	if (Combat && Combat->EquippedWeapon)
 	{
 		Combat->EquippedWeapon->DropWeapon();

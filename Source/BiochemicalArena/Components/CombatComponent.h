@@ -68,10 +68,10 @@ private:
 	FHUDPackage HUDPackage;
 
 	float DefaultFOV;
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat")
 	float ZoomedFOV = 30.f;
 	float CurrentFOV;
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat")
 	float ZoomInterpSpeed = 20.f;
 	void InterpFOV(float DeltaTime);
 

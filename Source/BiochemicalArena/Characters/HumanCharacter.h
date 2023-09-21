@@ -25,6 +25,8 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
 
+	void PlayFootstepSound();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -92,10 +94,10 @@ private:
 	UFUNCTION(Server, Reliable)
 	void ServerDropButtonPressed();
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat")
 	class UAnimMontage* FireWeaponMontage;
 
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* HitReactMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Player Stats")
@@ -113,6 +115,17 @@ private:
 	UPROPERTY(EditDefaultsOnly)
 	float ElimDelay = 3.f;
 	void ElimTimerFinished();
+
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class USoundCue* MetalSound;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class USoundCue* WaterSound;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class USoundCue* GrassSound;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class USoundCue* MudSound;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	class USoundCue* CommonSound;
 
 public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return CameraComponent; }
