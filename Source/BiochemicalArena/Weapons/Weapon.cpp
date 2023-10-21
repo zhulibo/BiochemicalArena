@@ -4,7 +4,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Casing.h"
+#include "BiochemicalArena/Weapons/Cassings/Casing.h"
+#include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 AWeapon::AWeapon()
@@ -45,6 +46,8 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
+	DOREPLIFETIME_CONDITION(AWeapon, CarriedAmmo, COND_OwnerOnly);
+	DOREPLIFETIME(AWeapon, Ammo);
 }
 
 void AWeapon::Fire(const FVector& HitTarget)
@@ -53,7 +56,6 @@ void AWeapon::Fire(const FVector& HitTarget)
 	{
 		WeaponMesh->PlayAnimation(FireAnimation, false);
 	}
-
 	if (CasingClass)
 	{
 		const USkeletalMeshSocket* AmmoEjectSocket = WeaponMesh->GetSocketByName(FName("AmmoEject"));
@@ -71,15 +73,47 @@ void AWeapon::Fire(const FVector& HitTarget)
 			}
 		}
 	}
+	int32 AmmoNum = FMath::Clamp(Ammo - 1, 0, MagCapacity);
+	SetAmmo(AmmoNum);
 }
 
 void AWeapon::DropWeapon()
 {
-	SetWeaponState(EWeaponState::EWS_Dropped);
+	SetWeaponState(EWeaponState::EwsDropped);
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 	WeaponMesh->DetachFromComponent(DetachRules);
-	WeaponMesh->AddImpulse(GetOwner()->GetActorForwardVector() * 1000.0f);
+	// 丢弃武器时，给予一个向前的冲量
+	AHumanCharacter* OwnerCharacter = Cast<AHumanCharacter>(GetOwner());
+	if (OwnerCharacter)
+	{
+		UCameraComponent* CameraComponent = OwnerCharacter->FindComponentByClass<UCameraComponent>();
+		if (CameraComponent)
+		{
+			float ImpulseNum =  1200.f;
+			if (OwnerCharacter->IsElimmed())
+			{
+				ImpulseNum = 600.f;
+			}
+			WeaponMesh->AddImpulse(CameraComponent->GetForwardVector() * ImpulseNum);
+		}
+	}
 	SetOwner(nullptr);
+}
+
+void AWeapon::OnRep_Owner()
+{
+	Super::OnRep_Owner();
+
+	if (Owner == nullptr)
+	{
+		Character = nullptr;
+		Controller = nullptr;
+	}
+	else
+	{
+		SetAmmo(Ammo);
+		SetCarriedAmmo(CarriedAmmo);
+	}
 }
 
 void AWeapon::SetWeaponState(EWeaponState State)
@@ -87,7 +121,7 @@ void AWeapon::SetWeaponState(EWeaponState State)
 	WeaponState = State;
 	switch (WeaponState)
 	{
-	case EWeaponState::EWS_Equipped:
+	case EWeaponState::EwsEquipped:
 		if (HasAuthority())
 		{
 			AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -96,10 +130,16 @@ void AWeapon::SetWeaponState(EWeaponState State)
 		WeaponMesh->SetEnableGravity(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
-	case EWeaponState::EWS_Dropped:
+	case EWeaponState::EwsDropped:
 		if (HasAuthority())
 		{
-			AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			/**
+			 * HACK 延迟开启AreaSphere碰撞
+			 * 避免DropWeapon未执行完，发生OnSphereOverlap > EquipWeapon
+			 * 同时确保武器已离开角色Overlap区域
+			 */
+			FTimerHandle TimerHandle;
+			GetWorldTimerManager().SetTimer(TimerHandle, this, &AWeapon::SetAreaSphereCollision, .4f);
 		}
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
@@ -108,21 +148,94 @@ void AWeapon::SetWeaponState(EWeaponState State)
 	}
 }
 
+void AWeapon::SetAreaSphereCollision()
+{
+	AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
 void AWeapon::OnRep_WeaponState()
 {
 	switch (WeaponState)
 	{
-	case EWeaponState::EWS_Equipped:
+	case EWeaponState::EwsEquipped:
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetEnableGravity(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
-	case EWeaponState::EWS_Dropped:
+	case EWeaponState::EwsDropped:
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		break;
 	}
+}
+
+void AWeapon::SetAmmo(int32 AmmoNum)
+{
+	Ammo = AmmoNum;
+	SetHUDAmmo(); // if local is server, OnRep_Ammo will not be called, so call it here
+}
+
+void AWeapon::SetCarriedAmmo(int32 AmmoNum)
+{
+	CarriedAmmo = AmmoNum;
+	SetHUDCarriedAmmo(); // if local is server, OnRep_CarriedAmmo will not be called, so call it here
+}
+
+void AWeapon::OnRep_Ammo()
+{
+	SetHUDAmmo();
+
+	if (WeaponType == EWeaponType::EWT_Shotgun && IsFull() && Character && Character->GetCombat())
+	{
+		Character->GetCombat()->JumpToShotgunEnd();
+	}
+}
+
+void AWeapon::OnRep_CarriedAmmo()
+{
+	SetHUDCarriedAmmo();
+
+	if (WeaponType == EWeaponType::EWT_Shotgun && CarriedAmmo == 0 && Character && Character->GetCombat())
+	{
+		Character->GetCombat()->JumpToShotgunEnd();
+	}
+}
+
+void AWeapon::SetHUDAmmo()
+{
+	if (Character == nullptr) Character = Cast<AHumanCharacter>(GetOwner());
+	if (Character)
+	{
+		if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
+		if (Controller)
+		{
+			Controller->SetHUDWeaponAmmo(Ammo);
+		}
+	}
+}
+
+void AWeapon::SetHUDCarriedAmmo()
+{
+	if (Character == nullptr) Character = Cast<AHumanCharacter>(GetOwner());
+	if (Character)
+	{
+		if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
+		if (Controller)
+		{
+			Controller->SetHUDCarriedAmmo(CarriedAmmo);
+		}
+	}
+}
+
+bool AWeapon::IsEmpty()
+{
+	return Ammo <= 0;
+}
+
+bool AWeapon::IsFull()
+{
+	return Ammo == MagCapacity;
 }
 
 void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

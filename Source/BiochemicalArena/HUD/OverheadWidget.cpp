@@ -22,15 +22,15 @@ void UOverheadWidget::ShowPlayerNetRole(APawn* InPawn)
 		break;
 	}
 
-	FString RemoteRoleString = FString::Printf(TEXT("%s"), *Role);
-	SetDisplayText(RemoteRoleString);
+	FString DisplayString = FString::Printf(TEXT("%s"), *Role);
+	SetDisplayText(DisplayString);
 }
 
-void UOverheadWidget::SetDisplayText(FString TextToDisplay)
+void UOverheadWidget::SetDisplayText(FString DisplayString)
 {
 	if (DisplayText)
 	{
-		DisplayText->SetText(FText::FromString(TextToDisplay));
+		DisplayText->SetText(FText::FromString(DisplayString));
 	}
 }
 

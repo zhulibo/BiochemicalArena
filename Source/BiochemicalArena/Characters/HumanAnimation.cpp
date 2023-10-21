@@ -7,6 +7,7 @@
 void UHumanAnimation::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
+
 	HumanCharacter = Cast<AHumanCharacter>(TryGetPawnOwner());
 }
 
@@ -31,7 +32,7 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 	bElimmed = HumanCharacter->IsElimmed();
 	AO_Pitch = HumanCharacter->GetAO_Pitch();
 
-	// 瞄准方向与移动方向的偏移量
+	// 瞄准方向与移动方向的偏移量，用于控制脚步朝向
 	FRotator AimRotation = HumanCharacter->GetBaseAimRotation();
 	FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(HumanCharacter->GetVelocity());
 	FRotator DiffRotation = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
@@ -59,4 +60,6 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), HumanCharacter->GetHitTarget(), FColor::Red);
 		}
 	}
+
+	bUseLeftHandFABRIK = HumanCharacter->GetCombatState() == ECombatState::ECS_Unoccupied;
 }

@@ -1,8 +1,8 @@
-#include "ProjectileWeapon.h"
+#include "GeneralWeapon.h"
 #include "Engine/SkeletalMeshSocket.h"
-#include "Projectile.h"
+#include "Projectiles/Projectile.h"
 
-void AProjectileWeapon::Fire(const FVector& HitTarget)
+void AGeneralWeapon::Fire(const FVector& HitTarget)
 {
 	Super::Fire(HitTarget);
 
@@ -23,12 +23,13 @@ void AProjectileWeapon::Fire(const FVector& HitTarget)
 			UWorld* World = GetWorld();
 			if (World)
 			{
-				World->SpawnActor<AProjectile>(
+				AProjectile* SpawnedProjectile = World->SpawnActor<AProjectile>(
 					ProjectileClass,
 					SocketTransform.GetLocation(),
 					TargetRotation,
 					SpawnParams
-					);
+				);
+				SpawnedProjectile->Damage = Damage;
 			}
 		}
 	}

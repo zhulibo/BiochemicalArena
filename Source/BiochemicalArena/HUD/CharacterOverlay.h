@@ -11,12 +11,21 @@ class BIOCHEMICALARENA_API UCharacterOverlay : public UUserWidget
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	class UProgressBar* HPBar;
+	class UTextBlock* HealthValue;
+
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* HPValue;
+	UTextBlock* ScoreAmount;
+
 	UPROPERTY(meta = (BindWidget))
-	class UProgressBar* CSBar;
+	UTextBlock* DefeatsAmount;
+
 	UPROPERTY(meta = (BindWidget))
-	class UTextBlock* CSValue;
+	UTextBlock* WeaponAmmoAmount;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* CarriedAmmoAmount;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* MatchCountdownText;
 
 };

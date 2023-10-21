@@ -14,6 +14,6 @@ class BIOCHEMICALARENA_API ICrosshairsInterface
 {
 	GENERATED_BODY()
 
-	public:
+public:
 
 };

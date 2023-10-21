@@ -5,9 +5,10 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "BiochemicalArena/Controllers/HumanController.h"
+#include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
+#include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -23,6 +24,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
 	DOREPLIFETIME(UCombatComponent, bAiming);
+	DOREPLIFETIME(UCombatComponent, CombatState);
 }
 
 void UCombatComponent::BeginPlay()
@@ -89,10 +91,16 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;
 
-	Controller = Controller == nullptr ? Cast<AHumanController>(Character->Controller) : Controller;
+	if (Controller == nullptr)
+	{
+		Controller = Cast<AHumanController>(Character->Controller);
+	}
 	if (Controller)
 	{
-		HUD = HUD == nullptr ? Cast<AHumanHUD>(Controller->GetHUD()) : HUD;
+		if (HUD == nullptr)
+		{
+			HUD = Cast<AHumanHUD>(Controller->GetHUD());
+		}
 		if (HUD)
 		{
 			if (EquippedWeapon)
@@ -162,7 +170,6 @@ void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 void UCombatComponent::InterpFOV(float DeltaTime)
 {
 	if (EquippedWeapon == nullptr) return;
-
 	if (bAiming)
 	{
 		CurrentFOV = FMath::FInterpTo(CurrentFOV, EquippedWeapon->GetZoomedFOV(), DeltaTime, EquippedWeapon->GetZoomInterpSpeed());
@@ -180,18 +187,47 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
 	if (Character == nullptr || WeaponToEquip == nullptr) return;
-	if (WeaponToEquip->GetOwner() != nullptr)
-	{
-		return;
-	}
+
+	WeaponToEquip->SetOwner(Character);
 	EquippedWeapon = WeaponToEquip;
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+	EquippedWeapon->SetWeaponState(EWeaponState::EwsEquipped);
+	AttachActorToRightHand(EquippedWeapon);
+	PlayEquipWeaponSound();
+	// 初始设置弹药
+	EquippedWeapon->SetAmmo(EquippedWeapon->GetAmmo());
+	EquippedWeapon->SetCarriedAmmo(EquippedWeapon->GetCarriedAmmo());
+}
+
+void UCombatComponent::OnRep_EquippedWeapon()
+{
+	if (Character == nullptr || EquippedWeapon == nullptr) return;
+
+	EquippedWeapon->SetWeaponState(EWeaponState::EwsEquipped);
+	AttachActorToRightHand(EquippedWeapon);
+	PlayEquipWeaponSound();
+}
+
+void UCombatComponent::AttachActorToRightHand(AActor* ActorToAttach)
+{
+	if (Character == nullptr || Character->GetMesh() == nullptr || ActorToAttach == nullptr) return;
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
 	if (HandSocket)
 	{
-		HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
+		HandSocket->AttachActor(ActorToAttach, Character->GetMesh());
 	}
-	EquippedWeapon->SetOwner(Character);
+}
+
+void UCombatComponent::PlayEquipWeaponSound()
+{
+	if (Character && EquippedWeapon && EquippedWeapon->EquipSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,
+			EquippedWeapon->EquipSound,
+			Character->GetActorLocation()
+		);
+	}
 }
 
 void UCombatComponent::SetAiming(bool bIsAiming)
@@ -213,20 +249,7 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 	}
 }
 
-void UCombatComponent::OnRep_EquippedWeapon()
-{
-	if (EquippedWeapon && Character)
-	{
-		EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-		const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
-		if (HandSocket)
-		{
-			HandSocket->AttachActor(EquippedWeapon, Character->GetMesh());
-		}
-	}
-}
-
-void UCombatComponent::FireButtonPressed(bool bPressed)
+void UCombatComponent::FireHandle(bool bPressed)
 {
 	bFireButtonPressed = bPressed;
 	if (bFireButtonPressed)
@@ -237,7 +260,7 @@ void UCombatComponent::FireButtonPressed(bool bPressed)
 
 void UCombatComponent::Fire()
 {
-	if (bCanFire)
+	if (CanFire())
 	{
 		ServerFire(HitTarget);
 		if (EquippedWeapon)
@@ -245,7 +268,7 @@ void UCombatComponent::Fire()
 			bCanFire = false;
 			CrosshairShootingFactor = .75f;
 		}
-		if (EquippedWeapon && EquippedWeapon->bAutomatic)
+		if (EquippedWeapon)
 		{
 			StartFireTimer();
 		}
@@ -260,10 +283,17 @@ void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& Trac
 void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
 	if (EquippedWeapon == nullptr) return;
-	if (Character)
+	if (Character && CombatState == ECombatState::ECS_Reloading && EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun)
 	{
-		EquippedWeapon->Fire(TraceHitTarget);
 		Character->PlayFireMontage(bAiming);
+		EquippedWeapon->Fire(TraceHitTarget);
+		CombatState = ECombatState::ECS_Unoccupied; // TODO 散弹枪装弹时射击，local立即设置CombatState为ECS_Unoccupied
+		return;
+	}
+	if (Character && CombatState == ECombatState::ECS_Unoccupied)
+	{
+		Character->PlayFireMontage(bAiming);
+		EquippedWeapon->Fire(TraceHitTarget);
 	}
 }
 
@@ -282,8 +312,103 @@ void UCombatComponent::FireTimerFinished()
 {
 	if (EquippedWeapon == nullptr) return;
 	bCanFire = true;
-	if (bFireButtonPressed)
+	if (bFireButtonPressed && EquippedWeapon->bAutomatic)
 	{
 		Fire();
+	}
+}
+
+bool UCombatComponent::CanFire()
+{
+	if (EquippedWeapon == nullptr) return false;
+
+	bool bShotgunReloadingWithBulletIn = !EquippedWeapon->IsEmpty() &&
+		bCanFire &&
+		CombatState == ECombatState::ECS_Reloading &&
+		EquippedWeapon->GetWeaponType() == EWeaponType::EWT_Shotgun;
+	if (bShotgunReloadingWithBulletIn) return true;
+
+	if (!EquippedWeapon->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Unoccupied) return true;
+	return false;
+}
+
+void UCombatComponent::Reload()
+{
+	if (EquippedWeapon && EquippedWeapon->GetCarriedAmmo() > 0 && CombatState == ECombatState::ECS_Unoccupied && !EquippedWeapon->IsFull())
+	{
+		ServerReload();
+	}
+}
+
+void UCombatComponent::ServerReload_Implementation()
+{
+	if (Character == nullptr || EquippedWeapon == nullptr) return;
+	CombatState = ECombatState::ECS_Reloading;
+	HandleReload();
+}
+
+void UCombatComponent::HandleReload()
+{
+	Character->PlayReloadMontage();
+}
+
+void UCombatComponent::FinishReloading()
+{
+	if (Character == nullptr || EquippedWeapon == nullptr) return;
+	if (Character->HasAuthority())
+	{
+		CombatState = ECombatState::ECS_Unoccupied;
+		// 设置ammo和CarriedAmmo
+		int32 Ammo = EquippedWeapon->GetAmmo();
+		int32 MagCapacity = EquippedWeapon->GetMagCapacity();
+		int32 CarriedAmmo = EquippedWeapon->GetCarriedAmmo();
+		int32 NeedAmmoNum = MagCapacity - Ammo;
+		if (CarriedAmmo > NeedAmmoNum)
+		{
+			EquippedWeapon->SetAmmo(MagCapacity);
+			EquippedWeapon->SetCarriedAmmo(CarriedAmmo - NeedAmmoNum);
+		}
+		else
+		{
+			EquippedWeapon->SetAmmo(Ammo + CarriedAmmo);
+			EquippedWeapon->SetCarriedAmmo(0);
+		}
+	}
+}
+
+void UCombatComponent::ShellReload()
+{
+	if (Character == nullptr || EquippedWeapon == nullptr || !Character->HasAuthority()) return;
+
+	// 设置ammo和CarriedAmmo
+	EquippedWeapon->SetAmmo(EquippedWeapon->GetAmmo() + 1);
+	EquippedWeapon->SetCarriedAmmo(EquippedWeapon->GetCarriedAmmo() - 1);
+	// 装入一发可立即开火
+	bCanFire = true;
+	// 弹匣满了或者CarriedAmmo耗尽，跳转到ShotgunEnd
+	if (EquippedWeapon->IsFull() || EquippedWeapon->GetCarriedAmmo() == 0)
+	{
+		JumpToShotgunEnd();
+	}
+}
+
+void UCombatComponent::JumpToShotgunEnd()
+{
+	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (AnimInstance && Character->GetReloadMontage())
+	{
+		AnimInstance->Montage_JumpToSection(FName("M870ReloadingEnd"));
+	}
+}
+
+void UCombatComponent::OnRep_CombatState()
+{
+	switch (CombatState)
+	{
+	case ECombatState::ECS_Reloading:
+		HandleReload();
+		break;
+	case ECombatState::ECS_Unoccupied:
+		break;
 	}
 }

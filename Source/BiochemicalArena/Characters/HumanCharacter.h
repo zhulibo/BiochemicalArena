@@ -1,15 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-#include "InputActionValue.h"
+#include "CommonCharacter.h"
+#include "CharacterComponents/CombatComponent.h"
 #include "BiochemicalArena/Interfaces/CrosshairsInterface.h"
 #include "Camera/CameraComponent.h"
-#include "BiochemicalArena/Weapons/Weapon.h"
+#include "CharacterComponents/CombatState.h"
 #include "HumanCharacter.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API AHumanCharacter : public ACharacter, public ICrosshairsInterface
+class BIOCHEMICALARENA_API AHumanCharacter : public ACommonCharacter, public ICrosshairsInterface
 {
 	GENERATED_BODY()
 
@@ -20,12 +20,11 @@ public:
 	void SetOverlappingWeapon(AWeapon* Weapon);
 
 	void PlayFireMontage(bool bAiming);
+	void PlayReloadMontage();
 
 	void Elim();
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
-
-	void PlayFootstepSound();
 
 protected:
 	virtual void BeginPlay() override;
@@ -37,78 +36,63 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* CameraComponent;
 
-	void CalculateAO_Pitch();
-
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-	void JumpButtonPressed(const FInputActionValue& Value);
-	void CrouchButtonPressed(const FInputActionValue& Value);
-	void CrouchButtonReleased(const FInputActionValue& Value);
-	void CrouchControllerButtonPressed(const FInputActionValue& Value);
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimButtonReleased(const FInputActionValue& Value);
 	void FireButtonPressed(const FInputActionValue& Value);
 	void FireButtonReleased(const FInputActionValue& Value);
-	void EquipWeaponHandle();
+	void ReloadButtonPressed(const FInputActionValue& Value);
 	void DropButtonPressed(const FInputActionValue& Value);
 
 	UFUNCTION()
-	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, class AController* InstigatorController, AActor* DamageCauser);
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
 	void UpdateHUDHealth();
 	void PlayHitReactMontage();
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
-	UPROPERTY(VisibleAnywhere)
-	class UCombatComponent* Combat;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UCombatComponent* Combat;
 
 	UPROPERTY()
-	class AWeapon* OverlappingWeapon;
-
-	float AO_Pitch;
+	AWeapon* OverlappingWeapon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* DefaultMappingContext;
+	UInputMappingContext* WeaponsMappingContext;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* MoveAction;
+	UInputAction* AimAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* LookAction;
+	UInputAction* FireAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* JumpAction;
+	UInputAction* ReloadAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* CrouchAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* CrouchControllerAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* WeaponsMappingContext;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* AimAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* FireAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	class UInputAction* DropAction;
+	UInputAction* DropAction;
 
+	UFUNCTION(Server, Reliable)
+	void ServerDetectOverlappingWeapon();
 	UFUNCTION(Server, Reliable)
 	void ServerEquipWeaponHandle();
 	UFUNCTION(Server, Reliable)
 	void ServerDropButtonPressed();
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
-	class UAnimMontage* FireWeaponMontage;
-
+	UAnimMontage* FireWeaponMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* HitReactMontage;
+	UPROPERTY(EditAnywhere, Category = Combat)
+	UAnimMontage* ReloadMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Player Stats")
-	float MaxHealth = 100.f;
+	float MaxHealth = 200.f;
 	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player Stats")
-	float Health = 100.f;
+	float Health = 200.f;
 	UFUNCTION()
 	void OnRep_Health();
 
 	UPROPERTY()
-	class AHumanController* HumanController;
+	AHumanController* HumanController;
+	UPROPERTY()
+	class AHumanState* HumanState;
 
 	bool bElimmed = false;
 	FTimerHandle ElimTimer;
@@ -116,26 +100,18 @@ private:
 	float ElimDelay = 3.f;
 	void ElimTimerFinished();
 
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	class USoundCue* MetalSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	class USoundCue* WaterSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	class USoundCue* GrassSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	class USoundCue* MudSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
-	class USoundCue* CommonSound;
-
 public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return CameraComponent; }
 	bool IsWeaponEquipped();
 	bool IsAiming();
-	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
 	AWeapon* GetEquippedWeapon();
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FVector GetHitTarget() const;
 	FORCEINLINE float GetHealth() const { return Health; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	ECombatState GetCombatState() const;
+
+	FORCEINLINE UCombatComponent* GetCombat() const { return Combat; }
+	FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; }
 
 };

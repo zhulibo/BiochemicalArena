@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Weapon.h"
-#include "ProjectileWeapon.generated.h"
+#include "GeneralWeapon.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API AProjectileWeapon : public AWeapon
+class BIOCHEMICALARENA_API AGeneralWeapon : public AWeapon
 {
 	GENERATED_BODY()
 

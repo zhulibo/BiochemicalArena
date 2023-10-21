@@ -1,6 +1,6 @@
 #include "InfectMode.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/Controllers/HumanController.h"
+#include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 

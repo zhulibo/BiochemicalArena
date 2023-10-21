@@ -4,13 +4,13 @@
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "BiochemicalArena/Components/CombatComponent.h"
-#include "BiochemicalArena/ControllerS/HumanController.h"
-#include "BiochemicalArena/Modes/InfectMode.h"
+#include "CharacterComponents/CombatComponent.h"
+#include "BiochemicalArena/PlayerControllers/HumanController.h"
+#include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
+#include "BiochemicalArena/GameModes/InfectMode.h"
+#include "BiochemicalArena/Weapons/Weapon.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
 
 AHumanCharacter::AHumanCharacter()
 {
@@ -30,69 +30,16 @@ AHumanCharacter::AHumanCharacter()
 
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combat->SetIsReplicated(true);
-
-	// 设置CharacterMovementComponent可蹲下
-	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
 void AHumanCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	CalculateAO_Pitch();
-}
-
-void AHumanCharacter::PlayFootstepSound()
-{
-	FHitResult HitResult;
-	FVector Start = GetActorLocation();
-	FVector End = Start - FVector(0.f, 0.f, 100.f);
-
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.bReturnPhysicalMaterial = true;
-
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, QueryParams);
-
-	if (HitResult.bBlockingHit)
-	{
-		EPhysicalSurface HitSurface = UGameplayStatics::GetSurfaceType(HitResult);
-		FVector_NetQuantize HitLocation = HitResult.Location;
-
-		switch (HitSurface)
-		{
-		case EPhysicalSurface::SurfaceType1:
-			if (MetalSound) UGameplayStatics::PlaySoundAtLocation(this, MetalSound, HitLocation);
-			break;
-		case EPhysicalSurface::SurfaceType2:
-			if (WaterSound) UGameplayStatics::PlaySoundAtLocation(this, WaterSound, HitLocation);
-			break;
-		case EPhysicalSurface::SurfaceType3:
-			if (GrassSound) UGameplayStatics::PlaySoundAtLocation(this, GrassSound, HitLocation);
-			break;
-		case EPhysicalSurface::SurfaceType4:
-			if (MudSound) UGameplayStatics::PlaySoundAtLocation(this, MudSound, HitLocation);
-			break;
-		default:
-			if (CommonSound) UGameplayStatics::PlaySoundAtLocation(this, CommonSound, HitLocation);
-			break;
-		}
-	}
 }
 
 void AHumanCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
-			Subsystem->AddMappingContext(WeaponsMappingContext, 0);
-		}
-	}
 
 	UpdateHUDHealth();
 
@@ -107,19 +54,25 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+	// Add Input Mapping Context
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (PlayerController)
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AHumanCharacter::Move);
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AHumanCharacter::Look);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AHumanCharacter::JumpButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Triggered, this, &AHumanCharacter::CrouchButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AHumanCharacter::CrouchButtonReleased);
-		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &AHumanCharacter::CrouchControllerButtonPressed);
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		if (Subsystem)
+		{
+			Subsystem->AddMappingContext(WeaponsMappingContext, 0);
+		}
+	}
+	// Set up action bindings
+	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
+	if (EnhancedInputComponent)
+	{
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &AHumanCharacter::AimButtonPressed);
 		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &AHumanCharacter::AimButtonReleased);
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &AHumanCharacter::FireButtonPressed);
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &AHumanCharacter::FireButtonReleased);
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AHumanCharacter::ReloadButtonPressed);
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Triggered, this, &AHumanCharacter::DropButtonPressed);
 	}
 }
@@ -138,72 +91,6 @@ void AHumanCharacter::PostInitializeComponents()
 	if (Combat)
 	{
 		Combat->Character = this;
-	}
-}
-
-void AHumanCharacter::CalculateAO_Pitch()
-{
-	AO_Pitch = GetBaseAimRotation().Pitch;
-	if (AO_Pitch > 90.f && !IsLocallyControlled())
-	{
-		// map pitch from [360, 270) to [0, -90)
-		FVector2D InRange(360.f, 270.f);
-		FVector2D OutRange(0.f, -90.f);
-		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
-	}
-}
-
-void AHumanCharacter::Move(const FInputActionValue& Value)
-{
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	if (Controller != nullptr)
-	{
-		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);
-	}
-}
-
-void AHumanCharacter::Look(const FInputActionValue& Value)
-{
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-	if (Controller != nullptr)
-	{
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
-	}
-}
-
-void AHumanCharacter::JumpButtonPressed(const FInputActionValue& Value)
-{
-	if (bIsCrouched)
-	{
-		UnCrouch();
-	}
-	else
-	{
-		Jump();
-	}
-}
-
-void AHumanCharacter::CrouchButtonPressed(const FInputActionValue& Value)
-{
-	Crouch();
-}
-
-void AHumanCharacter::CrouchButtonReleased(const FInputActionValue& Value)
-{
-	UnCrouch();
-}
-
-void AHumanCharacter::CrouchControllerButtonPressed(const FInputActionValue& Value)
-{
-	if (bIsCrouched)
-	{
-		UnCrouch();
-	}
-	else
-	{
-		Crouch();
 	}
 }
 
@@ -229,7 +116,7 @@ void AHumanCharacter::FireButtonPressed(const FInputActionValue& Value)
 {
 	if (Combat)
 	{
-		Combat->FireButtonPressed(true);
+		Combat->FireHandle(true);
 	}
 }
 
@@ -237,30 +124,37 @@ void AHumanCharacter::FireButtonReleased(const FInputActionValue& Value)
 {
 	if (Combat)
 	{
-		Combat->FireButtonPressed(false);
+		Combat->FireHandle(false);
+	}
+}
+
+void AHumanCharacter::ReloadButtonPressed(const FInputActionValue& Value)
+{
+	if (Combat)
+	{
+		Combat->Reload();
+	}
+}
+
+void AHumanCharacter::ServerDetectOverlappingWeapon_Implementation()
+{
+	TArray<AActor*> OverlappingActors;
+	GetOverlappingActors(OverlappingActors, AWeapon::StaticClass());
+	for (AActor* OverlappingActor : OverlappingActors)
+	{
+		AWeapon* Weapon = Cast<AWeapon>(OverlappingActor);
+		if (Weapon)
+		{
+			SetOverlappingWeapon(Weapon);
+			break;
+		}
 	}
 }
 
 void AHumanCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SetOverlappingWeapon"));
-	// 打印Weapon->GetVelocity()
-	UE_LOG(LogTemp, Warning, TEXT("Weapon->GetVelocity(): %s"), *Weapon->GetVelocity().ToString());
-	if (bElimmed || IsWeaponEquipped()) return;
+	if (IsWeaponEquipped() || bElimmed || Weapon->GetOwner()) return;
 	OverlappingWeapon = Weapon;
-	// HACK 延迟200ms执行，等待丢弃武器状态已同步
-	FTimerHandle EquipWeaponTimer;
-	GetWorldTimerManager().SetTimer(
-		EquipWeaponTimer,
-		this,
-		&AHumanCharacter::EquipWeaponHandle,
-		.2f
-	);
-	// TODO 主动触发脚下武器的SetOverlappingWeapon
-}
-
-void AHumanCharacter::EquipWeaponHandle()
-{
 	if (Combat)
 	{
 		if (HasAuthority())
@@ -296,6 +190,8 @@ void AHumanCharacter::DropButtonPressed(const FInputActionValue& Value)
 			ServerDropButtonPressed();
 		}
 	}
+	// 检测是否有武器重叠
+	ServerDetectOverlappingWeapon();
 }
 
 void AHumanCharacter::ServerDropButtonPressed_Implementation()
@@ -317,21 +213,49 @@ void AHumanCharacter::PlayFireMontage(bool bAiming)
 	}
 }
 
+void AHumanCharacter::PlayReloadMontage()
+{
+	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ReloadMontage)
+	{
+		AnimInstance->Montage_Play(ReloadMontage);
+		FName SectionName;
+		switch (Combat->EquippedWeapon->GetWeaponType())
+		{
+		case EWeaponType::EWT_GeneralWeapon:
+			SectionName = FName("AK47");
+			break;
+		case EWeaponType::EWT_Shotgun:
+			SectionName = FName("M870");
+			break;
+		}
+		AnimInstance->Montage_JumpToSection(SectionName);
+	}
+}
+
 void AHumanCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 	AController* InstigatorController, AActor* DamageCauser)
 {
+	if (bElimmed) return;
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 	UpdateHUDHealth();
 	PlayHitReactMontage();
 
 	if (Health == 0.f)
 	{
-		AInfectMode* InfectMode = GetWorld()->GetAuthGameMode<AInfectMode>();
-		if (InfectMode)
+		ATeamDeadMatchMode* TeamDeadMatchMode = GetWorld()->GetAuthGameMode<ATeamDeadMatchMode>();
+		if (TeamDeadMatchMode)
 		{
-			HumanController = HumanController == nullptr ? Cast<AHumanController>(Controller) : HumanController;
-			AHumanController* AttackerController = Cast<AHumanController>(InstigatorController);
-			InfectMode->PlayerEliminated(this, HumanController, AttackerController);
+			if (HumanController == nullptr)
+			{
+				HumanController = Cast<AHumanController>(Controller);
+			}
+			if (AHumanController* AttackerController = Cast<AHumanController>(InstigatorController))
+			{
+				TeamDeadMatchMode->PlayerEliminated(this, HumanController, AttackerController);
+			}
 		}
 	}
 }
@@ -344,7 +268,10 @@ void AHumanCharacter::OnRep_Health()
 
 void AHumanCharacter::UpdateHUDHealth()
 {
-	HumanController = HumanController == nullptr ? Cast<AHumanController>(Controller) : HumanController;
+	if (HumanController == nullptr)
+	{
+		HumanController = Cast<AHumanController>(Controller);
+	}
 	if (HumanController)
 	{
 		HumanController->SetHUDHealth(Health, MaxHealth);
@@ -366,11 +293,7 @@ void AHumanCharacter::PlayHitReactMontage()
 
 void AHumanCharacter::Elim()
 {
-	// Pre set bElimmed, used to disable EquipWeaponHandle,
-	// Elim > cause DropWeapon > cause SetOverlappingWeapon > EquipWeaponHandle,
-	// EquipWeaponHandle may execute before MulticastElim.
-	bElimmed = true;
-
+	bElimmed = true; // set immediately
 	if (Combat && Combat->EquippedWeapon)
 	{
 		Combat->EquippedWeapon->DropWeapon();
@@ -399,10 +322,10 @@ void AHumanCharacter::MulticastElim_Implementation()
 
 void AHumanCharacter::ElimTimerFinished()
 {
-	AInfectMode* InfectMode = GetWorld()->GetAuthGameMode<AInfectMode>();
-	if (InfectMode)
+	ATeamDeadMatchMode* TeamDeadMatchMode = GetWorld()->GetAuthGameMode<ATeamDeadMatchMode>();
+	if (TeamDeadMatchMode)
 	{
-		InfectMode->RequestRespawn(this, Controller);
+		TeamDeadMatchMode->RequestRespawn(this, Controller);
 	}
 }
 
@@ -426,4 +349,10 @@ FVector AHumanCharacter::GetHitTarget() const
 {
 	if (Combat == nullptr) return FVector();
 	return Combat->HitTarget;
+}
+
+ECombatState AHumanCharacter::GetCombatState() const
+{
+	if (Combat == nullptr) return ECombatState::ECS_Max;
+	return Combat->CombatState;
 }

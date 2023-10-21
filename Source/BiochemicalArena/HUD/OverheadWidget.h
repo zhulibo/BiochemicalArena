@@ -15,8 +15,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ShowPlayerNetRole(APawn* InPawn);
-
-	void SetDisplayText(FString TextToDisplay);
+	void SetDisplayText(FString DisplayString);
 
 protected:
 	virtual void NativeDestruct() override;
