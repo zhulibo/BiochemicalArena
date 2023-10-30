@@ -28,13 +28,13 @@ class BIOCHEMICALARENA_API AHumanHUD : public AHUD
 public:
 	virtual void DrawHUD() override;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats")
+	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> CharacterOverlayClass;
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;
 	void AddCharacterOverlay();
 
-	UPROPERTY(EditAnywhere, Category = "Announcements")
+	UPROPERTY(EditAnywhere, Category = "HUD")
 	TSubclassOf<UUserWidget> AnnouncementClass;
 	UPROPERTY()
 	class UAnnouncement* Announcement;

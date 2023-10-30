@@ -14,6 +14,8 @@ public:
 
 	UPROPERTY()
 	float Damage;
+	UPROPERTY(EditAnywhere)
+	float InitialSpeed = 100000;
 
 protected:
 	virtual void BeginPlay() override;
@@ -24,6 +26,8 @@ protected:
 private:
 	UPROPERTY(EditAnywhere)
 	class UBoxComponent* CollisionBox;
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* ProjectileMesh;
 	UPROPERTY(VisibleAnywhere)
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 

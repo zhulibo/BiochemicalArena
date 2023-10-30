@@ -39,12 +39,12 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 	YawOffset = DiffRotation.Yaw;
 
 	bWeaponEquipped = HumanCharacter->IsWeaponEquipped();
-	EquippedWeapon = HumanCharacter->GetEquippedWeapon();
+	CurrentWeapon = HumanCharacter->GetCurrentWeapon();
 
-	if (bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && HumanCharacter->GetMesh())
+	if (bWeaponEquipped && CurrentWeapon && CurrentWeapon->GetWeaponMesh() && HumanCharacter->GetMesh())
 	{
 		// 获取武器左手插槽的世界坐标
-		LeftHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
+		LeftHandTransform = CurrentWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
 		FVector OutPosition;
 		FRotator OutRotation;
 		// 转换为相对于右手骨骼空间的坐标
@@ -54,7 +54,7 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 		// 红色为准心指向，黄色为枪管指向
 		if (HumanCharacter->IsLocallyControlled())
 		{
-			FTransform MuzzleTipTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("MuzzleSocket"), ERelativeTransformSpace::RTS_World);
+			FTransform MuzzleTipTransform = CurrentWeapon->GetWeaponMesh()->GetSocketTransform(FName("MuzzleSocket"), ERelativeTransformSpace::RTS_World);
 			FVector MuzzleX(FRotationMatrix(MuzzleTipTransform.GetRotation().Rotator()).GetUnitAxis(EAxis::X));
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), MuzzleTipTransform.GetLocation() + MuzzleX * 2000.f, FColor::Yellow);
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), HumanCharacter->GetHitTarget(), FColor::Red);

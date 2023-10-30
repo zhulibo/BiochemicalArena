@@ -34,7 +34,7 @@ void AWeapon::BeginPlay()
 	// 服务端统一检测OnSphereOverlap事件
 	if (HasAuthority())
 	{
-		AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 		AreaSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 		AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnSphereOverlap);
@@ -46,7 +46,7 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AWeapon, WeaponState);
-	DOREPLIFETIME_CONDITION(AWeapon, CarriedAmmo, COND_OwnerOnly);
+	DOREPLIFETIME(AWeapon, CarriedAmmo);
 	DOREPLIFETIME(AWeapon, Ammo);
 }
 
@@ -79,7 +79,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 
 void AWeapon::DropWeapon()
 {
-	SetWeaponState(EWeaponState::EwsDropped);
+	SetWeaponState(EWeaponState::EWS_Dropped);
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 	WeaponMesh->DetachFromComponent(DetachRules);
 	// 丢弃武器时，给予一个向前的冲量
@@ -89,12 +89,14 @@ void AWeapon::DropWeapon()
 		UCameraComponent* CameraComponent = OwnerCharacter->FindComponentByClass<UCameraComponent>();
 		if (CameraComponent)
 		{
-			float ImpulseNum =  1200.f;
+			float ImpulseNumPerKg =  300.f;
 			if (OwnerCharacter->IsElimmed())
 			{
-				ImpulseNum = 600.f;
+				ImpulseNumPerKg = 150.f;
 			}
-			WeaponMesh->AddImpulse(CameraComponent->GetForwardVector() * ImpulseNum);
+			// 打印武器的质量
+			UE_LOG(LogTemp, Warning, TEXT("WeaponMass: %f"), WeaponMesh->GetMass());
+			WeaponMesh->AddImpulse(CameraComponent->GetForwardVector() * ImpulseNumPerKg * WeaponMesh->GetMass());
 		}
 	}
 	SetOwner(nullptr);
@@ -102,6 +104,7 @@ void AWeapon::DropWeapon()
 
 void AWeapon::OnRep_Owner()
 {
+	Super::OnRep_Owner();
 	Super::OnRep_Owner();
 
 	if (Owner == nullptr)
@@ -121,7 +124,7 @@ void AWeapon::SetWeaponState(EWeaponState State)
 	WeaponState = State;
 	switch (WeaponState)
 	{
-	case EWeaponState::EwsEquipped:
+	case EWeaponState::EWS_Equipped:
 		if (HasAuthority())
 		{
 			AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -130,7 +133,7 @@ void AWeapon::SetWeaponState(EWeaponState State)
 		WeaponMesh->SetEnableGravity(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
-	case EWeaponState::EwsDropped:
+	case EWeaponState::EWS_Dropped:
 		if (HasAuthority())
 		{
 			/**
@@ -157,12 +160,12 @@ void AWeapon::OnRep_WeaponState()
 {
 	switch (WeaponState)
 	{
-	case EWeaponState::EwsEquipped:
+	case EWeaponState::EWS_Equipped:
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetEnableGravity(false);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
-	case EWeaponState::EwsDropped:
+	case EWeaponState::EWS_Dropped:
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -186,7 +189,7 @@ void AWeapon::OnRep_Ammo()
 {
 	SetHUDAmmo();
 
-	if (WeaponType == EWeaponType::EWT_Shotgun && IsFull() && Character && Character->GetCombat())
+	if (WeaponCate == EWeaponCate::EWT_Shotgun && IsFull() && Character && Character->GetCombat())
 	{
 		Character->GetCombat()->JumpToShotgunEnd();
 	}
@@ -196,7 +199,7 @@ void AWeapon::OnRep_CarriedAmmo()
 {
 	SetHUDCarriedAmmo();
 
-	if (WeaponType == EWeaponType::EWT_Shotgun && CarriedAmmo == 0 && Character && Character->GetCombat())
+	if (WeaponCate == EWeaponCate::EWT_Shotgun && CarriedAmmo == 0 && Character && Character->GetCombat())
 	{
 		Character->GetCombat()->JumpToShotgunEnd();
 	}
@@ -244,6 +247,6 @@ void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
 	if (HumanCharacter)
 	{
-		HumanCharacter->SetOverlappingWeapon(this);
+		HumanCharacter->EquipOverlappingWeapon(this);
 	}
 }

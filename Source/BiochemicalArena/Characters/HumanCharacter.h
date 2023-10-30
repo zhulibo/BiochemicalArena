@@ -17,7 +17,7 @@ public:
 	AHumanCharacter();
 	virtual void Tick(float DeltaTime) override;
 
-	void SetOverlappingWeapon(AWeapon* Weapon);
+	void EquipOverlappingWeapon(AWeapon* Weapon);
 
 	void PlayFireMontage(bool bAiming);
 	void PlayReloadMontage();
@@ -25,10 +25,11 @@ public:
 	void Elim();
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastElim();
+	void SetDefaultWeapon();
 
 protected:
 	virtual void BeginPlay() override;
-
+	void PollInit();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
@@ -42,6 +43,11 @@ protected:
 	void FireButtonReleased(const FInputActionValue& Value);
 	void ReloadButtonPressed(const FInputActionValue& Value);
 	void DropButtonPressed(const FInputActionValue& Value);
+	void SwapMainWeaponButtonPressed(const FInputActionValue& Value);
+	void SwapSecondaryWeaponButtonPressed(const FInputActionValue& Value);
+	void SwapMeleeWeaponButtonPressed(const FInputActionValue& Value);
+	void SwapThrowingWeaponButtonPressed(const FInputActionValue& Value);
+	void SwapLastWeaponButtonPressed(const FInputActionValue& Value);
 
 	UFUNCTION()
 	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
@@ -49,13 +55,23 @@ protected:
 	void PlayHitReactMontage();
 
 private:
+	UPROPERTY()
+	class ATeamDeadMatchMode* TeamDeadMatchMode;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	TSubclassOf<AWeapon> DefaultMainWeaponClass;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	TSubclassOf<AWeapon> DefaultSecondaryWeaponClass;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	TSubclassOf<AWeapon> DefaultMeleeWeaponClass;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	TSubclassOf<AWeapon> DefaultThrowingWeaponClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	UCombatComponent* Combat;
-
-	UPROPERTY()
-	AWeapon* OverlappingWeapon;
+	UPROPERTY(VisibleAnywhere)
+	class UPickupComponent* Pickup;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* WeaponsMappingContext;
@@ -67,24 +83,36 @@ private:
 	UInputAction* ReloadAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	UInputAction* DropAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapMainWeaponAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapSecondaryWeaponAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapMeleeWeaponAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapThrowingWeaponAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapLastWeaponAction;
 
 	UFUNCTION(Server, Reliable)
 	void ServerDetectOverlappingWeapon();
 	UFUNCTION(Server, Reliable)
-	void ServerEquipWeaponHandle();
+	void ServerEquipWeaponHandle(AWeapon* Weapon);
 	UFUNCTION(Server, Reliable)
 	void ServerDropButtonPressed();
+	UFUNCTION(Server, Reliable)
+	void ServerSwapWeaponHandle(EWeaponType NewWeaponType);
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* FireWeaponMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* HitReactMontage;
-	UPROPERTY(EditAnywhere, Category = Combat)
+	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* ReloadMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Player Stats")
+	UPROPERTY(EditAnywhere, Category = "Player")
 	float MaxHealth = 200.f;
-	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player Stats")
+	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player")
 	float Health = 200.f;
 	UFUNCTION()
 	void OnRep_Health();
@@ -104,7 +132,7 @@ public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return CameraComponent; }
 	bool IsWeaponEquipped();
 	bool IsAiming();
-	AWeapon* GetEquippedWeapon();
+	AWeapon* GetCurrentWeapon();
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
 	FVector GetHitTarget() const;
 	FORCEINLINE float GetHealth() const { return Health; }

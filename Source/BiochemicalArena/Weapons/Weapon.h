@@ -5,15 +5,6 @@
 #include "WeaponTypes.h"
 #include "Weapon.generated.h"
 
-UENUM(BlueprintType)
-enum class EWeaponState : uint8
-{
-	EwsEquipped UMETA(DisplayName = "Equipped"),
-	EwsDropped UMETA(DisplayName = "Dropped"),
-
-	EwsMax UMETA(DisplayName = "DefaultMax")
-};
-
 UCLASS()
 class BIOCHEMICALARENA_API AWeapon : public AActor
 {
@@ -40,9 +31,9 @@ public:
 	UPROPERTY(EditAnywhere)
 	float ZoomInterpSpeed = 20.f;
 
-	UPROPERTY(EditAnywhere, Category = "Combat")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	float FireDelay = .1f;
-	UPROPERTY(EditAnywhere, Category = "Combat")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	bool bAutomatic = true;
 
 	UPROPERTY(EditAnywhere, Category = "Crosshairs")
@@ -69,13 +60,13 @@ protected:
 		const FHitResult& SweepResult
 	);
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	float Damage = 60.f;
 
 private:
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	USkeletalMeshComponent* WeaponMesh;
-	UPROPERTY(VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	class USphereComponent* AreaSphere;
 
 	UPROPERTY()
@@ -83,23 +74,25 @@ private:
 	UPROPERTY()
 	class AHumanController* Controller;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	EWeaponType WeaponType;
-	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	EWeaponCate WeaponCate;
+	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon")
 	EWeaponState WeaponState;
 	UFUNCTION()
 	void OnRep_WeaponState();
 
-	UPROPERTY(EditAnywhere, Category = "Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	UAnimationAsset* FireAnimation;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	TSubclassOf<class ACasing> CasingClass;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	int32 MagCapacity;
-	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_Ammo)
+	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_Ammo, Category = "Weapon")
 	int32 Ammo;
-	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_CarriedAmmo)
+	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_CarriedAmmo, Category = "Weapon")
 	int32 CarriedAmmo;
 
 	UFUNCTION()
@@ -116,10 +109,12 @@ public:
 	FORCEINLINE float GetZoomedFOV() const { return ZoomedFOV; }
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
+	FORCEINLINE EWeaponCate GetWeaponCate() const { return WeaponCate; }
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 	FORCEINLINE int32 GetCarriedAmmo() const { return CarriedAmmo; }
 	bool IsEmpty();
 	bool IsFull();
+	FORCEINLINE EWeaponState GetWeaponState() const { return WeaponState; }
 
 };
