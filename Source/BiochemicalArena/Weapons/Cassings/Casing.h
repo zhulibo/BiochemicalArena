@@ -28,6 +28,6 @@ private:
 	class USoundCue* ShellSound;
 
 	UPROPERTY(EditAnywhere)
-	float ShellEjectionImpulse;
+	float ShellEjectionImpulsePerKg = 200.f;;
 
 };

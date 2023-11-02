@@ -12,7 +12,6 @@ class BIOCHEMICALARENA_API AHumanController : public APlayerController
 public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void OnPossess(APawn* InPawn) override;
 
 	virtual float GetServerTime();
 
@@ -34,7 +33,7 @@ protected:
 	float ClientServerDelta = 0.f; // difference between client and server time(not network delay)
 	UPROPERTY(EditAnywhere, Category = Time)
 	float RefreshFrequency = 5.f;
-	void GetClientServerDelta();
+	void HandleClientServerDelta();
 	UFUNCTION(Server, Reliable)
 	void RequestServerTime(float TimeClientRequest);
 	UFUNCTION(Client, Reliable)
@@ -46,12 +45,18 @@ protected:
 	UFUNCTION(Client, Reliable)
 	void ReturnServerMatchState(FName StateOfMatch, float Warmup, float Match, float Cooldown, float StartingTime);
 
+	void InitDefaultHUD();
 	void SetHUDTime();
-	void PollInit();
 
 private:
 	UPROPERTY()
 	class ATeamDeadMatchMode* TeamDeadMatchMode;
+	UPROPERTY()
+	class ATeamDeadMatchState* TeamDeadMatchState;
+	UPROPERTY()
+	class AHumanCharacter* HumanCharacter;
+	UPROPERTY()
+	class AHumanState* HumanState;
 	UPROPERTY()
 	class AHumanHUD* HumanHUD;
 
@@ -66,9 +71,9 @@ private:
 	float CooldownTime = 0.f;
 	uint32 CountdownSeconds = 0;
 
+	bool bHasInitDefaultHUD = false;
 	UPROPERTY()
 	class UCharacterOverlay* CharacterOverlay;
-	bool bInitializeCharacterOverlay = false;
 
 	float HUDHealth;
 	float HUDMaxHealth;

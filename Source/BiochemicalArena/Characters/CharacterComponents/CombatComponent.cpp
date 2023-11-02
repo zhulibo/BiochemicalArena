@@ -56,15 +56,15 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 	if (Character && Character->IsLocallyControlled())
 	{
 		FHitResult HitResult;
-		TraceUnderCrosshairs(HitResult);
+		TraceUnderCrosshair(HitResult);
 		HitTarget = HitResult.ImpactPoint;
 
-		SetHUDCrosshairs(DeltaTime);
+		SetHUDCrosshair(DeltaTime);
 		InterpFOV(DeltaTime);
 	}
 }
 
-void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
+void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 {
 	FVector2D ViewportSize;
 	if (GEngine && GEngine->GameViewport)
@@ -93,37 +93,31 @@ void UCombatComponent::TraceUnderCrosshairs(FHitResult& TraceHitResult)
 	}
 }
 
-void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
+void UCombatComponent::SetHUDCrosshair(float DeltaTime)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;
 
-	if (Controller == nullptr)
-	{
-		Controller = Cast<AHumanController>(Character->Controller);
-	}
+	if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
 	if (Controller)
 	{
-		if (HUD == nullptr)
-		{
-			HUD = Cast<AHumanHUD>(Controller->GetHUD());
-		}
+		if (HUD == nullptr) HUD = Cast<AHumanHUD>(Controller->GetHUD());
 		if (HUD)
 		{
 			if (GetCurrentWeapon())
 			{
-				HUDPackage.CrosshairsCenter = GetCurrentWeapon()->CrosshairsCenter;
-				HUDPackage.CrosshairsLeft = GetCurrentWeapon()->CrosshairsLeft;
-				HUDPackage.CrosshairsRight = GetCurrentWeapon()->CrosshairsRight;
-				HUDPackage.CrosshairsBottom = GetCurrentWeapon()->CrosshairsBottom;
-				HUDPackage.CrosshairsTop = GetCurrentWeapon()->CrosshairsTop;
+				HUDPackage.CrosshairCenter = GetCurrentWeapon()->CrosshairCenter;
+				HUDPackage.CrosshairLeft = GetCurrentWeapon()->CrosshairLeft;
+				HUDPackage.CrosshairRight = GetCurrentWeapon()->CrosshairRight;
+				HUDPackage.CrosshairBottom = GetCurrentWeapon()->CrosshairBottom;
+				HUDPackage.CrosshairTop = GetCurrentWeapon()->CrosshairTop;
 			}
 			else
 			{
-				HUDPackage.CrosshairsCenter = nullptr;
-				HUDPackage.CrosshairsLeft = nullptr;
-				HUDPackage.CrosshairsRight = nullptr;
-				HUDPackage.CrosshairsBottom = nullptr;
-				HUDPackage.CrosshairsTop = nullptr;
+				HUDPackage.CrosshairCenter = nullptr;
+				HUDPackage.CrosshairLeft = nullptr;
+				HUDPackage.CrosshairRight = nullptr;
+				HUDPackage.CrosshairBottom = nullptr;
+				HUDPackage.CrosshairTop = nullptr;
 			}
 
 			// Calculate crosshair spread
@@ -192,32 +186,21 @@ void UCombatComponent::InterpFOV(float DeltaTime)
 
 void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
 {
-	if (WeaponToEquip == nullptr) return;
-	WeaponToEquip->SetOwner(Character);
-	WeaponToEquip->SetWeaponState(EWeaponState::EWS_Equipped);
-	EWeaponType WeaponType = WeaponToEquip->GetWeaponType();
-	switch (WeaponType)
-	{
-	case EWeaponType::EWT_MainWeapon:
-		MainWeapon = WeaponToEquip;
-		break;
-	case EWeaponType::EWT_SecondaryWeapon:
-		SecondaryWeapon = WeaponToEquip;
-		break;
-	case EWeaponType::EWT_MeleeWeapon:
-		MeleeWeapon = WeaponToEquip;
-		break;
-	case EWeaponType::EWT_ThrowingWeapon:
-		ThrowingWeapon = WeaponToEquip;
-		break;
-	}
-	AttachActorToBodySocket(WeaponToEquip);
+	LocalEquipWeapon(WeaponToEquip);
 	MulticastEquipWeapon(WeaponToEquip);
 }
 
 void UCombatComponent::MulticastEquipWeapon_Implementation(AWeapon* WeaponToEquip)
 {
-	if (WeaponToEquip == nullptr) return;
+	if (Character && !Character->HasAuthority())
+	{
+		LocalEquipWeapon(WeaponToEquip);
+	}
+}
+
+void UCombatComponent::LocalEquipWeapon(AWeapon* WeaponToEquip)
+{
+	if (WeaponToEquip == nullptr || Character == nullptr) return;
 	WeaponToEquip->SetOwner(Character);
 	WeaponToEquip->SetWeaponState(EWeaponState::EWS_Equipped);
 	EWeaponType WeaponType = WeaponToEquip->GetWeaponType();
@@ -241,18 +224,25 @@ void UCombatComponent::MulticastEquipWeapon_Implementation(AWeapon* WeaponToEqui
 
 void UCombatComponent::UseWeapon(AWeapon* WeaponToUse)
 {
-	if (Character == nullptr || WeaponToUse == nullptr) return;
-	AttachActorToRightHand(WeaponToUse);
-	CurrentWeaponType = WeaponToUse->GetWeaponType();
-	PlayEquipWeaponSound();
-	// 初始设置弹药
-	GetCurrentWeapon()->SetAmmo(WeaponToUse->GetAmmo());
-	GetCurrentWeapon()->SetCarriedAmmo(WeaponToUse->GetCarriedAmmo());
+	LocalUseWeapon(WeaponToUse);
 	MulticastUseWeapon(WeaponToUse);
 }
 
 void UCombatComponent::MulticastUseWeapon_Implementation(AWeapon* WeaponToUse)
 {
+	if (Character && !Character->HasAuthority())
+	{
+		LocalUseWeapon(WeaponToUse);
+	}
+}
+
+void UCombatComponent::LocalUseWeapon(AWeapon* WeaponToUse)
+{
+	if (Character == nullptr || WeaponToUse == nullptr || GetCurrentWeapon() == nullptr) return;
+	AttachActorToRightHand(WeaponToUse);
+	CurrentWeaponType = WeaponToUse->GetWeaponType();
+	GetCurrentWeapon()->SetAmmo(WeaponToUse->GetAmmo());
+	GetCurrentWeapon()->SetCarriedAmmo(WeaponToUse->GetCarriedAmmo());
 	PlayEquipWeaponSound();
 }
 
@@ -322,7 +312,7 @@ void UCombatComponent::AttachActorToBodySocket(AWeapon* ActorToAttach)
 
 void UCombatComponent::PlayEquipWeaponSound()
 {
-	if (Character && GetCurrentWeapon() && GetCurrentWeapon()->EquipSound)
+	if (Character && Character->IsLocallyControlled() && GetCurrentWeapon() && GetCurrentWeapon()->EquipSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(
 			this,
@@ -384,6 +374,7 @@ void UCombatComponent::SetCombatWeaponPointNull(EWeaponType WeaponType)
 
 void UCombatComponent::SetAiming(bool bIsAiming)
 {
+	bAimButtonPressed = bIsAiming;
 	bAiming = bIsAiming;
 	ServerSetAiming(bIsAiming);
 	if (Character)
@@ -398,6 +389,14 @@ void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
 	if (Character)
 	{
 		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::OnRep_Aiming()
+{
+	if (Character && Character->IsLocallyControlled())
+	{
+		bAiming = bAimButtonPressed;
 	}
 }
 
@@ -416,6 +415,7 @@ void UCombatComponent::Fire()
 	{
 		bCanFire = false;
 		CrosshairShootingFactor = .75f;
+		LocalFire(HitTarget);
 		ServerFire(HitTarget);
 		if (GetCurrentWeapon() && Character)
 		{
@@ -436,15 +436,23 @@ void UCombatComponent::ServerFire_Implementation(const FVector_NetQuantize& Trac
 
 void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
-	if (GetCurrentWeapon() == nullptr) return;
-	if (Character && CombatState == ECombatState::ECS_Reloading && GetCurrentWeapon()->GetWeaponCate() == EWeaponCate::EWT_Shotgun)
+	if (Character && Character->IsLocallyControlled()) return;
+	LocalFire(TraceHitTarget);
+}
+
+void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
+{
+	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
+	if (CombatState == ECombatState::ECS_Reloading && GetCurrentWeapon()->GetWeaponCate() == EWeaponCate::EWT_Shotgun)
 	{
+		bLocallyReloading = false;
 		Character->PlayFireMontage(bAiming);
 		GetCurrentWeapon()->Fire(TraceHitTarget);
-		CombatState = ECombatState::ECS_Unoccupied; // TODO 散弹枪装弹时射击，local立即设置CombatState为ECS_Unoccupied
+		CombatState = ECombatState::ECS_Unoccupied;
 		return;
 	}
-	if (Character && CombatState == ECombatState::ECS_Unoccupied)
+
+	if (CombatState == ECombatState::ECS_Unoccupied)
 	{
 		Character->PlayFireMontage(bAiming);
 		GetCurrentWeapon()->Fire(TraceHitTarget);
@@ -463,21 +471,26 @@ void UCombatComponent::LoadNewBulletFinished()
 bool UCombatComponent::CanFire()
 {
 	if (GetCurrentWeapon() == nullptr) return false;
-
 	bool bShotgunReloadingWithBulletIn = !GetCurrentWeapon()->IsEmpty() &&
 		bCanFire &&
 		CombatState == ECombatState::ECS_Reloading &&
 		GetCurrentWeapon()->GetWeaponCate() == EWeaponCate::EWT_Shotgun;
 	if (bShotgunReloadingWithBulletIn) return true;
-
+	if (bLocallyReloading) return false;
 	if (!GetCurrentWeapon()->IsEmpty() && bCanFire && CombatState == ECombatState::ECS_Unoccupied) return true;
 	return false;
 }
 
 void UCombatComponent::Reload()
 {
-	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCarriedAmmo() > 0 && CombatState == ECombatState::ECS_Unoccupied && !GetCurrentWeapon()->IsFull())
+	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCarriedAmmo() > 0 && CombatState == ECombatState::ECS_Unoccupied && !GetCurrentWeapon()->IsFull() && !bLocallyReloading)
 	{
+		bLocallyReloading = true;
+		if (Character->IsLocallyControlled())
+		{
+			CombatState = ECombatState::ECS_Reloading;
+			Character->PlayReloadMontage();
+		}
 		ServerReload();
 	}
 }
@@ -485,49 +498,54 @@ void UCombatComponent::Reload()
 void UCombatComponent::ServerReload_Implementation()
 {
 	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
-	CombatState = ECombatState::ECS_Reloading;
-	HandleReload();
-}
-
-void UCombatComponent::HandleReload()
-{
-	Character->PlayReloadMontage();
+	if (!Character->IsLocallyControlled())
+	{
+		CombatState = ECombatState::ECS_Reloading;
+		Character->PlayReloadMontage();
+	}
 }
 
 void UCombatComponent::FinishReloading()
 {
 	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
-	if (Character->HasAuthority())
+	bLocallyReloading = false;
+	CombatState = ECombatState::ECS_Unoccupied;
+	// 设置ammo和CarriedAmmo
+	int32 Ammo = GetCurrentWeapon()->GetAmmo();
+	int32 MagCapacity = GetCurrentWeapon()->GetMagCapacity();
+	int32 CarriedAmmo = GetCurrentWeapon()->GetCarriedAmmo();
+	int32 NeedAmmoNum = MagCapacity - Ammo;
+	if (CarriedAmmo > NeedAmmoNum)
 	{
-		CombatState = ECombatState::ECS_Unoccupied;
-		// 设置ammo和CarriedAmmo
-		int32 Ammo = GetCurrentWeapon()->GetAmmo();
-		int32 MagCapacity = GetCurrentWeapon()->GetMagCapacity();
-		int32 CarriedAmmo = GetCurrentWeapon()->GetCarriedAmmo();
-		int32 NeedAmmoNum = MagCapacity - Ammo;
-		if (CarriedAmmo > NeedAmmoNum)
-		{
-			GetCurrentWeapon()->SetAmmo(MagCapacity);
-			GetCurrentWeapon()->SetCarriedAmmo(CarriedAmmo - NeedAmmoNum);
-		}
-		else
-		{
-			GetCurrentWeapon()->SetAmmo(Ammo + CarriedAmmo);
-			GetCurrentWeapon()->SetCarriedAmmo(0);
-		}
+		GetCurrentWeapon()->SetAmmo(MagCapacity);
+		GetCurrentWeapon()->SetCarriedAmmo(CarriedAmmo - NeedAmmoNum);
+	}
+	else
+	{
+		GetCurrentWeapon()->SetAmmo(Ammo + CarriedAmmo);
+		GetCurrentWeapon()->SetCarriedAmmo(0);
 	}
 }
 
 void UCombatComponent::ShellReload()
 {
-	if (Character == nullptr || GetCurrentWeapon() == nullptr || !Character->HasAuthority()) return;
-
-	// 设置ammo和CarriedAmmo
+	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
+	if (Character->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("server: %d"), GetCurrentWeapon()->GetAmmo() + 1);
+	}
+	if (Character->IsLocallyControlled())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Locally: %d"), GetCurrentWeapon()->GetAmmo() + 1);
+	}
+	if (!Character->HasAuthority() && !Character->IsLocallyControlled())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("client: %d"), GetCurrentWeapon()->GetAmmo() + 1);
+	}
 	GetCurrentWeapon()->SetAmmo(GetCurrentWeapon()->GetAmmo() + 1);
 	GetCurrentWeapon()->SetCarriedAmmo(GetCurrentWeapon()->GetCarriedAmmo() - 1);
 	// 装入一发可立即开火
 	bCanFire = true;
-	// 弹匣满了或者CarriedAmmo耗尽，跳转到ShotgunEnd
 	if (GetCurrentWeapon()->IsFull() || GetCurrentWeapon()->GetCarriedAmmo() == 0)
 	{
 		JumpToShotgunEnd();
@@ -548,7 +566,7 @@ void UCombatComponent::OnRep_CombatState()
 	switch (CombatState)
 	{
 	case ECombatState::ECS_Reloading:
-		HandleReload();
+		if (Character && !Character->IsLocallyControlled()) Character->PlayReloadMontage();
 		break;
 	case ECombatState::ECS_Unoccupied:
 		break;

@@ -36,19 +36,22 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	bool bAutomatic = true;
 
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
-	UTexture2D* CrosshairsCenter;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
-	UTexture2D* CrosshairsLeft;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
-	UTexture2D* CrosshairsRight;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
-	UTexture2D* CrosshairsTop;
-	UPROPERTY(EditAnywhere, Category = "Crosshairs")
-	UTexture2D* CrosshairsBottom;
+	UPROPERTY(EditAnywhere, Category = "Crosshair")
+	UTexture2D* CrosshairCenter;
+	UPROPERTY(EditAnywhere, Category = "Crosshair")
+	UTexture2D* CrosshairLeft;
+	UPROPERTY(EditAnywhere, Category = "Crosshair")
+	UTexture2D* CrosshairRight;
+	UPROPERTY(EditAnywhere, Category = "Crosshair")
+	UTexture2D* CrosshairTop;
+	UPROPERTY(EditAnywhere, Category = "Crosshair")
+	UTexture2D* CrosshairBottom;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnWeaponStateSet();
+	virtual void OnEquipped();
+	virtual void OnDropped();
 
 	UFUNCTION()
 	virtual void OnSphereOverlap(
@@ -89,17 +92,14 @@ private:
 	TSubclassOf<class ACasing> CasingClass;
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
-	int32 MagCapacity;
-	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_Ammo, Category = "Weapon")
 	int32 Ammo;
-	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_CarriedAmmo, Category = "Weapon")
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	int32 MagCapacity;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
 	int32 CarriedAmmo;
+	int32 MaxCarriedAmmo;
 
-	UFUNCTION()
-	void OnRep_Ammo();
-	UFUNCTION()
-	void OnRep_CarriedAmmo();
-
+	void SpendRound();
 	void SetHUDAmmo();
 	void SetHUDCarriedAmmo();
 
@@ -110,9 +110,10 @@ public:
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE EWeaponCate GetWeaponCate() const { return WeaponCate; }
-	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
+	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE int32 GetCarriedAmmo() const { return CarriedAmmo; }
+	FORCEINLINE int32 GetMaxCarriedAmmo() const { return MaxCarriedAmmo; }
 	bool IsEmpty();
 	bool IsFull();
 	FORCEINLINE EWeaponState GetWeaponState() const { return WeaponState; }

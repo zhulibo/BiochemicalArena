@@ -26,7 +26,7 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	float WarmupTime = 5.f;
 	UPROPERTY(EditDefaultsOnly)
-	float MatchTime = 30.f;
+	float MatchTime = 600.f;
 	UPROPERTY(EditDefaultsOnly)
 	float CooldownTime = 5.f;
 

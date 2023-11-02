@@ -3,13 +3,13 @@
 #include "CoreMinimal.h"
 #include "CommonCharacter.h"
 #include "CharacterComponents/CombatComponent.h"
-#include "BiochemicalArena/Interfaces/CrosshairsInterface.h"
+#include "BiochemicalArena/Interfaces/CrosshairInterface.h"
 #include "Camera/CameraComponent.h"
 #include "CharacterComponents/CombatState.h"
 #include "HumanCharacter.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API AHumanCharacter : public ACommonCharacter, public ICrosshairsInterface
+class BIOCHEMICALARENA_API AHumanCharacter : public ACommonCharacter, public ICrosshairInterface
 {
 	GENERATED_BODY()
 
@@ -29,10 +29,10 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	void PollInit();
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	void PollInit();
 
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* CameraComponent;

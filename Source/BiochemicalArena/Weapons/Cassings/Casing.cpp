@@ -6,7 +6,6 @@
 ACasing::ACasing()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	bReplicates = true;
 
 	CasingMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CasingMesh"));
 	SetRootComponent(CasingMesh);
@@ -19,7 +18,6 @@ ACasing::ACasing()
 	CasingMesh->SetEnableGravity(true);
 	CasingMesh->SetNotifyRigidBodyCollision(true);
 
-	ShellEjectionImpulse = 6.f;
 	bFirstOnHit = true;
 }
 
@@ -28,8 +26,8 @@ void ACasing::BeginPlay()
 	Super::BeginPlay();
 
 	CasingMesh->OnComponentHit.AddDynamic(this, &ACasing::OnHit);
-	const FVector RandomShell = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(GetActorForwardVector(), 15.f);
-	CasingMesh->AddImpulse(RandomShell * ShellEjectionImpulse);
+	const FVector RandomShell = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(GetActorForwardVector(), 10.f);
+	CasingMesh->AddImpulse(RandomShell * ShellEjectionImpulsePerKg * CasingMesh->GetMass());
 	SetLifeSpan(10.f);
 }
 

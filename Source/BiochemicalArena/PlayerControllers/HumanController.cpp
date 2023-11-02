@@ -9,24 +9,30 @@
 #include "Net/UnrealNetwork.h"
 #include "BiochemicalArena/HUD/Announcement.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
+#include "BiochemicalArena/Weapons/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 
 void AHumanController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	HumanHUD = Cast<AHumanHUD>(GetHUD());
-
-	RequestServerMatchState();
-	GetClientServerDelta();
+	if (IsLocalController())
+	{
+		HumanHUD = Cast<AHumanHUD>(GetHUD());
+		RequestServerMatchState();
+		HandleClientServerDelta();
+	}
 }
 
 void AHumanController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	SetHUDTime();
-	PollInit();
+	if (IsLocalController())
+	{
+		InitDefaultHUD();
+		SetHUDTime();
+	}
 }
 
 void AHumanController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -34,17 +40,6 @@ void AHumanController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AHumanController, MatchState);
-}
-
-void AHumanController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
-
-	AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(InPawn);
-	if (HumanCharacter)
-	{
-		SetHUDHealth(HumanCharacter->GetHealth(), HumanCharacter->GetMaxHealth());
-	}
 }
 
 float AHumanController::GetServerTime()
@@ -56,25 +51,22 @@ float AHumanController::GetServerTime()
 	return GetWorld()->GetTimeSeconds() + ClientServerDelta;
 }
 
-void AHumanController::GetClientServerDelta()
+void AHumanController::HandleClientServerDelta()
 {
-	if (IsLocalController())
-	{
-		// 周期性获取ClientServerDelta
-		FTimerHandle TimerHandle;
-		FTimerDelegate TimerDelegate;
-		auto Lambda = [this]() {
-			RequestServerTime(GetWorld()->GetTimeSeconds());
-		};
-		TimerDelegate.BindWeakLambda(this, Lambda);
-		GetWorldTimerManager().SetTimer(
-			TimerHandle,
-			TimerDelegate,
-			RefreshFrequency,
-			true,
-			0.f
-		);
-	}
+	// 周期性获取ClientServerDelta
+	FTimerHandle TimerHandle;
+	FTimerDelegate TimerDelegate;
+	auto Lambda = [this]() {
+		RequestServerTime(GetWorld()->GetTimeSeconds());
+	};
+	TimerDelegate.BindWeakLambda(this, Lambda);
+	GetWorldTimerManager().SetTimer(
+		TimerHandle,
+		TimerDelegate,
+		RefreshFrequency,
+		true,
+		0.f
+	);
 }
 
 void AHumanController::RequestServerTime_Implementation(float TimeClientRequest)
@@ -145,10 +137,7 @@ void AHumanController::OnRep_MatchState()
 
 void AHumanController::HandleMatchHasStarted()
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD)
 	{
 		if (HumanHUD->CharacterOverlay == nullptr)
@@ -164,18 +153,15 @@ void AHumanController::HandleMatchHasStarted()
 
 void AHumanController::HandleCooldown()
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD)
 	{
 		HumanHUD->CharacterOverlay->RemoveFromParent();
 		if (HumanHUD->Announcement && HumanHUD->Announcement->AnnouncementText)
 		{
 			HumanHUD->Announcement->SetVisibility(ESlateVisibility::Visible);
-			ATeamDeadMatchState* TeamDeadMatchState = Cast<ATeamDeadMatchState>(UGameplayStatics::GetGameState(this));
-			AHumanState* HumanState = GetPlayerState<AHumanState>();
+			if (TeamDeadMatchState == nullptr) TeamDeadMatchState = Cast<ATeamDeadMatchState>(UGameplayStatics::GetGameState(this));
+			if (HumanState == nullptr) HumanState = GetPlayerState<AHumanState>();
 			if (TeamDeadMatchState && HumanState)
 			{
 				FString AnnouncementString = FString("Game over");
@@ -187,6 +173,30 @@ void AHumanController::HandleCooldown()
 				HumanHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementString));
 			}
 		}
+	}
+}
+
+void AHumanController::InitDefaultHUD()
+{
+	if (bHasInitDefaultHUD) return;
+
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetPawn());
+	if (CharacterOverlay == nullptr && HumanHUD && HumanHUD->CharacterOverlay) CharacterOverlay = HumanHUD->CharacterOverlay;
+	if (HumanState == nullptr) HumanState = GetPlayerState<AHumanState>();
+
+	if (HumanCharacter &&
+		HumanCharacter->GetCombat() &&
+		HumanCharacter->GetCombat()->GetCurrentWeapon() &&
+		CharacterOverlay &&
+		HumanState)
+	{
+		SetHUDWeaponAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetAmmo());
+		SetHUDCarriedAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetCarriedAmmo());
+		SetHUDHealth(HumanCharacter->GetHealth(), HumanCharacter->GetMaxHealth());
+		SetHUDScore(HumanState->GetScore());
+		SetHUDDefeats(HumanState->GetDefeats());
+
+		bHasInitDefaultHUD = true;
 	}
 }
 
@@ -226,10 +236,7 @@ void AHumanController::SetHUDTime()
 
 void AHumanController::SetHUDWarmupCountdown(float CountdownTime)
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD && HumanHUD->Announcement && HumanHUD->Announcement->AnnouncementText)
 	{
 		if (CountdownTime < 0.f)
@@ -246,10 +253,7 @@ void AHumanController::SetHUDWarmupCountdown(float CountdownTime)
 
 void AHumanController::SetHUDMatchCountdown(float CountdownTime)
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	bool bHUDValid = HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->MatchCountdownText;
 	if (bHUDValid)
 	{
@@ -265,47 +269,18 @@ void AHumanController::SetHUDMatchCountdown(float CountdownTime)
 	}
 }
 
-void AHumanController::PollInit()
-{
-	if (CharacterOverlay == nullptr)
-	{
-		if (HumanHUD && HumanHUD->CharacterOverlay)
-		{
-			CharacterOverlay = HumanHUD->CharacterOverlay;
-			if (CharacterOverlay)
-			{
-				SetHUDHealth(HUDHealth, HUDMaxHealth);
-				SetHUDScore(HUDScore);
-				SetHUDDefeats(HUDDefeats);
-			}
-		}
-	}
-}
-
 void AHumanController::SetHUDHealth(float Health, float MaxHealth)
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->HealthValue)
 	{
 		HumanHUD->CharacterOverlay->HealthValue->SetText(FText::AsNumber(Health));
-	}
-	else
-	{
-		bInitializeCharacterOverlay = true;
-		HUDHealth = Health;
-		HUDMaxHealth = MaxHealth;
 	}
 }
 
 void AHumanController::SetHUDWeaponAmmo(int32 Ammo)
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->WeaponAmmoAmount)
 	{
 		HumanHUD->CharacterOverlay->WeaponAmmoAmount->SetText(FText::AsNumber(Ammo));
@@ -314,10 +289,7 @@ void AHumanController::SetHUDWeaponAmmo(int32 Ammo)
 
 void AHumanController::SetHUDCarriedAmmo(int32 Ammo)
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->CarriedAmmoAmount)
 	{
 		HumanHUD->CharacterOverlay->CarriedAmmoAmount->SetText(FText::AsNumber(Ammo));
@@ -326,34 +298,18 @@ void AHumanController::SetHUDCarriedAmmo(int32 Ammo)
 
 void AHumanController::SetHUDScore(float Score)
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->ScoreAmount)
 	{
 		HumanHUD->CharacterOverlay->ScoreAmount->SetText(FText::AsNumber(Score));
-	}
-	else
-	{
-		bInitializeCharacterOverlay = true;
-		HUDScore = Score;
 	}
 }
 
 void AHumanController::SetHUDDefeats(int32 Defeats)
 {
-	if (HumanHUD == nullptr)
-	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-	}
+	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->DefeatsAmount)
 	{
 		HumanHUD->CharacterOverlay->DefeatsAmount->SetText(FText::AsNumber(Defeats));
-	}
-	else
-	{
-		bInitializeCharacterOverlay = true;
-		HUDDefeats = Defeats;
 	}
 }

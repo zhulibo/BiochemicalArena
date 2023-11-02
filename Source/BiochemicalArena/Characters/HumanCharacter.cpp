@@ -36,18 +36,9 @@ AHumanCharacter::AHumanCharacter()
 	Pickup->SetIsReplicated(true);
 }
 
-void AHumanCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	PollInit();
-}
-
 void AHumanCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	UpdateHUDHealth();
 
 	if (HasAuthority())
 	{
@@ -55,36 +46,28 @@ void AHumanCharacter::BeginPlay()
 	}
 }
 
+void AHumanCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	PollInit();
+}
+
 void AHumanCharacter::PollInit()
 {
 	if (HumanController == nullptr)
 	{
-		// HumanController = Cast<AHumanController>(Controller);
 		HumanController = Cast<AHumanController>(Controller);
-		if (HumanController)
+		if (HumanController && HasAuthority())
 		{
-			// UE_LOG(LogTemp, Warning, TEXT("CharacterName: %s"), *GetName());
-			// if (HasAuthority())
-			// {
-			// 	UE_LOG(LogTemp, Warning, TEXT("server"));
-			// }
-			// else
-			// {
-			// 	UE_LOG(LogTemp, Warning, TEXT("client"));
-			// }
 			SetDefaultWeapon();
-			UpdateHUDHealth();
 		}
 	}
 }
 
 void AHumanCharacter::SetDefaultWeapon()
 {
-	if (TeamDeadMatchMode == nullptr)
-	{
-		TeamDeadMatchMode = GetWorld()->GetAuthGameMode<ATeamDeadMatchMode>();
-	}
-	if (TeamDeadMatchMode && !bElimmed && Combat)
+	if (Combat)
 	{
 		if (DefaultMainWeaponClass)
 		{
@@ -163,20 +146,18 @@ void AHumanCharacter::PostInitializeComponents()
 
 void AHumanCharacter::AimButtonPressed(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AimButtonPressed"));
-	// if (Combat)
-	// {
-	// 	Combat->SetAiming(true);
-	// }
+	if (Combat)
+	{
+		Combat->SetAiming(true);
+	}
 }
 
 void AHumanCharacter::AimButtonReleased(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AimButtonReleased"));
-	// if (Combat)
-	// {
-	// 	Combat->SetAiming(false);
-	// }
+	if (Combat)
+	{
+		Combat->SetAiming(false);
+	}
 }
 
 void AHumanCharacter::FireButtonPressed(const FInputActionValue& Value)
@@ -367,17 +348,12 @@ void AHumanCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 
 	if (Health == 0.f)
 	{
-		if (TeamDeadMatchMode == nullptr)
-	{
-		TeamDeadMatchMode = GetWorld()->GetAuthGameMode<ATeamDeadMatchMode>();
-	}
+		if (TeamDeadMatchMode == nullptr) TeamDeadMatchMode = GetWorld()->GetAuthGameMode<ATeamDeadMatchMode>();
 		if (TeamDeadMatchMode)
 		{
-			if (HumanController == nullptr)
-			{
-				HumanController = Cast<AHumanController>(Controller);
-			}
-			if (AHumanController* AttackerController = Cast<AHumanController>(InstigatorController))
+			if (HumanController == nullptr) HumanController = Cast<AHumanController>(Controller);
+			AHumanController* AttackerController = Cast<AHumanController>(InstigatorController);
+			if (HumanController && AttackerController)
 			{
 				TeamDeadMatchMode->PlayerEliminated(this, HumanController, AttackerController);
 			}
@@ -393,10 +369,7 @@ void AHumanCharacter::OnRep_Health()
 
 void AHumanCharacter::UpdateHUDHealth()
 {
-	if (HumanController == nullptr)
-	{
-		HumanController = Cast<AHumanController>(Controller);
-	}
+	if (HumanController == nullptr) HumanController = Cast<AHumanController>(Controller);
 	if (HumanController)
 	{
 		HumanController->SetHUDHealth(Health, MaxHealth);
@@ -447,10 +420,7 @@ void AHumanCharacter::MulticastElim_Implementation()
 
 void AHumanCharacter::ElimTimerFinished()
 {
-	if (TeamDeadMatchMode == nullptr)
-	{
-		TeamDeadMatchMode = GetWorld()->GetAuthGameMode<ATeamDeadMatchMode>();
-	}
+	if (TeamDeadMatchMode == nullptr) TeamDeadMatchMode = GetWorld()->GetAuthGameMode<ATeamDeadMatchMode>();
 	if (TeamDeadMatchMode)
 	{
 		TeamDeadMatchMode->RequestRespawn(this, Controller);

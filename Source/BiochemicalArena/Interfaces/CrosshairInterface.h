@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "CrosshairsInterface.generated.h"
+#include "CrosshairInterface.generated.h"
 
 UINTERFACE(MinimalAPI)
-class UCrosshairsInterface : public UInterface
+class UCrosshairInterface : public UInterface
 {
 	GENERATED_BODY()
 };
 
-class BIOCHEMICALARENA_API ICrosshairsInterface
+class BIOCHEMICALARENA_API ICrosshairInterface
 {
 	GENERATED_BODY()
 

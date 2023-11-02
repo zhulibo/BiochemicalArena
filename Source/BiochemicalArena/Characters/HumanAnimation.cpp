@@ -15,10 +15,7 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 {
 	Super::NativeUpdateAnimation(DeltaTime);
 
-	if (HumanCharacter == nullptr)
-	{
-		HumanCharacter = Cast<AHumanCharacter>(TryGetPawnOwner());
-	}
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(TryGetPawnOwner());
 	if (HumanCharacter == nullptr) return;
 
 	FVector Velocity = HumanCharacter->GetVelocity();
