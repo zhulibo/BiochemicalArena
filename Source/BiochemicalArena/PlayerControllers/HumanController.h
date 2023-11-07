@@ -22,7 +22,7 @@ public:
 	void SetHUDMatchCountdown(float CountdownTime);
 
 	void SetHUDHealth(float Health, float MaxHealth);
-	void SetHUDWeaponAmmo(int32 Ammo);
+	void SetHUDAmmo(int32 Ammo);
 	void SetHUDCarriedAmmo(int32 Ammo);
 	void SetHUDScore(float Score);
 	void SetHUDDefeats(int32 Defeats);

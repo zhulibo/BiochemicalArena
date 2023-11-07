@@ -13,10 +13,10 @@ void AMG42Pickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		UCombatComponent* Combat = HumanCharacter->GetCombat();
 		if (Combat)
 		{
-			AWeapon* MainWeapon = Combat->GetMainWeapon();
+			AWeapon* PrimaryWeapon = Combat->GetPrimaryWeapon();
 			AWeapon* MG42 = GetWorld()->SpawnActor<AWeapon>(MG42Class);
 			if (MG42 == nullptr) return;
-			if (MainWeapon)
+			if (PrimaryWeapon)
 			{
 				// TODO server调用
 				// Combat->EquipWeapon(MG42);

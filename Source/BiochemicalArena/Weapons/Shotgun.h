@@ -10,6 +10,7 @@ class BIOCHEMICALARENA_API AShotgun : public AWeapon
 	GENERATED_BODY()
 
 public:
+	AShotgun();
 	virtual void Fire(const FVector& HitTarget) override;
 
 private:

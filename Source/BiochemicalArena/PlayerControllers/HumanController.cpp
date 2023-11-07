@@ -190,7 +190,7 @@ void AHumanController::InitDefaultHUD()
 		CharacterOverlay &&
 		HumanState)
 	{
-		SetHUDWeaponAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetAmmo());
+		SetHUDAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetAmmo());
 		SetHUDCarriedAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetCarriedAmmo());
 		SetHUDHealth(HumanCharacter->GetHealth(), HumanCharacter->GetMaxHealth());
 		SetHUDScore(HumanState->GetScore());
@@ -278,7 +278,7 @@ void AHumanController::SetHUDHealth(float Health, float MaxHealth)
 	}
 }
 
-void AHumanController::SetHUDWeaponAmmo(int32 Ammo)
+void AHumanController::SetHUDAmmo(int32 Ammo)
 {
 	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
 	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->WeaponAmmoAmount)

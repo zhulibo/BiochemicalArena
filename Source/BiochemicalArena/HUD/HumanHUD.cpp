@@ -7,6 +7,10 @@ void AHumanHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CrosshairLeft = LoadObject<UTexture2D>(nullptr, TEXT("/Game/Assets/Textures/Crosshairs/Crosshair_Left.Crosshair_Left"));
+	CrosshairRight = LoadObject<UTexture2D>(nullptr, TEXT("/Game/Assets/Textures/Crosshairs/Crosshair_Right.Crosshair_Right"));
+	CrosshairTop = LoadObject<UTexture2D>(nullptr, TEXT("/Game/Assets/Textures/Crosshairs/Crosshair_Top.Crosshair_Top"));
+	CrosshairBottom = LoadObject<UTexture2D>(nullptr, TEXT("/Game/Assets/Textures/Crosshairs/Crosshair_Bottom.Crosshair_Bottom"));
 }
 
 void AHumanHUD::AddCharacterOverlay()
@@ -32,6 +36,7 @@ void AHumanHUD::AddAnnouncement()
 void AHumanHUD::DrawHUD()
 {
 	Super::DrawHUD();
+
 	FVector2D ViewportSize;
 	if (GEngine)
 	{
@@ -39,30 +44,25 @@ void AHumanHUD::DrawHUD()
 		const FVector2D ViewportCenter(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
 		float SpreadScaled = CrosshairSpreadMax * HUDPackage.CrosshairSpread;
 
-		if (HUDPackage.CrosshairCenter)
-		{
-			FVector2D Spread(0.f, 0.f);
-			DrawCrosshair(HUDPackage.CrosshairCenter, ViewportCenter, Spread, HUDPackage.CrosshairColor);
-		}
-		if (HUDPackage.CrosshairLeft)
+		if (CrosshairLeft)
 		{
 			FVector2D Spread(-SpreadScaled, 0.f);
-			DrawCrosshair(HUDPackage.CrosshairLeft, ViewportCenter, Spread, HUDPackage.CrosshairColor);
+			DrawCrosshair(CrosshairLeft, ViewportCenter, Spread, HUDPackage.CrosshairColor);
 		}
-		if (HUDPackage.CrosshairRight)
+		if (CrosshairRight)
 		{
 			FVector2D Spread(SpreadScaled, 0.f);
-			DrawCrosshair(HUDPackage.CrosshairRight, ViewportCenter, Spread, HUDPackage.CrosshairColor);
+			DrawCrosshair(CrosshairRight, ViewportCenter, Spread, HUDPackage.CrosshairColor);
 		}
-		if (HUDPackage.CrosshairTop)
+		if (CrosshairTop)
 		{
 			FVector2D Spread(0.f, -SpreadScaled);
-			DrawCrosshair(HUDPackage.CrosshairTop, ViewportCenter, Spread, HUDPackage.CrosshairColor);
+			DrawCrosshair(CrosshairTop, ViewportCenter, Spread, HUDPackage.CrosshairColor);
 		}
-		if (HUDPackage.CrosshairBottom)
+		if (CrosshairBottom)
 		{
 			FVector2D Spread(0.f, SpreadScaled);
-			DrawCrosshair(HUDPackage.CrosshairBottom, ViewportCenter, Spread, HUDPackage.CrosshairColor);
+			DrawCrosshair(CrosshairBottom, ViewportCenter, Spread, HUDPackage.CrosshairColor);
 		}
 	}
 }

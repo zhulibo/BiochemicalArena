@@ -3,6 +3,11 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Projectiles/Projectile.h"
 
+AShotgun::AShotgun()
+{
+	WeaponCate = EWeaponCate::Shotgun;
+}
+
 void AShotgun::Fire(const FVector& HitTarget)
 {
 	Super::Fire(HitTarget);

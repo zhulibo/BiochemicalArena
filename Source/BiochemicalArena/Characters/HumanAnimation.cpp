@@ -35,10 +35,10 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 	FRotator DiffRotation = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
 	YawOffset = DiffRotation.Yaw;
 
-	bWeaponEquipped = HumanCharacter->IsWeaponEquipped();
 	CurrentWeapon = HumanCharacter->GetCurrentWeapon();
+	bUseLeftHandFABRIK = HumanCharacter->GetCombatState() == ECombatState::Ready;
 
-	if (bWeaponEquipped && CurrentWeapon && CurrentWeapon->GetWeaponMesh() && HumanCharacter->GetMesh())
+	if (bUseLeftHandFABRIK && CurrentWeapon && CurrentWeapon->GetWeaponMesh() && HumanCharacter->GetMesh())
 	{
 		// 获取武器左手插槽的世界坐标
 		LeftHandTransform = CurrentWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
@@ -58,5 +58,4 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
 		}
 	}
 
-	bUseLeftHandFABRIK = HumanCharacter->GetCombatState() == ECombatState::ECS_Unoccupied;
 }

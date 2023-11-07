@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "WeaponTypes.h"
+#include "WeaponType.h"
 #include "Weapon.generated.h"
 
 UCLASS()
@@ -15,13 +15,12 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void Fire(const FVector& HitTarget);
 	void DropWeapon();
-	virtual void OnRep_Owner() override;
 
 	void SetWeaponState(EWeaponState State);
 	void SetAreaSphereCollision();
 
 	UPROPERTY(EditAnywhere)
-	class USoundCue* EquipSound;
+	class USoundCue* UseWeaponSound;
 
 	void SetAmmo(int32 AmmoNum);
 	void SetCarriedAmmo(int32 AmmoNum);
@@ -36,19 +35,18 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 	bool bAutomatic = true;
 
-	UPROPERTY(EditAnywhere, Category = "Crosshair")
-	UTexture2D* CrosshairCenter;
-	UPROPERTY(EditAnywhere, Category = "Crosshair")
-	UTexture2D* CrosshairLeft;
-	UPROPERTY(EditAnywhere, Category = "Crosshair")
-	UTexture2D* CrosshairRight;
-	UPROPERTY(EditAnywhere, Category = "Crosshair")
-	UTexture2D* CrosshairTop;
-	UPROPERTY(EditAnywhere, Category = "Crosshair")
-	UTexture2D* CrosshairBottom;
-
 protected:
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	EWeaponType WeaponType;
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	EWeaponCate WeaponCate;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	EWeaponName WeaponName;
+	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon")
+	EWeaponState WeaponState;
+
 	virtual void OnWeaponStateSet();
 	virtual void OnEquipped();
 	virtual void OnDropped();
@@ -77,12 +75,6 @@ private:
 	UPROPERTY()
 	class AHumanController* Controller;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon")
-	EWeaponType WeaponType;
-	UPROPERTY(EditAnywhere, Category = "Weapon")
-	EWeaponCate WeaponCate;
-	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "Weapon")
-	EWeaponState WeaponState;
 	UFUNCTION()
 	void OnRep_WeaponState();
 
@@ -110,6 +102,7 @@ public:
 	FORCEINLINE float GetZoomInterpSpeed() const { return ZoomInterpSpeed; }
 	FORCEINLINE EWeaponType GetWeaponType() const { return WeaponType; }
 	FORCEINLINE EWeaponCate GetWeaponCate() const { return WeaponCate; }
+	FORCEINLINE EWeaponName GetWeaponName() const { return WeaponName; }
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }
 	FORCEINLINE int32 GetMagCapacity() const { return MagCapacity; }
 	FORCEINLINE int32 GetCarriedAmmo() const { return CarriedAmmo; }

@@ -12,9 +12,7 @@ class BIOCHEMICALARENA_API ACommonCharacter : public ACharacter
 
 public:
 	ACommonCharacter();
-
 	virtual void Tick(float DeltaTime) override;
-
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	void PlayFootstepSound();
@@ -30,30 +28,42 @@ protected:
 	void CrouchControllerButtonPressed(const FInputActionValue& Value);
 
 	void CalculateAO_Pitch();
+	virtual void Landed(const FHitResult& Hit) override;
+	virtual float CalcFallDamageCoefficient();
+	void PlayOuchWeaponSound(float DamageCoefficient);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayOuchWeaponSound(float DamageCoefficient);
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Sound")
+	UPROPERTY()
 	class USoundCue* MetalSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
+	UPROPERTY()
 	USoundCue* WaterSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
+	UPROPERTY()
 	USoundCue* GrassSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
+	UPROPERTY()
 	USoundCue* MudSound;
-	UPROPERTY(EditAnywhere, Category = "Sound")
+	UPROPERTY()
 	USoundCue* CommonSound;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY()
+	USoundCue* OuchSound1;
+	UPROPERTY()
+	USoundCue* OuchSound2;
+	UPROPERTY()
+	USoundCue* OuchSound3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
 	UInputAction* CrouchAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
 	UInputAction* CrouchControllerAction;
 
 	float AO_Pitch;

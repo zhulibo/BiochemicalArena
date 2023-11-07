@@ -17,28 +17,23 @@ AWeapon::AWeapon()
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetupAttachment(RootComponent);
 	SetRootComponent(WeaponMesh);
-
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	WeaponMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	WeaponMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 
 	AreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
 	AreaSphere->SetupAttachment(RootComponent);
-	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	AreaSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+
+	AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnSphereOverlap);
 }
 
 void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 服务端统一检测OnSphereOverlap事件
-	if (HasAuthority())
-	{
-		AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-		AreaSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-		AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnSphereOverlap);
-	}
 	MaxCarriedAmmo = CarriedAmmo;
 }
 
@@ -77,7 +72,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 
 void AWeapon::DropWeapon()
 {
-	SetWeaponState(EWeaponState::EWS_Dropped);
+	SetWeaponState(EWeaponState::Dropped);
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 	WeaponMesh->DetachFromComponent(DetachRules);
 	// 丢弃武器时，给予一个向前的冲量
@@ -93,17 +88,8 @@ void AWeapon::DropWeapon()
 		}
 	}
 	SetOwner(nullptr);
-}
-
-void AWeapon::OnRep_Owner()
-{
-	Super::OnRep_Owner();
-
-	if (Owner == nullptr)
-	{
-		Character = nullptr;
-		Controller = nullptr;
-	}
+	Character = nullptr;
+	Controller = nullptr;
 }
 
 void AWeapon::SetWeaponState(EWeaponState State)
@@ -121,10 +107,10 @@ void AWeapon::OnWeaponStateSet()
 {
 	switch (WeaponState)
 	{
-	case EWeaponState::EWS_Equipped:
+	case EWeaponState::Equipped:
 		OnEquipped();
 		break;
-	case EWeaponState::EWS_Dropped:
+	case EWeaponState::Dropped:
 		OnDropped();
 		break;
 	}
@@ -132,10 +118,8 @@ void AWeapon::OnWeaponStateSet()
 
 void AWeapon::OnEquipped()
 {
-	if (HasAuthority())
-	{
-		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
+	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	WeaponMesh->SetSimulatePhysics(false);
 	WeaponMesh->SetEnableGravity(false);
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -143,16 +127,15 @@ void AWeapon::OnEquipped()
 
 void AWeapon::OnDropped()
 {
-	if (HasAuthority())
-	{
-		/**
-		 * HACK 延迟开启AreaSphere碰撞
-		 * 避免DropWeapon未执行完，发生OnSphereOverlap > EquipWeapon
-		 * 同时确保武器已离开角色Overlap区域
-		 */
-		FTimerHandle TimerHandle;
-		GetWorldTimerManager().SetTimer(TimerHandle, this, &AWeapon::SetAreaSphereCollision, .4f);
-	}
+	/**
+	 * HACK 延迟开启AreaSphere碰撞
+	 * 1 避免DropWeapon未执行完，发生OnSphereOverlap > EquipWeapon
+	 * 2 确保武器已被丢出该角色Overlap区域
+	 * 2 角色死亡时，等待bElimmed属性本地已设置，因为伤害只在服务端计算，需等待Elim() > MulticastElim()
+	 */
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &AWeapon::SetAreaSphereCollision, .4f);
+
 	WeaponMesh->SetSimulatePhysics(true);
 	WeaponMesh->SetEnableGravity(true);
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -178,10 +161,6 @@ void AWeapon::SetAmmo(int32 AmmoNum)
 	Ammo = AmmoNum;
 	if (Character == nullptr) Character = Cast<AHumanCharacter>(GetOwner());
 	if (Character && Character->IsLocallyControlled()) SetHUDAmmo();
-	if (WeaponCate == EWeaponCate::EWT_Shotgun && IsFull() && Character && Character->GetCombat())
-	{
-		Character->GetCombat()->JumpToShotgunEnd();
-	}
 }
 
 void AWeapon::SetCarriedAmmo(int32 AmmoNum)
@@ -189,11 +168,6 @@ void AWeapon::SetCarriedAmmo(int32 AmmoNum)
 	CarriedAmmo = AmmoNum;
 	if (Character == nullptr) Character = Cast<AHumanCharacter>(GetOwner());
 	if (Character && Character->IsLocallyControlled()) SetHUDCarriedAmmo();
-
-	if (WeaponCate == EWeaponCate::EWT_Shotgun && CarriedAmmo == 0 && Character && Character->GetCombat())
-	{
-		Character->GetCombat()->JumpToShotgunEnd();
-	}
 }
 
 void AWeapon::SetHUDAmmo()
@@ -202,10 +176,7 @@ void AWeapon::SetHUDAmmo()
 	if (Character)
 	{
 		if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
-		if (Controller)
-		{
-			Controller->SetHUDWeaponAmmo(Ammo);
-		}
+		if (Controller) Controller->SetHUDAmmo(Ammo);
 	}
 }
 
@@ -215,10 +186,7 @@ void AWeapon::SetHUDCarriedAmmo()
 	if (Character)
 	{
 		if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
-		if (Controller)
-		{
-			Controller->SetHUDCarriedAmmo(CarriedAmmo);
-		}
+		if (Controller) Controller->SetHUDCarriedAmmo(CarriedAmmo);
 	}
 }
 
@@ -236,7 +204,7 @@ void AWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* 
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
-	if (HumanCharacter)
+	if (HumanCharacter && HumanCharacter->IsLocallyControlled())
 	{
 		HumanCharacter->EquipOverlappingWeapon(this);
 	}

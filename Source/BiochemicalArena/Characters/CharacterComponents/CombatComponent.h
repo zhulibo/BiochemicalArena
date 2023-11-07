@@ -4,7 +4,7 @@
 #include "CombatState.h"
 #include "Components/ActorComponent.h"
 #include "BiochemicalArena/HUD/HumanHUD.h"
-#include "BiochemicalArena/Weapons/WeaponTypes.h"
+#include "BiochemicalArena/Weapons/WeaponType.h"
 #include "CombatComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -18,22 +18,20 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void EquipWeapon(class AWeapon* WeaponToEquip);
-	void UseWeapon(AWeapon* WeaponToEquip);
 	void SwapWeapon(EWeaponType NewWeaponType);
-	void AttachActorToRightHand(AActor* ActorToAttach);
-	void AttachActorToBodySocket(AWeapon* ActorToAttach);
+	void FinishSwapAttach(EWeaponType NewWeaponType);
+	void FinishSwap();
 	void FireHandle(bool bPressed);
 
 	void Reload();
-	UFUNCTION(BlueprintCallable)
 	void ShellReload();
 	void JumpToShotgunEnd();
-	UFUNCTION(BlueprintCallable)
 	void FinishReloading();
+	void DropWeapon();
 
 	AWeapon* GetCurrentWeapon();
+	AWeapon* GetWeaponByType(EWeaponType WeaponType);
 	bool HasEquippedThisTypeWeapon(EWeaponType WeaponType);
-	void SetCombatWeaponPointNull(EWeaponType WeaponType);
 
 protected:
 	virtual void BeginPlay() override;
@@ -53,6 +51,8 @@ private:
 	class AHumanController* Controller;
 	UPROPERTY()
 	AHumanHUD* HUD;
+	UPROPERTY()
+	class USoundCue* ClickSound;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Aiming)
 	bool bAiming = false;
@@ -60,10 +60,8 @@ private:
 	UFUNCTION()
 	void OnRep_Aiming();
 
-	bool bLocallyReloading = false;
-
 	UPROPERTY(Replicated)
-	AWeapon* MainWeapon;
+	AWeapon* PrimaryWeapon;
 	UPROPERTY(Replicated)
 	AWeapon* SecondaryWeapon;
 	UPROPERTY(Replicated)
@@ -71,9 +69,9 @@ private:
 	UPROPERTY(Replicated)
 	AWeapon* ThrowingWeapon;
 	UPROPERTY(Replicated)
-	EWeaponType CurrentWeaponType;
+	EWeaponType CurrentWeaponType = EWeaponType::MAX;
 	UPROPERTY(Replicated)
-	EWeaponType LastWeaponType;
+	EWeaponType LastWeaponType = EWeaponType::MAX;
 
 	UPROPERTY(EditAnywhere)
 	float BaseWalkSpeed;
@@ -101,21 +99,31 @@ private:
 	void LoadNewBulletFinished();
 	bool CanFire();
 
-	UPROPERTY(ReplicatedUsing = OnRep_CombatState)
-	ECombatState CombatState = ECombatState::ECS_Unoccupied;
-	UFUNCTION()
-	void OnRep_CombatState();
+	UPROPERTY(Replicated)
+	ECombatState CombatState = ECombatState::MAX;
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bIsAiming);
 
+	UFUNCTION(Server, Reliable)
+	void ServerEquipWeapon(AWeapon* WeaponToEquip);
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastEquipWeapon(AWeapon* WeaponToEquip);
 	void LocalEquipWeapon(AWeapon* WeaponToEquip);
+	UFUNCTION(Server, Reliable)
+	void ServerSwapWeapon(EWeaponType NewWeaponType);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastUseWeapon(AWeapon* WeaponToUse);
-	void LocalUseWeapon(AWeapon* WeaponToUse);
-	void PlayEquipWeaponSound();
+	void MulticastSwapWeapon(EWeaponType NewWeaponType);
+	void LocalSwapWeapon(EWeaponType NewWeaponType);
+	void UseWeapon(AWeapon* WeaponToUse);
+	void AttachActorToRightHand(AActor* ActorToAttach);
+	void AttachActorToBodySocket(AWeapon* ActorToAttach);
+	void PlayUseWeaponSound();
+	UFUNCTION(Server, Reliable)
+	void ServerDropWeapon();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastDropWeapon();
+	void LocalDropWeapon();
 
 	UFUNCTION(Server, Reliable)
 	void ServerFire(const FVector_NetQuantize& TraceHitTarget);
@@ -125,8 +133,10 @@ private:
 
 	UFUNCTION(Server, Reliable)
 	void ServerReload();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastReload();
 
 public:
-	FORCEINLINE AWeapon* GetMainWeapon() const { return MainWeapon; }
+	FORCEINLINE AWeapon* GetPrimaryWeapon() const { return PrimaryWeapon; }
 
 };

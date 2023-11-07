@@ -17,10 +17,14 @@ public:
 	AHumanCharacter();
 	virtual void Tick(float DeltaTime) override;
 
+	template <typename EnumType>
+	FName GetMetaData(EnumType enum_value, FString MetaDataName); // 获取枚举类型的元数据
+
 	void EquipOverlappingWeapon(AWeapon* Weapon);
 
 	void PlayFireMontage(bool bAiming);
 	void PlayReloadMontage();
+	void PlaySwapMontage(EWeaponName NewWeaponName);
 
 	void Elim();
 	UFUNCTION(NetMulticast, Reliable)
@@ -32,9 +36,12 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	void Landed(const FHitResult& Hit) override;
 	void PollInit();
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
+	class USpringArmComponent* CameraBoom;
+	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	UCameraComponent* CameraComponent;
 
 	void AimButtonPressed(const FInputActionValue& Value);
@@ -43,7 +50,7 @@ protected:
 	void FireButtonReleased(const FInputActionValue& Value);
 	void ReloadButtonPressed(const FInputActionValue& Value);
 	void DropButtonPressed(const FInputActionValue& Value);
-	void SwapMainWeaponButtonPressed(const FInputActionValue& Value);
+	void SwapPrimaryWeaponButtonPressed(const FInputActionValue& Value);
 	void SwapSecondaryWeaponButtonPressed(const FInputActionValue& Value);
 	void SwapMeleeWeaponButtonPressed(const FInputActionValue& Value);
 	void SwapThrowingWeaponButtonPressed(const FInputActionValue& Value);
@@ -52,13 +59,12 @@ protected:
 	UFUNCTION()
 	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
 	void UpdateHUDHealth();
-	void PlayHitReactMontage();
 
 private:
 	UPROPERTY()
 	class ATeamDeadMatchMode* TeamDeadMatchMode;
 	UPROPERTY(EditAnywhere, Category = "Combat")
-	TSubclassOf<AWeapon> DefaultMainWeaponClass;
+	TSubclassOf<AWeapon> DefaultPrimaryWeaponClass;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	TSubclassOf<AWeapon> DefaultSecondaryWeaponClass;
 	UPROPERTY(EditAnywhere, Category = "Combat")
@@ -73,42 +79,35 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UPickupComponent* Pickup;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* WeaponsMappingContext;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
+	UInputMappingContext* WeaponMappingContext;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* AimAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* FireAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* ReloadAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* DropAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapMainWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapPrimaryWeaponAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* SwapSecondaryWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* SwapMeleeWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* SwapThrowingWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
 	UInputAction* SwapLastWeaponAction;
 
-	UFUNCTION(Server, Reliable)
-	void ServerDetectOverlappingWeapon();
-	UFUNCTION(Server, Reliable)
-	void ServerEquipWeaponHandle(AWeapon* Weapon);
-	UFUNCTION(Server, Reliable)
-	void ServerDropButtonPressed();
-	UFUNCTION(Server, Reliable)
-	void ServerSwapWeaponHandle(EWeaponType NewWeaponType);
+	void DetectOverlappingWeapon();
 
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* FireWeaponMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
-	UAnimMontage* HitReactMontage;
-	UPROPERTY(EditAnywhere, Category = "Combat")
 	UAnimMontage* ReloadMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* SwapMontage;
 
 	UPROPERTY(EditAnywhere, Category = "Player")
 	float MaxHealth = 200.f;
@@ -130,7 +129,6 @@ private:
 
 public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return CameraComponent; }
-	bool IsWeaponEquipped();
 	bool IsAiming();
 	AWeapon* GetCurrentWeapon();
 	FORCEINLINE bool IsElimmed() const { return bElimmed; }
@@ -143,3 +141,12 @@ public:
 	FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; }
 
 };
+
+template <typename EnumType>
+FName AHumanCharacter::GetMetaData(EnumType enum_value, FString MetaDataName)
+{
+	FString EnumName = UEnum::GetValueAsString(enum_value);
+	EnumName = EnumName.Left(EnumName.Find("::"));
+	UEnum* EnumObject = FindObject<UEnum>(nullptr, *FString::Printf(TEXT("/Script/BIOCHEMICALARENA.%s"), *EnumName));
+	return FName(*EnumObject->GetMetaData(*MetaDataName, static_cast<int32>(enum_value)));
+}

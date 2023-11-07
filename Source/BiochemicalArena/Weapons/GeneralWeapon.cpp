@@ -2,6 +2,11 @@
 #include "Engine/SkeletalMeshSocket.h"
 #include "Projectiles/Projectile.h"
 
+AGeneralWeapon::AGeneralWeapon()
+{
+	WeaponCate = EWeaponCate::General;
+}
+
 void AGeneralWeapon::Fire(const FVector& HitTarget)
 {
 	Super::Fire(HitTarget);

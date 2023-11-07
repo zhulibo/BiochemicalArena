@@ -7,11 +7,11 @@
 #include "CharacterComponents/CombatComponent.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
-#include "BiochemicalArena/GameModes/InfectMode.h"
 #include "BiochemicalArena/Weapons/Weapon.h"
 #include "CharacterComponents/PickupComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
 AHumanCharacter::AHumanCharacter()
 {
@@ -21,10 +21,16 @@ AHumanCharacter::AHumanCharacter()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, "HeadSocket");
+	CameraBoom->TargetArmLength = 0.f;
+	CameraBoom->bUsePawnControlRotation = true;
+
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(CastChecked<USceneComponent, UCapsuleComponent>(GetCapsuleComponent()));
-	CameraComponent->SetRelativeLocation(FVector(10.0f, 10.0f, BaseEyeHeight - 10.0f));
-	CameraComponent->bUsePawnControlRotation = true;
+	CameraComponent->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+
+	// TODO 设置头部对自己不可见
+	// GetMesh()->SetOwnerNoSee(true);
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
@@ -32,7 +38,7 @@ AHumanCharacter::AHumanCharacter()
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	Combat->SetIsReplicated(true);
 
-	Pickup = CreateDefaultSubobject<UPickupComponent>(TEXT("BuffComponent"));
+	Pickup = CreateDefaultSubobject<UPickupComponent>(TEXT("PickupComponent"));
 	Pickup->SetIsReplicated(true);
 }
 
@@ -69,18 +75,19 @@ void AHumanCharacter::SetDefaultWeapon()
 {
 	if (Combat)
 	{
-		if (DefaultMainWeaponClass)
+		if (Combat->CombatState == ECombatState::MAX) Combat->CombatState = ECombatState::Ready; // 初始化ECombatState
+		if (DefaultPrimaryWeaponClass)
 		{
-			AWeapon* DefaultMainWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultMainWeaponClass);
-			Combat->EquipWeapon(DefaultMainWeapon);
-			Combat->UseWeapon(DefaultMainWeapon);
-			Combat->CurrentWeaponType = EWeaponType::EWT_MainWeapon;
+			AWeapon* DefaultPrimaryWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultPrimaryWeaponClass);
+			Combat->EquipWeapon(DefaultPrimaryWeapon);
+			Combat->SwapWeapon(EWeaponType::Primary);
+			Combat->CurrentWeaponType = EWeaponType::Primary;
 		}
 		if (DefaultSecondaryWeaponClass)
 		{
 			AWeapon* DefaultSecondaryWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultSecondaryWeaponClass);
 			Combat->EquipWeapon(DefaultSecondaryWeapon);
-			Combat->LastWeaponType = EWeaponType::EWT_SecondaryWeapon;
+			Combat->LastWeaponType = EWeaponType::Secondary;
 		}
 		if (DefaultMeleeWeaponClass)
 		{
@@ -106,7 +113,7 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 		if (Subsystem)
 		{
-			Subsystem->AddMappingContext(WeaponsMappingContext, 0);
+			Subsystem->AddMappingContext(WeaponMappingContext, 0);
 		}
 	}
 	// Set up action bindings
@@ -119,7 +126,7 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &AHumanCharacter::FireButtonReleased);
 		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &AHumanCharacter::ReloadButtonPressed);
 		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Triggered, this, &AHumanCharacter::DropButtonPressed);
-		EnhancedInputComponent->BindAction(SwapMainWeaponAction, ETriggerEvent::Triggered, this, &AHumanCharacter::SwapMainWeaponButtonPressed);
+		EnhancedInputComponent->BindAction(SwapPrimaryWeaponAction, ETriggerEvent::Triggered, this, &AHumanCharacter::SwapPrimaryWeaponButtonPressed);
 		EnhancedInputComponent->BindAction(SwapSecondaryWeaponAction, ETriggerEvent::Triggered, this, &AHumanCharacter::SwapSecondaryWeaponButtonPressed);
 		EnhancedInputComponent->BindAction(SwapMeleeWeaponAction, ETriggerEvent::Triggered, this, &AHumanCharacter::SwapMeleeWeaponButtonPressed);
 		EnhancedInputComponent->BindAction(SwapThrowingWeaponAction, ETriggerEvent::Triggered, this, &AHumanCharacter::SwapThrowingWeaponButtonPressed);
@@ -138,14 +145,36 @@ void AHumanCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	if (Combat)
+	if (Combat && Combat->Character == nullptr)
 	{
 		Combat->Character = this;
 	}
 }
 
+void AHumanCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	float DamageCoefficient = CalcFallDamageCoefficient();
+	if (DamageCoefficient == 0.f) return;
+
+	Health = FMath::Clamp(Health - DamageCoefficient * MaxHealth, 0.f, MaxHealth);
+
+	if (IsLocallyControlled())
+	{
+		UpdateHUDHealth();
+		PlayOuchWeaponSound(DamageCoefficient);
+	}
+	if (HasAuthority())
+	{
+		MulticastPlayOuchWeaponSound(DamageCoefficient);
+		if (Health == 0.f) Elim();
+	}
+}
+
 void AHumanCharacter::AimButtonPressed(const FInputActionValue& Value)
 {
+	UE_LOG(LogTemp, Warning, TEXT("AimButtonPressed"));
 	if (Combat)
 	{
 		Combat->SetAiming(true);
@@ -190,48 +219,21 @@ void AHumanCharacter::EquipOverlappingWeapon(AWeapon* Weapon)
 	if (Combat && Combat->HasEquippedThisTypeWeapon(Weapon->GetWeaponType())) return;
 	if (Combat)
 	{
-		ServerEquipWeaponHandle(Weapon);
-	}
-}
-
-void AHumanCharacter::ServerEquipWeaponHandle_Implementation(AWeapon* Weapon)
-{
-	if (Combat)
-	{
 		Combat->EquipWeapon(Weapon);
 	}
 }
 
 void AHumanCharacter::DropButtonPressed(const FInputActionValue& Value)
 {
-	if (Combat && Combat->GetCurrentWeapon())
+	if (Combat && Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::Melee)
 	{
-		if (Combat->GetCurrentWeapon()->GetWeaponType() == EWeaponType::EWT_MeleeWeapon) return; // 刀不可丢弃
-		if (HasAuthority())
-		{
-			Combat->GetCurrentWeapon()->DropWeapon();
-			Combat->SetCombatWeaponPointNull(Combat->GetCurrentWeapon()->GetWeaponType());
-			Combat->SwapWeapon(EWeaponType::EWT_MeleeWeapon);
-		}
-		else
-		{
-			ServerDropButtonPressed();
-		}
-		ServerDetectOverlappingWeapon(); // 检测是否有武器重叠
+		Combat->DropWeapon();
+		Combat->SwapWeapon(EWeaponType::Melee); // 刀不可丢弃
+		DetectOverlappingWeapon(); // 检测是否有武器重叠
 	}
 }
 
-void AHumanCharacter::ServerDropButtonPressed_Implementation()
-{
-	if (Combat && Combat->GetCurrentWeapon())
-	{
-		Combat->GetCurrentWeapon()->DropWeapon();
-		Combat->SetCombatWeaponPointNull(Combat->GetCurrentWeapon()->GetWeaponType());
-		Combat->SwapWeapon(EWeaponType::EWT_MeleeWeapon);
-	}
-}
-
-void AHumanCharacter::ServerDetectOverlappingWeapon_Implementation()
+void AHumanCharacter::DetectOverlappingWeapon()
 {
 	TArray<AActor*> OverlappingActors;
 	GetOverlappingActors(OverlappingActors, AWeapon::StaticClass());
@@ -246,35 +248,40 @@ void AHumanCharacter::ServerDetectOverlappingWeapon_Implementation()
 	}
 }
 
-void AHumanCharacter::SwapMainWeaponButtonPressed(const FInputActionValue& Value)
+void AHumanCharacter::SwapPrimaryWeaponButtonPressed(const FInputActionValue& Value)
 {
-	if (Combat && Combat->MainWeapon && Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::EWT_MainWeapon)
+	if (Combat && Combat->PrimaryWeapon &&
+		Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::Primary)
 	{
-		ServerSwapWeaponHandle(EWeaponType::EWT_MainWeapon);
+		Combat->SwapWeapon(EWeaponType::Primary);
 	}
 }
 
 void AHumanCharacter::SwapSecondaryWeaponButtonPressed(const FInputActionValue& Value)
 {
-	if (Combat && Combat->SecondaryWeapon && Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::EWT_SecondaryWeapon)
+	if (Combat && Combat->SecondaryWeapon &&
+		Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::Secondary)
 	{
-		ServerSwapWeaponHandle(EWeaponType::EWT_SecondaryWeapon);
+		Combat->SwapWeapon(EWeaponType::Secondary);
 	}
+	Combat->SwapWeapon(EWeaponType::Secondary);
 }
 
 void AHumanCharacter::SwapMeleeWeaponButtonPressed(const FInputActionValue& Value)
 {
-	if (Combat && Combat->MeleeWeapon && Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::EWT_MeleeWeapon)
+	if (Combat && Combat->MeleeWeapon &&
+		Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::Melee)
 	{
-		ServerSwapWeaponHandle(EWeaponType::EWT_MeleeWeapon);
+		Combat->SwapWeapon(EWeaponType::Melee);
 	}
 }
 
 void AHumanCharacter::SwapThrowingWeaponButtonPressed(const FInputActionValue& Value)
 {
-	if (Combat && Combat->ThrowingWeapon && Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::EWT_ThrowingWeapon)
+	if (Combat && Combat->ThrowingWeapon &&
+		Combat->GetCurrentWeapon() && Combat->GetCurrentWeapon()->GetWeaponType() != EWeaponType::Throwing)
 	{
-		ServerSwapWeaponHandle(EWeaponType::EWT_ThrowingWeapon);
+		Combat->SwapWeapon(EWeaponType::Throwing);
 	}
 }
 
@@ -285,25 +292,20 @@ void AHumanCharacter::SwapLastWeaponButtonPressed(const FInputActionValue& Value
 		EWeaponType WeaponTypeToSwap = Combat->LastWeaponType;
 		switch (WeaponTypeToSwap)
 		{
-		case EWeaponType::EWT_MainWeapon:
-			if (Combat->MainWeapon) ServerSwapWeaponHandle(EWeaponType::EWT_MainWeapon);
+		case EWeaponType::Primary:
+			if (Combat->PrimaryWeapon) Combat->SwapWeapon(EWeaponType::Primary);
 			break;
-		case EWeaponType::EWT_SecondaryWeapon:
-			if (Combat->SecondaryWeapon) ServerSwapWeaponHandle(EWeaponType::EWT_SecondaryWeapon);
+		case EWeaponType::Secondary:
+			if (Combat->SecondaryWeapon) Combat->SwapWeapon(EWeaponType::Secondary);
 			break;
-		case EWeaponType::EWT_MeleeWeapon:
-			if (Combat->MeleeWeapon) ServerSwapWeaponHandle(EWeaponType::EWT_MeleeWeapon);
+		case EWeaponType::Melee:
+			if (Combat->MeleeWeapon) Combat->SwapWeapon(EWeaponType::Melee);
 			break;
-		case EWeaponType::EWT_ThrowingWeapon:
-			if (Combat->ThrowingWeapon) ServerSwapWeaponHandle(EWeaponType::EWT_ThrowingWeapon);
+		case EWeaponType::Throwing:
+			if (Combat->ThrowingWeapon) Combat->SwapWeapon(EWeaponType::Throwing);
 			break;
 		}
 	}
-}
-
-void AHumanCharacter::ServerSwapWeaponHandle_Implementation(EWeaponType NewWeaponType)
-{
-	Combat->SwapWeapon(NewWeaponType);
 }
 
 void AHumanCharacter::PlayFireMontage(bool bAiming)
@@ -318,23 +320,23 @@ void AHumanCharacter::PlayFireMontage(bool bAiming)
 
 void AHumanCharacter::PlayReloadMontage()
 {
-	if (Combat == nullptr || Combat->GetCurrentWeapon() == nullptr) return;
-
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && ReloadMontage)
+	if (Combat && Combat->GetCurrentWeapon() && AnimInstance && ReloadMontage)
 	{
 		AnimInstance->Montage_Play(ReloadMontage);
-		FName SectionName;
-		switch (Combat->GetCurrentWeapon()->GetWeaponCate())
-		{
-		case EWeaponCate::EWT_GeneralWeapon:
-			SectionName = FName("AK47");
-			break;
-		case EWeaponCate::EWT_Shotgun:
-			SectionName = FName("M870");
-			break;
-		}
-		AnimInstance->Montage_JumpToSection(SectionName);
+		FName MontageSectionName = GetMetaData(Combat->GetCurrentWeapon()->GetWeaponName(), "MontageSectionName");
+		AnimInstance->Montage_JumpToSection(MontageSectionName);
+	}
+}
+
+void AHumanCharacter::PlaySwapMontage(EWeaponName NewWeaponName)
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (Combat && AnimInstance && SwapMontage)
+	{
+		AnimInstance->Montage_Play(SwapMontage);
+		FName MontageSectionName = GetMetaData(NewWeaponName, "MontageSectionName");
+		AnimInstance->Montage_JumpToSection(MontageSectionName);
 	}
 }
 
@@ -344,7 +346,6 @@ void AHumanCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 	if (bElimmed) return;
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 	UpdateHUDHealth();
-	PlayHitReactMontage();
 
 	if (Health == 0.f)
 	{
@@ -364,7 +365,6 @@ void AHumanCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 void AHumanCharacter::OnRep_Health()
 {
 	UpdateHUDHealth();
-	PlayHitReactMontage();
 }
 
 void AHumanCharacter::UpdateHUDHealth()
@@ -376,22 +376,8 @@ void AHumanCharacter::UpdateHUDHealth()
 	}
 }
 
-void AHumanCharacter::PlayHitReactMontage()
-{
-	if (Combat == nullptr || Combat->GetCurrentWeapon() == nullptr) return;
-
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && HitReactMontage)
-	{
-		AnimInstance->Montage_Play(HitReactMontage);
-		FName SectionName("FromFront");
-		AnimInstance->Montage_JumpToSection(SectionName);
-	}
-}
-
 void AHumanCharacter::Elim()
 {
-	bElimmed = true; // set immediately
 	if (Combat && Combat->GetCurrentWeapon())
 	{
 		Combat->GetCurrentWeapon()->DropWeapon();
@@ -427,14 +413,9 @@ void AHumanCharacter::ElimTimerFinished()
 	}
 }
 
-bool AHumanCharacter::IsWeaponEquipped()
-{
-	return (Combat && Combat->GetCurrentWeapon());
-}
-
 bool AHumanCharacter::IsAiming()
 {
-	return (Combat && Combat->bAiming);
+	return Combat && Combat->bAiming;
 }
 
 AWeapon* AHumanCharacter::GetCurrentWeapon()
@@ -451,6 +432,5 @@ FVector AHumanCharacter::GetHitTarget() const
 
 ECombatState AHumanCharacter::GetCombatState() const
 {
-	if (Combat == nullptr) return ECombatState::ECS_Max;
 	return Combat->CombatState;
 }
