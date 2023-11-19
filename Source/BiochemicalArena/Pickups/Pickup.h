@@ -11,7 +11,7 @@ class BIOCHEMICALARENA_API APickup : public AActor
 	
 public:	
 	APickup();
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void Destroyed() override;
 
 protected:

@@ -51,17 +51,17 @@ void UCombatComponent::BeginPlay()
 	}
 }
 
-void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UCombatComponent::TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	Super::TickComponent(DeltaSeconds, TickType, ThisTickFunction);
 
 	if (Character && Character->IsLocallyControlled())
 	{
 		FHitResult HitResult;
 		TraceUnderCrosshair(HitResult);
 		HitTarget = HitResult.ImpactPoint;
-		SetHUDCrosshair(DeltaTime);
-		InterpFOV(DeltaTime);
+		SetHUDCrosshair(DeltaSeconds);
+		InterpFOV(DeltaSeconds);
 	}
 }
 
@@ -103,7 +103,7 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 	}
 }
 
-void UCombatComponent::SetHUDCrosshair(float DeltaTime)
+void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;
 
@@ -123,29 +123,29 @@ void UCombatComponent::SetHUDCrosshair(float DeltaTime)
 			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
 			if (Character->GetCharacterMovement()->IsFalling())
 			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaTime, 2.25f);
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaSeconds, 2.25f);
 			}
 			else
 			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaTime, 30.f);
+				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaSeconds, 30.f);
 			}
 
 			if (bAiming)
 			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.58f, DeltaTime, 10.f);
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.58f, DeltaSeconds, 10.f);
 			}
 			else
 			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.f, DeltaTime, 20.f);
+				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.f, DeltaSeconds, 20.f);
 			}
 
 			if (GetCurrentWeapon() && bFireButtonPressed)
 			{
-				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, .75f, DeltaTime, 20.f);
+				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, .75f, DeltaSeconds, 20.f);
 			}
 			else
 			{
-				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaTime, 10.f);
+				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaSeconds, 10.f);
 			}
 
 			HUDPackage.CrosshairSpread =
@@ -160,16 +160,16 @@ void UCombatComponent::SetHUDCrosshair(float DeltaTime)
 	}
 }
 
-void UCombatComponent::InterpFOV(float DeltaTime)
+void UCombatComponent::InterpFOV(float DeltaSeconds)
 {
 	if (GetCurrentWeapon() == nullptr) return;
 	if (bAiming)
 	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, GetCurrentWeapon()->GetZoomedFOV(), DeltaTime, GetCurrentWeapon()->GetZoomInterpSpeed());
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, GetCurrentWeapon()->GetZoomedFOV(), DeltaSeconds, GetCurrentWeapon()->GetZoomInterpSpeed());
 	}
 	else
 	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaTime, ZoomInterpSpeed);
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaSeconds, ZoomInterpSpeed);
 	}
 	if (Character && Character->GetCamera())
 	{

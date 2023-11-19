@@ -10,7 +10,7 @@ class BIOCHEMICALARENA_API AHumanController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual float GetServerTime();

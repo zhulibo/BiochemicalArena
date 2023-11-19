@@ -4,8 +4,6 @@
 #include "Blueprint/UserWidget.h"
 #include "Announcement.generated.h"
 
-class UTextBlock;
-
 UCLASS()
 class BIOCHEMICALARENA_API UAnnouncement : public UUserWidget
 {
@@ -13,6 +11,6 @@ class BIOCHEMICALARENA_API UAnnouncement : public UUserWidget
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	UTextBlock* AnnouncementText;
+	class UTextBlock* AnnouncementText;
 
 };

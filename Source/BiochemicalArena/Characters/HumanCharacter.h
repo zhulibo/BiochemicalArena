@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonCharacter.h"
-#include "CharacterComponents/CombatComponent.h"
+#include "BaseCharacter.h"
+#include "Components/CombatComponent.h"
 #include "BiochemicalArena/Interfaces/CrosshairInterface.h"
 #include "Camera/CameraComponent.h"
-#include "CharacterComponents/CombatState.h"
+#include "Components/CombatState.h"
 #include "HumanCharacter.generated.h"
 
 UCLASS()
@@ -15,7 +15,7 @@ class BIOCHEMICALARENA_API AHumanCharacter : public ACommonCharacter, public ICr
 
 public:
 	AHumanCharacter();
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	template <typename EnumType>
 	FName GetMetaData(EnumType enum_value, FString MetaDataName); // 获取枚举类型的元数据

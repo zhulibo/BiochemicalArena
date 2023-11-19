@@ -29,9 +29,9 @@ void APickup::BeginPlay()
 	
 }
 
-void APickup::Tick(float DeltaTime)
+void APickup::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaTime);
+	Super::Tick(DeltaSeconds);
 
 }
 

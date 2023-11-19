@@ -11,9 +11,9 @@ void UHumanAnimation::NativeInitializeAnimation()
 	HumanCharacter = Cast<AHumanCharacter>(TryGetPawnOwner());
 }
 
-void UHumanAnimation::NativeUpdateAnimation(float DeltaTime)
+void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 {
-	Super::NativeUpdateAnimation(DeltaTime);
+	Super::NativeUpdateAnimation(DeltaSeconds);
 
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(TryGetPawnOwner());
 	if (HumanCharacter == nullptr) return;

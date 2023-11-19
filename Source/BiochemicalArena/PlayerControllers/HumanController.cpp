@@ -24,9 +24,9 @@ void AHumanController::BeginPlay()
 	}
 }
 
-void AHumanController::Tick(float DeltaTime)
+void AHumanController::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaTime);
+	Super::Tick(DeltaSeconds);
 
 	if (IsLocalController())
 	{

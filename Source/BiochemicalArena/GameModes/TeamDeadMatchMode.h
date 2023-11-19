@@ -16,7 +16,7 @@ class BIOCHEMICALARENA_API ATeamDeadMatchMode : public AGameMode
 
 public:
 	ATeamDeadMatchMode();
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	virtual void PlayerEliminated(class AHumanCharacter* ElimmedCharacter, class AHumanController* VictimController,
 		AHumanController* AttackerController);

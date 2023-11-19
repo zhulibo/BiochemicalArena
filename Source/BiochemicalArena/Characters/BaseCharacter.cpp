@@ -1,4 +1,4 @@
-#include "CommonCharacter.h"
+#include "BaseCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -28,9 +28,9 @@ void ACommonCharacter::BeginPlay()
 	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
 }
 
-void ACommonCharacter::Tick(float DeltaTime)
+void ACommonCharacter::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaTime);
+	Super::Tick(DeltaSeconds);
 
 	CalculateAO_Pitch();
 }

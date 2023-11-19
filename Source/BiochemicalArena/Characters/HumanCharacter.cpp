@@ -4,11 +4,11 @@
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "CharacterComponents/CombatComponent.h"
+#include "Components/CombatComponent.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
 #include "BiochemicalArena/Weapons/Weapon.h"
-#include "CharacterComponents/PickupComponent.h"
+#include "Components/PickupComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -52,9 +52,9 @@ void AHumanCharacter::BeginPlay()
 	}
 }
 
-void AHumanCharacter::Tick(float DeltaTime)
+void AHumanCharacter::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaTime);
+	Super::Tick(DeltaSeconds);
 
 	PollInit();
 }

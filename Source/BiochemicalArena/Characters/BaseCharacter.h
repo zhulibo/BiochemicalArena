@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "CommonCharacter.generated.h"
+#include "BaseCharacter.generated.h"
 
 UCLASS()
 class BIOCHEMICALARENA_API ACommonCharacter : public ACharacter
@@ -12,7 +12,7 @@ class BIOCHEMICALARENA_API ACommonCharacter : public ACharacter
 
 public:
 	ACommonCharacter();
-	virtual void Tick(float DeltaTime) override;
+	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	void PlayFootstepSound();

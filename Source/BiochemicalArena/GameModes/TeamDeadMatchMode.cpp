@@ -23,9 +23,9 @@ void ATeamDeadMatchMode::BeginPlay()
 	LevelStartTime = GetWorld()->GetTimeSeconds();
 }
 
-void ATeamDeadMatchMode::Tick(float DeltaTime)
+void ATeamDeadMatchMode::Tick(float DeltaSeconds)
 {
-	Super::Tick(DeltaTime);
+	Super::Tick(DeltaSeconds);
 
 	if (MatchState == MatchState::WaitingToStart)
 	{

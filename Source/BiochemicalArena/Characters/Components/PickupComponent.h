@@ -12,7 +12,7 @@ class BIOCHEMICALARENA_API UPickupComponent : public UActorComponent
 public:	
 	UPickupComponent();
 	friend class AHumanCharacter;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:
 	virtual void BeginPlay() override;

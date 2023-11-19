@@ -15,7 +15,7 @@ class BIOCHEMICALARENA_API UCombatComponent : public UActorComponent
 public:
 	UCombatComponent();
 	friend class AHumanCharacter;
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void EquipWeapon(class AWeapon* WeaponToEquip);
 	void SwapWeapon(EWeaponType NewWeaponType);
@@ -38,7 +38,7 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	void TraceUnderCrosshair(FHitResult& TraceHitResult);
-	void SetHUDCrosshair(float DeltaTime);
+	void SetHUDCrosshair(float DeltaSeconds);
 
 	void SetAiming(bool bIsAiming);
 
@@ -91,7 +91,7 @@ private:
 	float CurrentFOV;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	float ZoomInterpSpeed = 20.f;
-	void InterpFOV(float DeltaTime);
+	void InterpFOV(float DeltaSeconds);
 
 	bool bFireButtonPressed;
 	FTimerHandle FireTimer;
