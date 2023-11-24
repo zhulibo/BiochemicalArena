@@ -9,7 +9,13 @@ class BIOCHEMICALARENA_API UAnimNotify_FinishSwapAttach : public UAnimNotify
 {
 	GENERATED_BODY()
 
+public:
+	UAnimNotify_FinishSwapAttach();
+
 private:
+	UPROPERTY()
+	UEnum* WeaponNameEnum;
+
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 		const FAnimNotifyEventReference& EventReference) override;
 

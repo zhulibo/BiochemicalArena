@@ -4,8 +4,8 @@
 #include "CommonActivatableWidget.h"
 #include "MenuTab.h"
 #include "MenuSwitcher.h"
-#include "TabWidget.h"
-#include "MainStack.h"
+#include "Common/MainStack.h"
+#include "Input/CommonBoundActionBar.h"
 #include "MenuContainer.generated.h"
 
 UCLASS()
@@ -16,16 +16,26 @@ class BIOCHEMICALARENA_API UMenuContainer : public UCommonActivatableWidget
 public:
 	virtual void NativeConstruct() override;
 
+protected:
+	void AddSettingActionButton();
+
+private:
 	UPROPERTY(meta = (BindWidget))
 	UMenuTab* MenuTab;
 	UPROPERTY(meta = (BindWidget))
 	UMenuSwitcher* MenuSwitcher;
+
 	UPROPERTY(meta = (BindWidget))
-	UTabWidget* TabStorage;
+	UCommonActivatableWidget* Storage;
 	UPROPERTY(meta = (BindWidget))
-	UTabWidget* TabServer;
+	UCommonActivatableWidget* Server;
 	UPROPERTY(meta = (BindWidget))
-	UTabWidget* TabShop;
+	UCommonActivatableWidget* Shop;
+	UPROPERTY(meta = (BindWidget))
+	UCommonActivatableWidget* Dev;
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonBoundActionBar* ActionBar;
 	UPROPERTY(meta = (BindWidget))
 	UMainStack* MainStack;
 

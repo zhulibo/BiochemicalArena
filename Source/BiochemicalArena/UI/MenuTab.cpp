@@ -1,4 +1,5 @@
 #include "MenuTab.h"
+#include "CommonActivatableWidget.h"
 
 void UMenuTab::NativeConstruct()
 {
@@ -12,32 +13,25 @@ void UMenuTab::NativeConstruct()
 
 void UMenuTab::LinkSwitcher()
 {
-	if (MenuSwitcher && TabButtonClass && ButtonContainer)
+	if (MenuSwitcher && TabButtonContainer && TabButtonClass)
 	{
 		// 链接Tab和Switcher
 		SetLinkedSwitcher(MenuSwitcher);
-		// 注册TabButton和TabWidget
-		if (TabStorage) RegisterTab(FName("Storage"), TabButtonClass, TabStorage, 0);
-		if (TabServer) RegisterTab(FName("Server"), TabButtonClass, TabServer, 1);
-		if (TabShop) RegisterTab(FName("Shop"), TabButtonClass, TabShop, 2);
-		// 设置tabButton的TabButtonText，并添加到ButtonContainer
-		UTabButton* StorageButton = Cast<UTabButton>(GetTabButtonBaseByID("Storage"));
-		if (StorageButton)
+		for (int i = 0; i < TabContent.Num(); i++)
 		{
-			StorageButton->TabButtonText->SetText(FText::FromString("Storage"));
-			ButtonContainer->AddChildToHorizontalBox(StorageButton);
+			if (TabContent[i] == nullptr) break;
+
+			FName TabButtonNameID = FName(TabContent[i]->GetName());
+			RegisterTab(TabButtonNameID, TabButtonClass, TabContent[i], i);
+
+			UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID));
+			if (TabButton)
+			{
+				TabButton->ButtonText->SetText(FText::FromName(TabButtonNameID));
+				TabButton->SetPadding(FMargin(10, 0, 10, 0));
+				TabButtonContainer->AddChildToHorizontalBox(TabButton);
+			}
 		}
-		UTabButton* ServerButton = Cast<UTabButton>(GetTabButtonBaseByID("Server"));
-		if (ServerButton)
-		{
-			ServerButton->TabButtonText->SetText(FText::FromString("Server"));
-			ButtonContainer->AddChildToHorizontalBox(ServerButton);
-		}
-		UTabButton* ShopButton = Cast<UTabButton>(GetTabButtonBaseByID("Shop"));
-		if (ShopButton)
-		{
-			ShopButton->TabButtonText->SetText(FText::FromString("Shop"));
-			ButtonContainer->AddChildToHorizontalBox(ShopButton);
-		}
+		// SelectTabByID("shop");
 	}
 }

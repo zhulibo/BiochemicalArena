@@ -2,14 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "CommonTabListWidgetBase.h"
-#include "CommonActionWidget.h"
-#include "MenuSwitcher.h"
-#include "Common/CommonButton.h"
+#include "CommonActivatableWidget.h"
+#include "CommonActivatableWidgetSwitcher.h"
+#include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/HorizontalBox.h"
-#include "MenuTab.generated.h"
+#include "BagTab.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UMenuTab : public UCommonTabListWidgetBase
+class BIOCHEMICALARENA_API UBagTab : public UCommonTabListWidgetBase
 {
 	GENERATED_BODY()
 
@@ -21,14 +21,10 @@ protected:
 
 private:
 	UPROPERTY(EditInstanceOnly, Category = "UI")
-	UMenuSwitcher* MenuSwitcher;
+	UCommonActivatableWidgetSwitcher* BagSwitcher;
 	UPROPERTY(EditInstanceOnly, Category = "UI")
 	TArray<UCommonActivatableWidget*> TabContent;
 
-	UPROPERTY(meta = (BindWidget))
-	UCommonActionWidget* LeftTabAction;
-	UPROPERTY(meta = (BindWidget))
-	UCommonActionWidget* RightTabAction;
 	UPROPERTY(meta = (BindWidget))
 	UHorizontalBox* TabButtonContainer;
 

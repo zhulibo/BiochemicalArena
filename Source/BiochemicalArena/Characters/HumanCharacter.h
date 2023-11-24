@@ -36,7 +36,7 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
-	void Landed(const FHitResult& Hit) override;
+	virtual void Landed(const FHitResult& Hit) override;
 	void PollInit();
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
@@ -147,6 +147,6 @@ FName AHumanCharacter::GetMetaData(EnumType enum_value, FString MetaDataName)
 {
 	FString EnumName = UEnum::GetValueAsString(enum_value);
 	EnumName = EnumName.Left(EnumName.Find("::"));
-	UEnum* EnumObject = FindObject<UEnum>(nullptr, *FString::Printf(TEXT("/Script/BIOCHEMICALARENA.%s"), *EnumName));
-	return FName(*EnumObject->GetMetaData(*MetaDataName, static_cast<int32>(enum_value)));
+	UEnum* Enum = FindObject<UEnum>(nullptr, *FString::Printf(TEXT("/Script/BIOCHEMICALARENA.%s"), *EnumName));
+	return FName(Enum->GetMetaData(*MetaDataName, static_cast<int32>(enum_value)));
 }
