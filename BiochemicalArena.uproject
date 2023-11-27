@@ -7,12 +7,7 @@
 		{
 			"Name": "BiochemicalArena",
 			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-				"Engine",
-				"UMG",
-				"CommonUI"
-			]
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

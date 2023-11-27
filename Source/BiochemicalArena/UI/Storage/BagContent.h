@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "EquipmentButton.h"
 #include "BagContent.generated.h"
 
 UCLASS()
@@ -12,7 +11,7 @@ class BIOCHEMICALARENA_API UBagContent : public UCommonActivatableWidget
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	UEquipmentButton* Primary;
+	class UEquipmentButton* Primary;
 	UPROPERTY(meta = (BindWidget))
 	UEquipmentButton* Secondary;
 	UPROPERTY(meta = (BindWidget))

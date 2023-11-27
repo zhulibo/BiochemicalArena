@@ -6,7 +6,7 @@ void AMenuController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AddMenu();
+	AddMenuContainer();
 }
 
 void AMenuController::Tick(float DeltaSeconds)
@@ -14,14 +14,17 @@ void AMenuController::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 }
 
-void AMenuController::AddMenu()
+void AMenuController::AddMenuContainer()
 {
 	if (MenuContainerClass)
 	{
 		MenuContainer = CreateWidget<UMenuContainer>(this, MenuContainerClass);
-		MenuContainer->AddToViewport();
-		MenuContainer->ActivateWidget();
-		FInputModeUIOnly InputModeData;
-		SetInputMode(InputModeData);
+		if (MenuContainer)
+		{
+			MenuContainer->AddToViewport();
+			MenuContainer->ActivateWidget();
+			FInputModeUIOnly InputModeData;
+			SetInputMode(InputModeData);
+		}
 	}
 }

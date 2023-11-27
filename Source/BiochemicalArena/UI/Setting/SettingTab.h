@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "CommonTabListWidgetBase.h"
-#include "BagTab.generated.h"
+#include "SettingTab.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UBagTab : public UCommonTabListWidgetBase
+class BIOCHEMICALARENA_API USettingTab : public UCommonTabListWidgetBase
 {
 	GENERATED_BODY()
 
@@ -17,10 +17,14 @@ protected:
 
 private:
 	UPROPERTY(EditInstanceOnly, Category = "UI")
-	class UCommonActivatableWidgetSwitcher* BagSwitcher;
+	class UCommonActivatableWidgetSwitcher* SettingSwitcher;
 	UPROPERTY(EditInstanceOnly, Category = "UI")
 	TArray<class UCommonActivatableWidget*> TabContent;
 
+	UPROPERTY(meta = (BindWidget))
+	class UCommonActionWidget* LeftTabAction;
+	UPROPERTY(meta = (BindWidget))
+	UCommonActionWidget* RightTabAction;
 	UPROPERTY(meta = (BindWidget))
 	class UHorizontalBox* TabButtonContainer;
 

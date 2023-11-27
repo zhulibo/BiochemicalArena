@@ -1,5 +1,6 @@
 #include "AmmoPickup.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "BiochemicalArena/Weapons/Weapon.h"
 
 void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

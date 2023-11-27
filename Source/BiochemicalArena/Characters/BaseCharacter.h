@@ -2,16 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "InputActionValue.h"
 #include "BaseCharacter.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API ACommonCharacter : public ACharacter
+class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	ACommonCharacter();
+	ABaseCharacter();
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
@@ -20,7 +19,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	void Move(const FInputActionValue& Value);
+	void Move(const struct FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void JumpButtonPressed(const FInputActionValue& Value);
 	void CrouchButtonPressed(const FInputActionValue& Value);

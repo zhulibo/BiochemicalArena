@@ -12,6 +12,8 @@
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Camera/CameraComponent.h"
+#include "Components/CombatState.h"
 
 AHumanCharacter::AHumanCharacter()
 {

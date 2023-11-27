@@ -1,4 +1,7 @@
 #include "Shop.h"
+#include "CommonTextBlock.h"
+#include "GoodsButton.h"
+#include "Components/WrapBox.h"
 
 void UShop::NativeConstruct()
 {

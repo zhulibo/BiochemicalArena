@@ -1,12 +1,13 @@
-#include "MenuTab.h"
+#include "SettingTab.h"
+
 #include "CommonActionWidget.h"
 #include "CommonActivatableWidget.h"
 #include "CommonActivatableWidgetSwitcher.h"
 #include "CommonTextBlock.h"
-#include "Common/CommonButton.h"
+#include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/HorizontalBox.h"
 
-void UMenuTab::NativeConstruct()
+void USettingTab::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -16,15 +17,16 @@ void UMenuTab::NativeConstruct()
 	LinkSwitcher();
 }
 
-void UMenuTab::LinkSwitcher()
+void USettingTab::LinkSwitcher()
 {
-	if (MenuSwitcher && TabButtonContainer && TabButtonClass)
+	if (SettingSwitcher && TabButtonContainer && TabButtonClass)
 	{
-		SetLinkedSwitcher(MenuSwitcher); // 链接Tab和Switcher
+		SetLinkedSwitcher(SettingSwitcher); // 链接Tab和Switcher
 		for (int i = 0; i < TabContent.Num(); i++)
 		{
 			if (TabContent[i] == nullptr) break;
-			FName TabButtonNameID = FName(TabContent[i]->GetName());
+			FString TabWidgetName = TabContent[i]->GetName();
+			FName TabButtonNameID = FName(*TabWidgetName.Right(TabWidgetName.Len() - 3));
 			RegisterTab(TabButtonNameID, TabButtonClass, TabContent[i], i);
 
 			UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID));
@@ -35,6 +37,8 @@ void UMenuTab::LinkSwitcher()
 				TabButtonContainer->AddChildToHorizontalBox(TabButton);
 			}
 		}
-		// SelectTabByID("shop");
+		SelectTabByID("Control");
+		// SelectTabByID("Video");
+		// SelectTabByID("Audio);
 	}
 }

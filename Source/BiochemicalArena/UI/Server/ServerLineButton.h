@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
-#include "CommonTextBlock.h"
 #include "ServerLineButton.generated.h"
 
 UCLASS()
@@ -12,7 +11,7 @@ class BIOCHEMICALARENA_API UServerLineButton : public UCommonButtonBase
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* Server;
+	class UCommonTextBlock* Server;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Map;
 	UPROPERTY(meta = (BindWidget))

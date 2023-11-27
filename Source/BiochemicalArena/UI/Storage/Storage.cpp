@@ -1,6 +1,14 @@
 #include "Storage.h"
+
+#include "BagContent.h"
+#include "CommonActivatableWidgetSwitcher.h"
+#include "CommonHierarchicalScrollBox.h"
+#include "CommonTextBlock.h"
+#include "EquipmentButton.h"
 #include "BiochemicalArena/Weapons/WeaponType.h"
 #include "BiochemicalArena/Characters/CharacterType.h"
+#include "BiochemicalArena/UI/Common/CommonButton.h"
+#include "Components/WrapBox.h"
 
 void UStorage::NativeConstruct()
 {

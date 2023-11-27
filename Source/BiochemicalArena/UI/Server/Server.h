@@ -2,10 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "CommonHierarchicalScrollBox.h"
-#include "BiochemicalArena/UI/Common/CommonButton.h"
-#include "ServerLineButton.h"
-#include "Components/EditableTextBox.h"
 #include "Server.generated.h"
 
 UCLASS()
@@ -20,7 +16,7 @@ public:
 protected:
 	void AddServerListItem();
 
-	void OnServerLineButtonClicked(UServerLineButton* ServerLineButton);
+	void OnServerLineButtonClicked(class UServerLineButton* ServerLineButton);
 	void OnServerReFreshButtonClicked();
 	void OnServerResetButtonClicked();
 
@@ -31,13 +27,13 @@ protected:
 
 private:
 	UPROPERTY(meta = (BindWidget))
-	UCommonHierarchicalScrollBox* ServerLineButtonContainer;
+	class UCommonHierarchicalScrollBox* ServerLineButtonContainer;
 	UPROPERTY(meta = (BindWidget))
-	UCommonButton* ServerReFreshButton;
+	class UCommonButton* ServerReFreshButton;
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* ServerResetButton;
 	UPROPERTY(meta = (BindWidget))
-	UEditableTextBox* ServerNameInput;
+	class UEditableTextBox* ServerNameInput;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UServerLineButton> ServerLineButtonClass;

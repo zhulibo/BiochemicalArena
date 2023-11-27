@@ -1,5 +1,6 @@
 #include "AnimNotify_FinishSwapAttach.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/Characters/Components/CombatComponent.h"
 
 UAnimNotify_FinishSwapAttach::UAnimNotify_FinishSwapAttach()
 {

@@ -6,6 +6,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "BiochemicalArena/Weapons/Cassings/Casing.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
+#include "Camera/CameraComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 AWeapon::AWeapon()

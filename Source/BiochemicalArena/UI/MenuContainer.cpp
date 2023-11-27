@@ -1,13 +1,9 @@
 #include "MenuContainer.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 
 void UMenuContainer::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	AddSettingActionButton();
-}
-
-void UMenuContainer::AddSettingActionButton()
-{
-
+	MenuStack->AddWidget(Menu);
 }

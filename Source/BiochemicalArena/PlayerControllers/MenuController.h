@@ -12,14 +12,15 @@ class BIOCHEMICALARENA_API AMenuController : public APlayerController
 public:
 	virtual void Tick(float DeltaSeconds) override;
 
+	UPROPERTY()
+	class UMenuContainer* MenuContainer;
+
 protected:
 	virtual void BeginPlay() override;
+	void AddMenuContainer();
 
 private:
 	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<class UMenuContainer> MenuContainerClass;
-	UPROPERTY()
-	UMenuContainer* MenuContainer;
-	void AddMenu();
+	TSubclassOf<UMenuContainer> MenuContainerClass;
 
 };

@@ -1,5 +1,11 @@
 #include "BagTab.h"
+
+#include "CommonActivatableWidget.h"
+#include "CommonActivatableWidgetSwitcher.h"
+#include "BiochemicalArena/UI/Common/CommonButton.h"
+#include "Components/HorizontalBox.h"
 #include "Components/SizeBox.h"
+#include "CommonTextBlock.h"
 
 void UBagTab::NativeConstruct()
 {

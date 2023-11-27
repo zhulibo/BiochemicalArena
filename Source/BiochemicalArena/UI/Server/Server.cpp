@@ -1,5 +1,11 @@
 #include "Server.h"
 
+#include "CommonHierarchicalScrollBox.h"
+#include "CommonTextBlock.h"
+#include "ServerLineButton.h"
+#include "BiochemicalArena/UI/Common/CommonButton.h"
+#include "Components/EditableTextBox.h"
+
 void UServer::NativeConstruct()
 {
 	Super::NativeConstruct();
@@ -9,7 +15,7 @@ void UServer::NativeConstruct()
 	ServerResetButton->ButtonText->SetText(FText::FromString("Reset"));
 	ServerReFreshButton->OnClicked().AddUObject(this, &ThisClass::OnServerReFreshButtonClicked);
 	ServerResetButton->OnClicked().AddUObject(this, &ThisClass::OnServerResetButtonClicked);
-	ServerNameInput->OnTextChanged.AddDynamic(this, &ThisClass::OnServerNameInputTextChanged);
+	ServerNameInput->OnTextChanged.AddUniqueDynamic(this, &ThisClass::OnServerNameInputTextChanged);
 }
 
 void UServer::AddServerListItem()
@@ -21,7 +27,7 @@ void UServer::AddServerListItem()
 			UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass);
 			if (ServerLineButton)
 			{
-				ServerLineButton->SetPadding(FMargin(0, 0, 0, 5));
+				ServerLineButton->SetPadding(FMargin(0, 0, 0, 2));
 				ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton);
 				ServerLineButtonContainer->AddChild(ServerLineButton);
 			}
@@ -36,7 +42,7 @@ void UServer::OnServerLineButtonClicked(UServerLineButton* ServerLineButton)
 
 void UServer::OnServerReFreshButtonClicked()
 {
-
+	UE_LOG(LogTemp, Warning, TEXT("OnServerReFreshButtonClicked"));
 }
 
 void UServer::OnServerResetButtonClicked()

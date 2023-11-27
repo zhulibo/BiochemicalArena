@@ -10,8 +10,10 @@ struct FHUDPackage
 	GENERATED_BODY()
 
 public:
-	float CrosshairSpread;
-	FLinearColor CrosshairColor;
+	UPROPERTY()
+	float CrosshairSpread = 0.f;
+	UPROPERTY()
+	FLinearColor CrosshairColor = FLinearColor::White;
 
 };
 

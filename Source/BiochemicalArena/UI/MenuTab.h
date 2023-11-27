@@ -2,10 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonTabListWidgetBase.h"
-#include "CommonActionWidget.h"
-#include "MenuSwitcher.h"
-#include "Common/CommonButton.h"
-#include "Components/HorizontalBox.h"
 #include "MenuTab.generated.h"
 
 UCLASS()
@@ -21,18 +17,18 @@ protected:
 
 private:
 	UPROPERTY(EditInstanceOnly, Category = "UI")
-	UMenuSwitcher* MenuSwitcher;
+	class UCommonActivatableWidgetSwitcher* MenuSwitcher;
 	UPROPERTY(EditInstanceOnly, Category = "UI")
-	TArray<UCommonActivatableWidget*> TabContent;
+	TArray<class UCommonActivatableWidget*> TabContent;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonActionWidget* LeftTabAction;
+	class UCommonActionWidget* LeftTabAction;
 	UPROPERTY(meta = (BindWidget))
 	UCommonActionWidget* RightTabAction;
 	UPROPERTY(meta = (BindWidget))
-	UHorizontalBox* TabButtonContainer;
+	class UHorizontalBox* TabButtonContainer;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UCommonButton> TabButtonClass;
+	TSubclassOf<class UCommonButton> TabButtonClass;
 
 };

@@ -1,12 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BagContent.h"
-#include "CommonActivatableWidgetSwitcher.h"
-#include "CommonHierarchicalScrollBox.h"
-#include "BiochemicalArena/UI/Common/CommonButton.h"
-#include "EquipmentButton.h"
-#include "Components/WrapBox.h"
+#include "CommonActivatableWidget.h"
 #include "Storage.generated.h"
 
 USTRUCT(BlueprintType)
@@ -35,13 +30,13 @@ protected:
 	UEnum* WeaponNameEnum;
 
 	void AddEquipmentTypeButton();
-	void OnEquipmentTypeButtonClicked(UCommonButton* CommonButton);
+	void OnEquipmentTypeButtonClicked(class UCommonButton* CommonButton);
 	TArray<FText> FilterWeapon(FString WeaponTypeToFilter);
 
 	void AddWeaponButton(TArray<FText> WeaponNames);
 	void AddCharacterButton();
 
-	void OnWeaponButtonClicked(UEquipmentButton* CommonButton);
+	void OnWeaponButtonClicked(class UEquipmentButton* CommonButton);
 	void OnCharacterButtonClicked(UEquipmentButton* CommonButton);
 
 	void SetBagContent(FString& WeaponType, FString& WeaponName);
@@ -56,11 +51,11 @@ private:
 	TSubclassOf<UEquipmentButton> CharacterButtonClass;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonHierarchicalScrollBox* EquipmentTypeButtonContainer;
+	class UCommonHierarchicalScrollBox* EquipmentTypeButtonContainer;
 	UPROPERTY(meta = (BindWidget))
-	UWrapBox* EquipmentButtonContainer;
+	class UWrapBox* EquipmentButtonContainer;
 	UPROPERTY(meta = (BindWidget))
-	UCommonActivatableWidgetSwitcher* BagSwitcher;
+	class UCommonActivatableWidgetSwitcher* BagSwitcher;
 	UPROPERTY(meta = (BindWidget))
 	UEquipmentButton* Character;
 

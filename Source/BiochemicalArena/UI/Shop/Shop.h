@@ -2,8 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "GoodsButton.h"
-#include "Components/WrapBox.h"
 #include "Shop.generated.h"
 
 UCLASS()
@@ -18,12 +16,12 @@ protected:
 	void AddWeaponButton();
 	void AddCharacterButton();
 
-	void OnWeaponButtonClicked(UGoodsButton* GoodsButton);
+	void OnWeaponButtonClicked(class UGoodsButton* GoodsButton);
 	void OnCharacterButtonClicked(UGoodsButton* GoodsButton);
 
 private:
 	UPROPERTY(meta = (BindWidget))
-	UWrapBox* GoodsButtonContainer;
+	class UWrapBox* GoodsButtonContainer;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UGoodsButton> WeaponButtonClass;

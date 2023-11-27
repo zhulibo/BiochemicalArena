@@ -4,6 +4,7 @@
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
 #include "Net/UnrealNetwork.h"

@@ -1,5 +1,6 @@
 #include "MG42Pickup.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "BiochemicalArena/Weapons/Weapon.h"
 
 void AMG42Pickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

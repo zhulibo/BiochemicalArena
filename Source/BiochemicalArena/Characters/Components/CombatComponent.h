@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CombatState.h"
 #include "Components/ActorComponent.h"
+#include "CombatState.h"
 #include "BiochemicalArena/HUD/HumanHUD.h"
 #include "BiochemicalArena/Weapons/WeaponType.h"
 #include "CombatComponent.generated.h"
@@ -50,7 +50,7 @@ private:
 	UPROPERTY()
 	class AHumanController* Controller;
 	UPROPERTY()
-	AHumanHUD* HUD;
+	class AHumanHUD* HUD;
 	UPROPERTY()
 	class USoundCue* ClickSound;
 

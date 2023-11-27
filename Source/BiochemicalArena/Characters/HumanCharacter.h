@@ -2,14 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
-#include "Components/CombatComponent.h"
 #include "BiochemicalArena/Interfaces/CrosshairInterface.h"
-#include "Camera/CameraComponent.h"
+#include "BiochemicalArena/Weapons/WeaponType.h"
 #include "Components/CombatState.h"
 #include "HumanCharacter.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API AHumanCharacter : public ACommonCharacter, public ICrosshairInterface
+class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter, public ICrosshairInterface
 {
 	GENERATED_BODY()
 
@@ -20,7 +19,7 @@ public:
 	template <typename EnumType>
 	FName GetMetaData(EnumType enum_value, FString MetaDataName); // 获取枚举类型的元数据
 
-	void EquipOverlappingWeapon(AWeapon* Weapon);
+	void EquipOverlappingWeapon(class AWeapon* Weapon);
 
 	void PlayFireMontage(bool bAiming);
 	void PlayReloadMontage();
@@ -42,7 +41,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
-	UCameraComponent* CameraComponent;
+	class UCameraComponent* CameraComponent;
 
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimButtonReleased(const FInputActionValue& Value);
@@ -75,7 +74,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	UCombatComponent* Combat;
+	class UCombatComponent* Combat;
 	UPROPERTY(VisibleAnywhere)
 	class UPickupComponent* Pickup;
 
@@ -117,7 +116,7 @@ private:
 	void OnRep_Health();
 
 	UPROPERTY()
-	AHumanController* HumanController;
+	class AHumanController* HumanController;
 	UPROPERTY()
 	class AHumanState* HumanState;
 

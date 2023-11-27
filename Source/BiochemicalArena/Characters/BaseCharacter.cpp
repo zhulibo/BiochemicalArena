@@ -5,7 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
-ACommonCharacter::ACommonCharacter()
+ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -13,7 +13,7 @@ ACommonCharacter::ACommonCharacter()
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 }
 
-void ACommonCharacter::BeginPlay()
+void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -28,14 +28,14 @@ void ACommonCharacter::BeginPlay()
 	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
 }
 
-void ACommonCharacter::Tick(float DeltaSeconds)
+void ABaseCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	CalculateAO_Pitch();
 }
 
-void ACommonCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
@@ -53,16 +53,16 @@ void ACommonCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ACommonCharacter::Move);
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ACommonCharacter::Look);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACommonCharacter::JumpButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ACommonCharacter::CrouchButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ACommonCharacter::CrouchButtonReleased);
-		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &ACommonCharacter::CrouchControllerButtonPressed);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Move);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Look);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABaseCharacter::JumpButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABaseCharacter::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABaseCharacter::CrouchButtonReleased);
+		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &ABaseCharacter::CrouchControllerButtonPressed);
 	}
 }
 
-void ACommonCharacter::PlayFootstepSound()
+void ABaseCharacter::PlayFootstepSound()
 {
 	FHitResult HitResult;
 	FVector Start = GetActorLocation();
@@ -100,7 +100,7 @@ void ACommonCharacter::PlayFootstepSound()
 	}
 }
 
-void ACommonCharacter::Move(const FInputActionValue& Value)
+void ABaseCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller)
@@ -110,7 +110,7 @@ void ACommonCharacter::Move(const FInputActionValue& Value)
 	}
 }
 
-void ACommonCharacter::Look(const FInputActionValue& Value)
+void ABaseCharacter::Look(const FInputActionValue& Value)
 {
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 	if (Controller)
@@ -120,7 +120,7 @@ void ACommonCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void ACommonCharacter::JumpButtonPressed(const FInputActionValue& Value)
+void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
 {
 	if (bIsCrouched)
 	{
@@ -132,17 +132,17 @@ void ACommonCharacter::JumpButtonPressed(const FInputActionValue& Value)
 	}
 }
 
-void ACommonCharacter::CrouchButtonPressed(const FInputActionValue& Value)
+void ABaseCharacter::CrouchButtonPressed(const FInputActionValue& Value)
 {
 	Crouch();
 }
 
-void ACommonCharacter::CrouchButtonReleased(const FInputActionValue& Value)
+void ABaseCharacter::CrouchButtonReleased(const FInputActionValue& Value)
 {
 	UnCrouch();
 }
 
-void ACommonCharacter::CrouchControllerButtonPressed(const FInputActionValue& Value)
+void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Value)
 {
 	if (bIsCrouched)
 	{
@@ -154,7 +154,7 @@ void ACommonCharacter::CrouchControllerButtonPressed(const FInputActionValue& Va
 	}
 }
 
-void ACommonCharacter::CalculateAO_Pitch()
+void ABaseCharacter::CalculateAO_Pitch()
 {
 	AO_Pitch = GetBaseAimRotation().Pitch;
 	if (AO_Pitch > 90.f && !IsLocallyControlled())
@@ -166,12 +166,12 @@ void ACommonCharacter::CalculateAO_Pitch()
 	}
 }
 
-void ACommonCharacter::Landed(const FHitResult& Hit)
+void ABaseCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 }
 
-float ACommonCharacter::CalcFallDamageCoefficient()
+float ABaseCharacter::CalcFallDamageCoefficient()
 {
 	FVector Velocity = GetCharacterMovement()->Velocity; // 用当前帧的速度即可，Landed判定的时机是即将落地时，此时速度达到最大
 	float Gravity = GetCharacterMovement()->GetGravityZ();
@@ -199,7 +199,7 @@ float ACommonCharacter::CalcFallDamageCoefficient()
 	return DamageCoefficient;
 }
 
-void ACommonCharacter::PlayOuchWeaponSound(float DamageCoefficient)
+void ABaseCharacter::PlayOuchWeaponSound(float DamageCoefficient)
 {
 	if (DamageCoefficient == 0.05f)
 	{
@@ -215,7 +215,7 @@ void ACommonCharacter::PlayOuchWeaponSound(float DamageCoefficient)
 	}
 }
 
-void ACommonCharacter::MulticastPlayOuchWeaponSound_Implementation(float DamageCoefficient)
+void ABaseCharacter::MulticastPlayOuchWeaponSound_Implementation(float DamageCoefficient)
 {
 	if (!IsLocallyControlled()) PlayOuchWeaponSound(DamageCoefficient);
 }
