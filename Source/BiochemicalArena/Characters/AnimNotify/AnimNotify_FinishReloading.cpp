@@ -3,7 +3,7 @@
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
 
 void UAnimNotify_FinishReloading::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
-                                         const FAnimNotifyEventReference& EventReference)
+	const FAnimNotifyEventReference& EventReference)
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 

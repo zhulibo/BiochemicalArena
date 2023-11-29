@@ -1,5 +1,4 @@
 #include "SettingTab.h"
-
 #include "CommonActionWidget.h"
 #include "CommonActivatableWidget.h"
 #include "CommonActivatableWidgetSwitcher.h"

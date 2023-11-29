@@ -14,6 +14,8 @@ public:
 
 	UPROPERTY()
 	class UMenuContainer* MenuContainer;
+	UPROPERTY()
+	class UCommonActivatableWidgetStack* ServerStack;
 
 protected:
 	virtual void BeginPlay() override;

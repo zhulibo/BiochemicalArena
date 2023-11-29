@@ -19,13 +19,12 @@ void UMenu::NativeConstruct()
 	QuitButton->ButtonText->SetText(FText::FromString("Quit"));
 	QuitButton->OnClicked().AddUObject(this, &ThisClass::OnQuitButtonClicked);
 
-	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::OnSettingButtonClicked, .2f, false);
+	// FTimerHandle TimerHandle;
+	// GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::OnSettingButtonClicked, .2f, false);
 }
 
 void UMenu::OnSettingButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnSettingButtonClicked"));
 	if (SettingClass)
 	{
 		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());

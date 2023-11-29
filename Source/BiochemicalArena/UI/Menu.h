@@ -31,13 +31,13 @@ private:
 	class UCommonActivatableWidgetSwitcher* MenuSwitcher;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonActivatableWidget* Storage;
+	class UServerContainer* Server;
 	UPROPERTY(meta = (BindWidget))
-	UCommonActivatableWidget* Server;
+	class UStorage* Storage;
 	UPROPERTY(meta = (BindWidget))
-	UCommonActivatableWidget* Shop;
+	class UShop* Shop;
 	UPROPERTY(meta = (BindWidget))
-	UCommonActivatableWidget* Dev;
+	class UDev* Dev;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class USetting> SettingClass;

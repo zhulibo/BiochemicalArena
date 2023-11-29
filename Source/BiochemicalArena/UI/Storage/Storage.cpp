@@ -29,6 +29,7 @@ void UStorage::AddEquipmentTypeButton()
 		{
 			AllTypeButton->ButtonText->SetText(FText::FromString("All"));
 			AllTypeButton->SetPadding(FMargin(0, 0, 20, 0));
+			AllTypeButton->SetIsSelectable(true);
 			AllTypeButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentTypeButtonClicked, AllTypeButton);
 			EquipmentTypeButtonContainer->AddChild(AllTypeButton);
 			// 默认显示全部装备，主动点击一下AllTypeButton(不知道怎么主动触发点击事件，先这样写吧！)
@@ -45,6 +46,7 @@ void UStorage::AddEquipmentTypeButton()
 				EnumItemName = EnumItemName.Right(EnumItemName.Len() - EnumItemName.Find("::") - 2);
 				WeaponTypeButton->ButtonText->SetText(FText::FromString(EnumItemName));
 				WeaponTypeButton->SetPadding(FMargin(0, 0, 20, 0));
+				WeaponTypeButton->SetIsSelectable(true);
 				WeaponTypeButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentTypeButtonClicked, WeaponTypeButton);
 				EquipmentTypeButtonContainer->AddChild(WeaponTypeButton);
 			}
@@ -55,6 +57,7 @@ void UStorage::AddEquipmentTypeButton()
 		{
 			CharacterTypeButton->ButtonText->SetText(FText::FromString("Character"));
 			CharacterTypeButton->SetPadding(FMargin(0, 0, 20, 0));
+			CharacterTypeButton->SetIsSelectable(true);
 			CharacterTypeButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentTypeButtonClicked, CharacterTypeButton);
 			EquipmentTypeButtonContainer->AddChild(CharacterTypeButton);
 		}
@@ -129,7 +132,7 @@ void UStorage::AddWeaponButton(TArray<FText> WeaponNames)
 {
 	if (WeaponButtonClass == nullptr) return;
 
-	for (int i = 0; i < WeaponNames.Num(); ++i)
+	for (int i = 0; i < WeaponNames.Num(); i++)
 	{
 		UEquipmentButton* WeaponButton = CreateWidget<UEquipmentButton>(this, WeaponButtonClass);
 		if (WeaponButton)

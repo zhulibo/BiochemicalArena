@@ -16,9 +16,10 @@ public:
 protected:
 	void AddServerListItem();
 
-	void OnServerLineButtonClicked(class UServerLineButton* ServerLineButton);
 	void OnServerReFreshButtonClicked();
 	void OnServerResetButtonClicked();
+	void OnServerCreateButtonClicked();
+	void OnServerLineButtonClicked(class UServerLineButton* ServerLineButton);
 
 	UPROPERTY()
 	FText ServerName;
@@ -26,10 +27,14 @@ protected:
 	void OnServerNameInputTextChanged(const FText& Text);
 
 private:
+	UPROPERTY()
+	class AMenuController* MenuController;
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* ServerLineButtonContainer;
 	UPROPERTY(meta = (BindWidget))
-	class UCommonButton* ServerReFreshButton;
+	class UCommonButton* ServerCreateButton;
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* ServerReFreshButton;
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* ServerResetButton;
 	UPROPERTY(meta = (BindWidget))
@@ -37,5 +42,7 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UServerLineButton> ServerLineButtonClass;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class ULobby> LobbyClass;
 
 };
