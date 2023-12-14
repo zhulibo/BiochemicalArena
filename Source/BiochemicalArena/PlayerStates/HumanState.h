@@ -12,13 +12,12 @@ class BIOCHEMICALARENA_API AHumanState : public APlayerState
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	void ElimTimerFinished();
 	void AddToScore(float ScoreAmount);
-	void AddToDefeats(int32 DefeatsAmount);
+	void AddToDefeat(int32 DefeatAmount);
 	virtual void OnRep_Score() override;
 
 	UFUNCTION()
-	virtual void OnRep_Defeats();
+	virtual void OnRep_Defeat();
 
 protected:
 	virtual void BeginPlay() override;
@@ -29,10 +28,10 @@ private:
 	UPROPERTY()
 	class AHumanController* Controller;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Defeats)
-	int32 Defeats;
+	UPROPERTY(ReplicatedUsing = OnRep_Defeat)
+	int32 Defeat;
 
 public:
-	FORCEINLINE float GetDefeats() const { return Defeats; }
+	FORCEINLINE float GetDefeat() const { return Defeat; }
 
 };

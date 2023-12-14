@@ -9,7 +9,9 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
-				"CommonUI"
+				"Engine",
+				"CommonUI",
+				"UMG"
 			]
 		}
 	],
@@ -23,6 +25,10 @@
 		},
 		{
 			"Name": "CommonUI",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineServicesEOS",
 			"Enabled": true
 		}
 	]

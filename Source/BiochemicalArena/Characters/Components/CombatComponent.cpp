@@ -37,7 +37,7 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
+	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 
 	if (Character)
 	{
@@ -104,53 +104,46 @@ void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 	if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
 	if (Controller)
 	{
-		if (HUD == nullptr) HUD = Cast<AHumanHUD>(Controller->GetHUD());
-		if (HUD)
+		// Calculate crosshair spread
+		// [0, 600] -> [0, 1]
+		FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
+		FVector2D VelocityMultiplierRange(0.f, 1.f);
+		FVector Velocity = Character->GetVelocity();
+		Velocity.Z = 0.f;
+
+		CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
+		if (Character->GetCharacterMovement()->IsFalling())
 		{
-			// Calculate crosshair spread
-			// [0, 600] -> [0, 1]
-			FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
-			FVector2D VelocityMultiplierRange(0.f, 1.f);
-			FVector Velocity = Character->GetVelocity();
-			Velocity.Z = 0.f;
-
-			CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
-			if (Character->GetCharacterMovement()->IsFalling())
-			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaSeconds, 2.25f);
-			}
-			else
-			{
-				CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaSeconds, 30.f);
-			}
-
-			if (bAiming)
-			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.58f, DeltaSeconds, 10.f);
-			}
-			else
-			{
-				CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.f, DeltaSeconds, 20.f);
-			}
-
-			if (GetCurrentWeapon() && bFireButtonPressed)
-			{
-				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, .75f, DeltaSeconds, 20.f);
-			}
-			else
-			{
-				CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaSeconds, 10.f);
-			}
-
-			HUDPackage.CrosshairSpread =
-				0.5f +
-				CrosshairVelocityFactor +
-				CrosshairInAirFactor -
-				CrosshairAimFactor +
-				CrosshairShootingFactor;
-
-			HUD->SetHUDPackage(HUDPackage);
+			CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaSeconds, 2.25f);
 		}
+		else
+		{
+			CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaSeconds, 30.f);
+		}
+
+		if (bAiming)
+		{
+			CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.58f, DeltaSeconds, 10.f);
+		}
+		else
+		{
+			CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.f, DeltaSeconds, 20.f);
+		}
+
+		if (GetCurrentWeapon() && bFireButtonPressed)
+		{
+			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, .75f, DeltaSeconds, 20.f);
+		}
+		else
+		{
+			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaSeconds, 10.f);
+		}
+
+		 float CrosshairSpread = 0.5f +
+			CrosshairVelocityFactor +
+			CrosshairInAirFactor -
+			CrosshairAimFactor +
+			CrosshairShootingFactor;
 	}
 }
 
@@ -242,7 +235,7 @@ void UCombatComponent::LocalSwapWeapon(EWeaponType NewWeaponType)
 	AWeapon* NewWeapon = GetWeaponByType(NewWeaponType);
 	if (NewWeapon)
 	{
-		Character->PlaySwapMontage(NewWeapon->GetWeaponName());
+		PlaySwapMontage(NewWeapon);
 		CombatState = ECombatState::Swapping;
 	}
 }
@@ -304,19 +297,26 @@ void UCombatComponent::AttachActorToRightHand(AActor* ActorToAttach)
 void UCombatComponent::AttachActorToBodySocket(AWeapon* ActorToAttach)
 {
 	if (ActorToAttach == nullptr || Character == nullptr || Character->GetMesh() == nullptr) return;
-	FName BodySocketName = Character->GetMetaData(ActorToAttach->GetWeaponType(), "BodySocketName");
+	FName BodySocketName;
+	switch (ActorToAttach->GetWeaponType())
+	{
+	case EWeaponType::Primary:
+		BodySocketName = FName("RightShoulderSocket");
+		break;
+	case EWeaponType::Secondary:
+		BodySocketName = FName("RightCrotchSocket");
+		break;
+	case EWeaponType::Melee:
+		BodySocketName = FName("LeftShoulderSocket");
+		break;
+	case EWeaponType::Throwing:
+		BodySocketName = FName("LeftCrotchSocket");
+		break;
+	}
 	const USkeletalMeshSocket* BodyScoket = Character->GetMesh()->GetSocketByName(BodySocketName);
 	if (BodyScoket)
 	{
 		BodyScoket->AttachActor(ActorToAttach, Character->GetMesh());
-	}
-}
-
-void UCombatComponent::PlayUseWeaponSound()
-{
-	if (Character && GetCurrentWeapon() && GetCurrentWeapon()->UseWeaponSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, GetCurrentWeapon()->UseWeaponSound, Character->GetActorLocation());
 	}
 }
 
@@ -395,7 +395,7 @@ void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
 	if (CombatState == ECombatState::Reloading && GetCurrentWeapon()->GetWeaponCate() == EWeaponCate::Shotgun)
 	{
-		Character->PlayFireMontage(bAiming);
+		PlayFireMontage();
 		GetCurrentWeapon()->Fire(TraceHitTarget);
 		CombatState = ECombatState::Ready;
 		return;
@@ -403,7 +403,7 @@ void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 
 	if (CombatState == ECombatState::Ready)
 	{
-		Character->PlayFireMontage(bAiming);
+		PlayFireMontage();
 		GetCurrentWeapon()->Fire(TraceHitTarget);
 	}
 }
@@ -439,7 +439,7 @@ void UCombatComponent::Reload()
 		CombatState == ECombatState::Ready && !GetCurrentWeapon()->IsFull())
 	{
 		CombatState = ECombatState::Reloading;
-		Character->PlayReloadMontage();
+		PlayReloadMontage();
 		ServerReload();
 	}
 }
@@ -455,11 +455,11 @@ void UCombatComponent::MulticastReload_Implementation()
 	if (!Character->IsLocallyControlled())
 	{
 		CombatState = ECombatState::Reloading;
-		Character->PlayReloadMontage();
+		PlayReloadMontage();
 	}
 }
 
-void UCombatComponent::FinishReloading()
+void UCombatComponent::FinishReload()
 {
 	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
 	CombatState = ECombatState::Ready;
@@ -495,10 +495,10 @@ void UCombatComponent::ShellReload()
 
 void UCombatComponent::JumpToShotgunEnd()
 {
-	UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance && Character->GetReloadMontage())
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (AnimInstance && GetCurrentWeapon()->ReloadMontage)
 	{
-		AnimInstance->Montage_JumpToSection(FName("M870ReloadingEnd"));
+		AnimInstance->Montage_JumpToSection(FName("ReloadEnd"));
 	}
 }
 
@@ -576,5 +576,49 @@ bool UCombatComponent::HasEquippedThisTypeWeapon(EWeaponType WeaponType)
 		return ThrowingWeapon == nullptr ? false : true;
 	default:
 		return false;
+	}
+}
+
+void UCombatComponent::PlayUseWeaponSound()
+{
+	if (Character && GetCurrentWeapon() && GetCurrentWeapon()->UseWeaponSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, GetCurrentWeapon()->UseWeaponSound, Character->GetActorLocation());
+	}
+}
+
+void UCombatComponent::PlayFireMontage()
+{
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (AnimInstance && GetCurrentWeapon())
+	{
+		UAnimMontage* FireMontage = GetCurrentWeapon()->FireMontage;
+		if (FireMontage)
+		{
+			AnimInstance->Montage_Play(FireMontage);
+		}
+	}
+}
+
+void UCombatComponent::PlayReloadMontage()
+{
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (AnimInstance && GetCurrentWeapon())
+	{
+		UAnimMontage* ReloadMontage = GetCurrentWeapon()->ReloadMontage;
+		if (ReloadMontage)
+		{
+			AnimInstance->Montage_Play(ReloadMontage);
+		}
+	}
+}
+
+void UCombatComponent::PlaySwapMontage(AWeapon* Weapon)
+{
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	UAnimMontage* SwapMontage = Weapon->SwapMontage;
+	if (AnimInstance && SwapMontage)
+	{
+		AnimInstance->Montage_Play(SwapMontage);
 	}
 }

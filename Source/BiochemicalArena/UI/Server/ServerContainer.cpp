@@ -16,6 +16,10 @@ void UServerContainer::NativeConstruct()
 
 	if (ServerClass)
 	{
-		ServerStack->AddWidget(ServerClass);
+		UCommonActivatableWidget* Widget = ServerStack->AddWidget(ServerClass);
+		if (Widget)
+		{
+			Server = Cast<UServer>(Widget);
+		}
 	}
 }

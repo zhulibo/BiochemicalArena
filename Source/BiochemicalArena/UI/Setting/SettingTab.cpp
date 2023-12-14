@@ -21,7 +21,7 @@ void USettingTab::LinkSwitcher()
 	if (SettingSwitcher && TabButtonContainer && TabButtonClass)
 	{
 		SetLinkedSwitcher(SettingSwitcher); // 链接Tab和Switcher
-		for (int i = 0; i < TabContent.Num(); i++)
+		for (int i = 0; i < TabContent.Num(); ++i)
 		{
 			if (TabContent[i] == nullptr) break;
 			FString TabWidgetName = TabContent[i]->GetName();

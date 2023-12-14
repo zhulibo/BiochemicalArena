@@ -70,7 +70,7 @@ void ATeamDeadMatchMode::PlayerEliminated(AHumanCharacter* ElimmedCharacter, AHu
 	}
 	if (VictimState)
 	{
-		VictimState->AddToDefeats(1);
+		VictimState->AddToDefeat(1);
 	}
 	if (ElimmedCharacter)
 	{

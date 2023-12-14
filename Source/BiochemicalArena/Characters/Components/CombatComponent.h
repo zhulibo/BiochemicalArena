@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "CombatState.h"
-#include "BiochemicalArena/HUD/HumanHUD.h"
 #include "BiochemicalArena/Weapons/WeaponType.h"
 #include "CombatComponent.generated.h"
 
@@ -26,7 +25,7 @@ public:
 	void Reload();
 	void ShellReload();
 	void JumpToShotgunEnd();
-	void FinishReloading();
+	void FinishReload();
 	void DropWeapon();
 
 	AWeapon* GetCurrentWeapon();
@@ -50,7 +49,7 @@ private:
 	UPROPERTY()
 	class AHumanController* Controller;
 	UPROPERTY()
-	class AHumanHUD* HUD;
+	UAnimInstance* AnimInstance;
 	UPROPERTY()
 	class USoundCue* ClickSound;
 
@@ -83,7 +82,6 @@ private:
 	float CrosshairAimFactor;
 	float CrosshairShootingFactor;
 	FVector HitTarget;
-	FHUDPackage HUDPackage;
 
 	float DefaultFOV;
 	UPROPERTY(EditAnywhere, Category = "Combat")
@@ -118,7 +116,6 @@ private:
 	void UseWeapon(AWeapon* WeaponToUse);
 	void AttachActorToRightHand(AActor* ActorToAttach);
 	void AttachActorToBodySocket(AWeapon* ActorToAttach);
-	void PlayUseWeaponSound();
 	UFUNCTION(Server, Reliable)
 	void ServerDropWeapon();
 	UFUNCTION(NetMulticast, Reliable)
@@ -135,6 +132,11 @@ private:
 	void ServerReload();
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastReload();
+
+	void PlayUseWeaponSound();
+	void PlayFireMontage();
+	void PlayReloadMontage();
+	void PlaySwapMontage(AWeapon* Weapon);
 
 public:
 	FORCEINLINE AWeapon* GetPrimaryWeapon() const { return PrimaryWeapon; }

@@ -1,0 +1,12 @@
+.git
+.idea
+.vs
+
+**/test/**
+**/Binaries/**
+**/Build/**
+**/DerivedDataCache/**
+**/Intermediate/**
+**/Saved/**
+
+*.sln

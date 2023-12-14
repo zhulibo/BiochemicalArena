@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "BiochemicalArena/Weapons/WeaponType.h"
 #include "Storage.generated.h"
 
 USTRUCT(BlueprintType)
@@ -26,9 +27,6 @@ public:
 	virtual void NativeConstruct() override;
 
 protected:
-	UPROPERTY()
-	UEnum* WeaponNameEnum;
-
 	void AddEquipmentTypeButton();
 	void OnEquipmentTypeButtonClicked(class UCommonButton* CommonButton);
 	TArray<FText> FilterWeapon(FString WeaponTypeToFilter);
@@ -39,10 +37,14 @@ protected:
 	void OnWeaponButtonClicked(class UEquipmentButton* CommonButton);
 	void OnCharacterButtonClicked(UEquipmentButton* CommonButton);
 
-	void SetBagContent(FString& WeaponType, FString& WeaponName);
+	void SetBagContent(EWeaponType& WeaponType, FString& WeaponName);
 	void SaveBag();
 
 private:
+	UPROPERTY()
+	UDataTable* WeaponDataTable;
+	TArray<FWeaponData*> WeaponDataRows;
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UCommonButton> EquipmentTypeButtonClass;
 	UPROPERTY(EditDefaultsOnly, Category = "UI")

@@ -22,6 +22,13 @@ public:
 	UPROPERTY(EditAnywhere)
 	class USoundCue* UseWeaponSound;
 
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	UAnimMontage* FireMontage;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	UAnimMontage* ReloadMontage;
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+	UAnimMontage* SwapMontage;
+
 	void SetAmmo(int32 AmmoNum);
 	void SetCarriedAmmo(int32 AmmoNum);
 

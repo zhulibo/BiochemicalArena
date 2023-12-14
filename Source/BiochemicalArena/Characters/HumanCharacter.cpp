@@ -78,29 +78,26 @@ void AHumanCharacter::SetDefaultWeapon()
 	if (Combat)
 	{
 		if (Combat->CombatState == ECombatState::MAX) Combat->CombatState = ECombatState::Ready; // 初始化ECombatState
-		if (DefaultPrimaryWeaponClass)
-		{
-			AWeapon* DefaultPrimaryWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultPrimaryWeaponClass);
-			Combat->EquipWeapon(DefaultPrimaryWeapon);
-			Combat->SwapWeapon(EWeaponType::Primary);
-			Combat->CurrentWeaponType = EWeaponType::Primary;
-		}
-		if (DefaultSecondaryWeaponClass)
-		{
-			AWeapon* DefaultSecondaryWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultSecondaryWeaponClass);
-			Combat->EquipWeapon(DefaultSecondaryWeapon);
-			Combat->LastWeaponType = EWeaponType::Secondary;
-		}
-		if (DefaultMeleeWeaponClass)
-		{
-			AWeapon* DefaultMeleeWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultMeleeWeaponClass);
-			Combat->EquipWeapon(DefaultMeleeWeapon);
-		}
-		if (DefaultThrowingWeaponClass)
-		{
-			AWeapon* DefaultThrowingWeapon = GetWorld()->SpawnActor<AWeapon>(DefaultThrowingWeaponClass);
-			Combat->EquipWeapon(DefaultThrowingWeapon);
-		}
+
+		UClass* PrimaryWeaponClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Weapons/AK47.AK47_C'"));
+		AWeapon* DefaultPrimaryWeapon = GetWorld()->SpawnActor<AWeapon>(PrimaryWeaponClass);
+		Combat->EquipWeapon(DefaultPrimaryWeapon);
+		Combat->SwapWeapon(EWeaponType::Primary);
+		Combat->CurrentWeaponType = EWeaponType::Primary;
+
+		UClass* SecondaryWeaponClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Weapons/Glock17.Glock17_C'"));
+		AWeapon* DefaultSecondaryWeapon = GetWorld()->SpawnActor<AWeapon>(SecondaryWeaponClass);
+		Combat->EquipWeapon(DefaultSecondaryWeapon);
+		Combat->LastWeaponType = EWeaponType::Secondary;
+
+		UClass* MeleeWeaponClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Weapons/Melee.Melee_C'"));
+		AWeapon* DefaultMeleeWeapon = GetWorld()->SpawnActor<AWeapon>(MeleeWeaponClass);
+		Combat->EquipWeapon(DefaultMeleeWeapon);
+
+		// UClass* ThrowingWeaponClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Weapons/Melee.Melee_C'"));
+		// AWeapon* DefaultThrowingWeapon = GetWorld()->SpawnActor<AWeapon>(ThrowingWeaponClass);
+		// Combat->EquipWeapon(DefaultThrowingWeapon);
+
 	}
 }
 
@@ -307,38 +304,6 @@ void AHumanCharacter::SwapLastWeaponButtonPressed(const FInputActionValue& Value
 			if (Combat->ThrowingWeapon) Combat->SwapWeapon(EWeaponType::Throwing);
 			break;
 		}
-	}
-}
-
-void AHumanCharacter::PlayFireMontage(bool bAiming)
-{
-	if (Combat == nullptr || Combat->GetCurrentWeapon() == nullptr) return;
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && FireWeaponMontage)
-	{
-		AnimInstance->Montage_Play(FireWeaponMontage);
-	}
-}
-
-void AHumanCharacter::PlayReloadMontage()
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (Combat && Combat->GetCurrentWeapon() && AnimInstance && ReloadMontage)
-	{
-		AnimInstance->Montage_Play(ReloadMontage);
-		FName MontageSectionName = GetMetaData(Combat->GetCurrentWeapon()->GetWeaponName(), "MontageSectionName");
-		AnimInstance->Montage_JumpToSection(MontageSectionName);
-	}
-}
-
-void AHumanCharacter::PlaySwapMontage(EWeaponName NewWeaponName)
-{
-	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (Combat && AnimInstance && SwapMontage)
-	{
-		AnimInstance->Montage_Play(SwapMontage);
-		FName MontageSectionName = GetMetaData(NewWeaponName, "MontageSectionName");
-		AnimInstance->Montage_JumpToSection(MontageSectionName);
 	}
 }
 

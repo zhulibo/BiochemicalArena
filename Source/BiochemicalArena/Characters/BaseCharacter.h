@@ -26,6 +26,10 @@ protected:
 	void CrouchButtonReleased(const FInputActionValue& Value);
 	void CrouchControllerButtonPressed(const FInputActionValue& Value);
 
+	void ScoreboardButtonPressed(const FInputActionValue& Value);
+	void ScoreboardButtonReleased(const FInputActionValue& Value);
+	void PauseMenuButtonPressed(const FInputActionValue& Value);
+
 	void CalculateAO_Pitch();
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual float CalcFallDamageCoefficient();
@@ -34,6 +38,9 @@ protected:
 	void MulticastPlayOuchWeaponSound(float DamageCoefficient);
 
 private:
+	UPROPERTY()
+	class ABaseController* BaseController;
+
 	UPROPERTY()
 	class USoundCue* MetalSound;
 	UPROPERTY()
@@ -64,6 +71,10 @@ private:
 	UInputAction* CrouchAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
 	UInputAction* CrouchControllerAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ScoreboardAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UInputAction* PauseMenuAction;
 
 	float AO_Pitch;
 

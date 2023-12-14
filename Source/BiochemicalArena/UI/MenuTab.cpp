@@ -21,7 +21,7 @@ void UMenuTab::LinkSwitcher()
 	if (MenuSwitcher && TabButtonContainer && TabButtonClass)
 	{
 		SetLinkedSwitcher(MenuSwitcher); // 链接Tab和Switcher
-		for (int i = 0; i < TabContent.Num(); i++)
+		for (int i = 0; i < TabContent.Num(); ++i)
 		{
 			if (TabContent[i] == nullptr) break;
 			FName TabButtonNameID = FName(TabContent[i]->GetName());

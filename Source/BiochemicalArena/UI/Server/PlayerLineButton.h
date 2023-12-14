@@ -2,15 +2,18 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
-#include "PlayerLine.generated.h"
+#include "Lobby.h"
+#include "PlayerLineButton.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UPlayerLine : public UCommonButtonBase
+class BIOCHEMICALARENA_API UPlayerLineButton : public UCommonButtonBase
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeConstruct() override;
+
+	TSharedPtr<const FLobbyMember> Member;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;

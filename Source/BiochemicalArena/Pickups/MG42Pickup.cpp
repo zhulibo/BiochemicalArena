@@ -19,7 +19,7 @@ void AMG42Pickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 			if (MG42 == nullptr) return;
 			if (PrimaryWeapon)
 			{
-				// TODO server调用
+				// TODO investigate server调用
 				// Combat->EquipWeapon(MG42);
 				// Combat->UseWeapon(MG42);
 			}

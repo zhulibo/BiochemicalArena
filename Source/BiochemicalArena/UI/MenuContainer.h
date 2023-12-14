@@ -13,7 +13,7 @@ public:
 	virtual void NativeConstruct() override;
 
 	UPROPERTY(meta = (BindWidget))
-	class UCommonActivatableWidgetStack* MenuStack;
+	class UCommonActivatableWidgetStack* MainStack;
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")

@@ -15,6 +15,9 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetStack* ServerStack;
 
+	UPROPERTY()
+	class UServer* Server;
+
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UServer> ServerClass;

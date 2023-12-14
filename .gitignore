@@ -1,9 +1,10 @@
-Binaries
-DerivedDataCache
-Intermediate
-Saved
-Build
+**/Binaries/**
+**/Build/**
+**/DerivedDataCache/**
+**/Intermediate/**
+**/Saved/**
 /Content
+
 .idea
 .vscode
 .vs

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
+#include "BiochemicalArena/Weapons/WeaponType.h"
 #include "AnimNotify_FinishSwapAttach.generated.h"
 
 UCLASS()
@@ -14,7 +15,8 @@ public:
 
 private:
 	UPROPERTY()
-	UEnum* WeaponNameEnum;
+	UDataTable* WeaponDataTable;
+	TArray<FWeaponData*> WeaponDataRows;
 
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 		const FAnimNotifyEventReference& EventReference) override;

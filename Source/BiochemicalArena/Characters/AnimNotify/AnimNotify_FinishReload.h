@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
-#include "AnimNotify_FinishReloading.generated.h"
+#include "AnimNotify_FinishReload.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UAnimNotify_FinishReloading : public UAnimNotify
+class BIOCHEMICALARENA_API UAnimNotify_FinishReload : public UAnimNotify
 {
 	GENERATED_BODY()
 

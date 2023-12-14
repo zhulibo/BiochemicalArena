@@ -20,7 +20,7 @@ void UBagTab::LinkSwitcher()
 	{
 		// 链接Tab和Switcher
 		SetLinkedSwitcher(BagSwitcher);
-		for (int i = 0; i < TabContent.Num(); i++)
+		for (int i = 0; i < TabContent.Num(); ++i)
 		{
 			if (TabContent[i] == nullptr) break;
 
@@ -33,10 +33,17 @@ void UBagTab::LinkSwitcher()
 			UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID));
 			if (SizeBox && TabButton)
 			{
-				SizeBox->SetWidthOverride(50);
-				SizeBox->AddChild(TabButton);
 				TabButton->ButtonText->SetText(FText::FromName(TabButtonNameID));
-				if (i != TabContent.Num() -1) TabButton->SetPadding(FMargin(0, 0, 5, 0));
+				if (i != TabContent.Num() -1)
+				{
+					TabButton->SetPadding(FMargin(0, 0, 5, 0));
+					SizeBox->SetWidthOverride(55);
+				}
+				else
+				{
+					SizeBox->SetWidthOverride(50);
+				}
+				SizeBox->AddChild(TabButton);
 				TabButtonContainer->AddChild(SizeBox);
 			}
 		}

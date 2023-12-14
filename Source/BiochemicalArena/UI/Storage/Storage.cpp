@@ -1,11 +1,9 @@
 #include "Storage.h"
-
 #include "BagContent.h"
 #include "CommonActivatableWidgetSwitcher.h"
 #include "CommonHierarchicalScrollBox.h"
 #include "CommonTextBlock.h"
 #include "EquipmentButton.h"
-#include "BiochemicalArena/Weapons/WeaponType.h"
 #include "BiochemicalArena/Characters/CharacterType.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/WrapBox.h"
@@ -14,7 +12,11 @@ void UStorage::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	WeaponNameEnum = FindObject<UEnum>(nullptr, TEXT("/Script/BIOCHEMICALARENA.EWeaponName"));
+	WeaponDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Weapons/Data/DT_WeaponData.DT_WeaponData'"));
+	if (WeaponDataTable)
+	{
+		WeaponDataTable->GetAllRows<FWeaponData>("", WeaponDataRows);
+	}
 	AddEquipmentTypeButton();
 }
 
@@ -102,28 +104,33 @@ void UStorage::OnEquipmentTypeButtonClicked(UCommonButton* CommonButton)
 TArray<FText> UStorage::FilterWeapon(FString WeaponTypeToFilter)
 {
 	TArray<FText> WeaponNames;
-	if (WeaponNameEnum == nullptr) WeaponNameEnum = FindObject<UEnum>(nullptr, TEXT("/Script/BIOCHEMICALARENA.EWeaponName"));
-	if (WeaponNameEnum == nullptr) return WeaponNames;
 
-	for (int32 i = 0; i < (int32)EWeaponName::MAX; ++i)
+	if (WeaponTypeToFilter == "All")
 	{
-		FString EnumItemName = UEnum::GetValueAsString((EWeaponName)i);
-		EnumItemName = EnumItemName.Right(EnumItemName.Len() - EnumItemName.Find("::") - 2);
-		// TODO if (未购买EnumItemName) continue;
-
-		FString WeaponType;
-		WeaponType = WeaponNameEnum->GetMetaData(TEXT("WeaponType"), i);
-
-		if (WeaponTypeToFilter == "All") // 返回所有类型武器
+		for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
 		{
-			WeaponNames.Add(FText::FromString(EnumItemName));
-		}
-		else if (WeaponType == WeaponTypeToFilter) // 返回对应类型武器
-		{
-			WeaponNames.Add(FText::FromString(EnumItemName));
+			FString WeaponName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
+			WeaponName = WeaponName.Right(WeaponName.Len() - WeaponName.Find("::") - 2);
+			// TODO if (未购买WeaponName) continue;
+			WeaponNames.Add(FText::FromString(WeaponName));
 		}
 	}
-	// UE_LOG(LogTemp, Warning, TEXT("WeaponNames: %s"), *FText::Join(FText::FromString(", "), WeaponNames).ToString());
+	else
+	{
+		for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
+		{
+			FString WeaponType = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponType);
+			WeaponType = WeaponType.Right(WeaponType.Len() - WeaponType.Find("::") - 2);
+			// TODO if (未购买WeaponName) continue;
+			if (WeaponType == WeaponTypeToFilter)
+			{
+				FString WeaponName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
+				WeaponName = WeaponName.Right(WeaponName.Len() - WeaponName.Find("::") - 2);
+				WeaponNames.Add(FText::FromString(WeaponName));
+			}
+		}
+	}
+
 	return WeaponNames;
 }
 
@@ -132,7 +139,7 @@ void UStorage::AddWeaponButton(TArray<FText> WeaponNames)
 {
 	if (WeaponButtonClass == nullptr) return;
 
-	for (int i = 0; i < WeaponNames.Num(); i++)
+	for (int i = 0; i < WeaponNames.Num(); ++i)
 	{
 		UEquipmentButton* WeaponButton = CreateWidget<UEquipmentButton>(this, WeaponButtonClass);
 		if (WeaponButton)
@@ -171,43 +178,38 @@ void UStorage::OnWeaponButtonClicked(UEquipmentButton* EquipmentButton)
 {
 	FString WeaponName = EquipmentButton->ButtonText->GetText().ToString();
 
-	if (WeaponNameEnum == nullptr) WeaponNameEnum = FindObject<UEnum>(nullptr, TEXT("/Script/BIOCHEMICALARENA.EWeaponName"));
-	if (WeaponNameEnum == nullptr) return;
-
-	for (int32 i = 0; i < (int32)EWeaponName::MAX; ++i)
+	for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
 	{
-		FString EnumItemName = UEnum::GetValueAsString((EWeaponName)i);
+		FString EnumItemName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
 		EnumItemName = EnumItemName.Right(EnumItemName.Len() - EnumItemName.Find("::") - 2);
-
 		if (EnumItemName == WeaponName)
 		{
-			FString WeaponType = WeaponNameEnum->GetMetaData(TEXT("WeaponType"), i);
-			SetBagContent(WeaponType, WeaponName);
+			SetBagContent(WeaponDataRows[i]->WeaponType, WeaponName);
 			break;
 		}
 	}
 }
 
-void UStorage::SetBagContent(FString& WeaponType, FString& WeaponName)
+void UStorage::SetBagContent(EWeaponType& WeaponType, FString& WeaponName)
 {
 	if (BagSwitcher)
 	{
 		UBagContent* ActiveBag = Cast<UBagContent>(BagSwitcher->GetActiveWidget());
 		if (ActiveBag)
 		{
-			if (WeaponType == "Primary")
+			if (WeaponType == EWeaponType::Primary)
 			{
 				ActiveBag->Primary->ButtonText->SetText(FText::FromString(WeaponName));
 			}
-			else if (WeaponType == "Secondary")
+			else if (WeaponType == EWeaponType::Secondary)
 			{
 				ActiveBag->Secondary->ButtonText->SetText(FText::FromString(WeaponName));
 			}
-			else if (WeaponType == "Melee")
+			else if (WeaponType == EWeaponType::Melee)
 			{
 				ActiveBag->Melee->ButtonText->SetText(FText::FromString(WeaponName));
 			}
-			else if (WeaponType == "Throwing")
+			else if (WeaponType == EWeaponType::Throwing)
 			{
 				ActiveBag->Throwing->ButtonText->SetText(FText::FromString(WeaponName));
 			}

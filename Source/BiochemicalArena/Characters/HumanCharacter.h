@@ -16,14 +16,7 @@ public:
 	AHumanCharacter();
 	virtual void Tick(float DeltaSeconds) override;
 
-	template <typename EnumType>
-	FName GetMetaData(EnumType enum_value, FString MetaDataName); // 获取枚举类型的元数据
-
 	void EquipOverlappingWeapon(class AWeapon* Weapon);
-
-	void PlayFireMontage(bool bAiming);
-	void PlayReloadMontage();
-	void PlaySwapMontage(EWeaponName NewWeaponName);
 
 	void Elim();
 	UFUNCTION(NetMulticast, Reliable)
@@ -62,14 +55,6 @@ protected:
 private:
 	UPROPERTY()
 	class ATeamDeadMatchMode* TeamDeadMatchMode;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	TSubclassOf<AWeapon> DefaultPrimaryWeaponClass;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	TSubclassOf<AWeapon> DefaultSecondaryWeaponClass;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	TSubclassOf<AWeapon> DefaultMeleeWeaponClass;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	TSubclassOf<AWeapon> DefaultThrowingWeaponClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	class UWidgetComponent* OverheadWidget;
@@ -101,13 +86,6 @@ private:
 
 	void DetectOverlappingWeapon();
 
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	UAnimMontage* FireWeaponMontage;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	UAnimMontage* ReloadMontage;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	UAnimMontage* SwapMontage;
-
 	UPROPERTY(EditAnywhere, Category = "Player")
 	float MaxHealth = 200.f;
 	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player")
@@ -137,15 +115,5 @@ public:
 	ECombatState GetCombatState() const;
 
 	FORCEINLINE UCombatComponent* GetCombat() const { return Combat; }
-	FORCEINLINE UAnimMontage* GetReloadMontage() const { return ReloadMontage; }
 
 };
-
-template <typename EnumType>
-FName AHumanCharacter::GetMetaData(EnumType enum_value, FString MetaDataName)
-{
-	FString EnumName = UEnum::GetValueAsString(enum_value);
-	EnumName = EnumName.Left(EnumName.Find("::"));
-	UEnum* Enum = FindObject<UEnum>(nullptr, *FString::Printf(TEXT("/Script/BIOCHEMICALARENA.%s"), *EnumName));
-	return FName(Enum->GetMetaData(*MetaDataName, static_cast<int32>(enum_value)));
-}

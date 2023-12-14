@@ -1,11 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseController.h"
 #include "GameFramework/PlayerController.h"
 #include "HumanController.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API AHumanController : public APlayerController
+class BIOCHEMICALARENA_API AHumanController : public ABaseController
 {
 	GENERATED_BODY()
 
@@ -18,14 +19,14 @@ public:
 	void OnMatchStateSet(FName State);
 	void HandleMatchHasStarted();
 	void HandleCooldown();
-	void SetHUDWarmupCountdown(float CountdownTime);
-	void SetHUDMatchCountdown(float CountdownTime);
+	void SetHUDWarmupCountdown(uint32 CountdownTime);
+	void SetHUDMatchCountdown(uint32 CountdownTime);
 
 	void SetHUDHealth(float Health, float MaxHealth);
 	void SetHUDAmmo(int32 Ammo);
 	void SetHUDCarriedAmmo(int32 Ammo);
 	void SetHUDScore(float Score);
-	void SetHUDDefeats(int32 Defeats);
+	void SetHUDDefeat(int32 Defeat);
 
 protected:
 	virtual void BeginPlay() override;
@@ -57,8 +58,6 @@ private:
 	class AHumanCharacter* HumanCharacter;
 	UPROPERTY()
 	class AHumanState* HumanState;
-	UPROPERTY()
-	class AHumanHUD* HumanHUD;
 
 	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
 	FName MatchState;
@@ -72,12 +71,10 @@ private:
 	uint32 CountdownSeconds = 0;
 
 	bool bHasInitDefaultHUD = false;
-	UPROPERTY()
-	class UCharacterOverlay* CharacterOverlay;
 
 	float HUDHealth;
 	float HUDMaxHealth;
 	float HUDScore;
-	int32 HUDDefeats;
+	int32 HUDDefeat;
 
 };

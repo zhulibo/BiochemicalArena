@@ -1,14 +1,17 @@
 ﻿#pragma once
 
+#include "Engine/DataTable.h"
+#include "WeaponType.generated.h"
+
 #define TRACE_LENGTH 100000.f
 
 UENUM(BlueprintType)
 enum class EWeaponType : uint8
 {
-	Primary UMETA(DisplayName = "Primary", BodySocketName = "RightShoulderSocket"),
-	Secondary UMETA(DisplayName = "Secondary", BodySocketName = "RightCrotchSocket"),
-	Melee UMETA(DisplayName = "Melee", BodySocketName = "LeftShoulderSocket"),
-	Throwing UMETA(DisplayName = "Throwing", BodySocketName = "LeftCrotchSocket"),
+	Primary UMETA(DisplayName = "Primary"),
+	Secondary UMETA(DisplayName = "Secondary"),
+	Melee UMETA(DisplayName = "Melee"),
+	Throwing UMETA(DisplayName = "Throwing"),
 
 	MAX UMETA(Hidden)
 };
@@ -24,12 +27,12 @@ enum class EWeaponCate : uint8
 UENUM(BlueprintType)
 enum class EWeaponName : uint8
 {
-	AK47 UMETA(DisplayName = "AK47", MontageSectionName = "AK47", WeaponType = "Primary", WeaponCate = "General"),
-	M870 UMETA(DisplayName = "M870", MontageSectionName = "M870", WeaponType = "Melee", WeaponCate = "Shotgun"),
+	AK47 UMETA(DisplayName = "AK47"),
+	M870 UMETA(DisplayName = "M870"),
 
-	Glock17 UMETA(DisplayName = "Glock17", MontageSectionName = "Glock17", WeaponType = "Secondary", WeaponCate = "Shotgun"),
+	Glock17 UMETA(DisplayName = "Glock17"),
 
-	Kukri UMETA(DisplayName = "Kukri", MontageSectionName = "Kukri", WeaponType = "Melee", WeaponCate = "Melee"),
+	Kukri UMETA(DisplayName = "Kukri"),
 
 	MAX UMETA(Hidden)
 };
@@ -40,4 +43,21 @@ enum class EWeaponState : uint8
 	InUse UMETA(DisplayName = "InUse"),
 	Equipped UMETA(DisplayName = "Equipped"),
 	Dropped UMETA(DisplayName = "Dropped"),
+};
+
+USTRUCT(BlueprintType)
+struct FWeaponData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EWeaponType WeaponType = EWeaponType::Primary;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EWeaponCate WeaponCate = EWeaponCate::General;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	EWeaponName WeaponName = EWeaponName::AK47;
+
 };

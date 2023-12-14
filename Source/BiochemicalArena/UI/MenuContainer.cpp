@@ -6,5 +6,5 @@ void UMenuContainer::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	MenuStack->AddWidget(MenuClass);
+	MainStack->AddWidget(MenuClass);
 }

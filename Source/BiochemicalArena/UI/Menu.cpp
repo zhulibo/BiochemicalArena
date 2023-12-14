@@ -4,6 +4,9 @@
 #include "BiochemicalArena/PlayerControllers/MenuController.h"
 #include "Common/CommonButton.h"
 #include "BiochemicalArena/UI/Setting/Setting.h"
+#include "Dev/Dev.h"
+#include "Server/Server.h"
+#include "Server/ServerContainer.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 
 void UMenu::NativeConstruct()
@@ -18,9 +21,6 @@ void UMenu::NativeConstruct()
 
 	QuitButton->ButtonText->SetText(FText::FromString("Quit"));
 	QuitButton->OnClicked().AddUObject(this, &ThisClass::OnQuitButtonClicked);
-
-	// FTimerHandle TimerHandle;
-	// GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::OnSettingButtonClicked, .2f, false);
 }
 
 void UMenu::OnSettingButtonClicked()
@@ -30,7 +30,7 @@ void UMenu::OnSettingButtonClicked()
 		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
 		if (MenuController && MenuController->MenuContainer)
 		{
-			MenuController->MenuContainer->MenuStack->AddWidget(SettingClass);
+			MenuController->MenuContainer->MainStack->AddWidget(SettingClass);
 		}
 	}
 }

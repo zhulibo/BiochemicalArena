@@ -2,6 +2,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
@@ -17,15 +18,15 @@ void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MetalSound = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
-	WaterSound = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
-	GrassSound = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
-	MudSound = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
-	CommonSound = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Common_Cue.Footsteps_Common_Cue"));
+	MetalSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	WaterSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	GrassSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	MudSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	CommonSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Common_Cue.Footsteps_Common_Cue'"));
 
-	OuchSound1 = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
-	OuchSound2 = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
-	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue"));
+	OuchSound1 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	OuchSound2 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 }
 
 void ABaseCharacter::Tick(float DeltaSeconds)
@@ -59,6 +60,9 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABaseCharacter::CrouchButtonPressed);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABaseCharacter::CrouchButtonReleased);
 		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &ABaseCharacter::CrouchControllerButtonPressed);
+		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Triggered, this, &ABaseCharacter::ScoreboardButtonPressed);
+		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Completed, this, &ABaseCharacter::ScoreboardButtonReleased);
+		EnhancedInputComponent->BindAction(PauseMenuAction, ETriggerEvent::Triggered, this, &ABaseCharacter::PauseMenuButtonPressed);
 	}
 }
 
@@ -152,6 +156,24 @@ void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Valu
 	{
 		Crouch();
 	}
+}
+
+void ABaseCharacter::ScoreboardButtonPressed(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	BaseController->ShowScoreboard(true);
+}
+
+void ABaseCharacter::ScoreboardButtonReleased(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	BaseController->ShowScoreboard(false);
+}
+
+void ABaseCharacter::PauseMenuButtonPressed(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	BaseController->ShowPauseMenu();
 }
 
 void ABaseCharacter::CalculateAO_Pitch()

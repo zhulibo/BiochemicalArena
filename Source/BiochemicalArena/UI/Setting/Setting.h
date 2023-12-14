@@ -15,6 +15,8 @@ public:
 protected:
 	UPROPERTY()
 	class AMenuController* MenuController;
+	UPROPERTY()
+	class ABaseController* BaseController;
 	UFUNCTION()
 	void OnBackButtonClicked();
 

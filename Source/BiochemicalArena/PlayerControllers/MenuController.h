@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "BiochemicalArena/UI/Server/EOS.h"
 #include "MenuController.generated.h"
 
 UCLASS()
@@ -17,12 +18,23 @@ public:
 	UPROPERTY()
 	class UCommonActivatableWidgetStack* ServerStack;
 
+	void Login();
+	void Login1();
+	void Login2();
+
 protected:
 	virtual void BeginPlay() override;
+
 	void AddMenuContainer();
+
+	void OnLoginComplete(bool bWasSuccessful);
+	void OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
 
 private:
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UMenuContainer> MenuContainerClass;
+
+	UPROPERTY()
+	UEOS* EOS;
 
 };

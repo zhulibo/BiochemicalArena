@@ -12,7 +12,7 @@ void AHumanState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(AHumanState, Defeats);
+	DOREPLIFETIME(AHumanState, Defeat);
 }
 
 void AHumanState::AddToScore(float ScoreAmount)
@@ -44,21 +44,21 @@ void AHumanState::OnRep_Score()
 	}
 }
 
-void AHumanState::AddToDefeats(int32 DefeatsAmount)
+void AHumanState::AddToDefeat(int32 DefeatAmount)
 {
-	Defeats += DefeatsAmount;
+	Defeat += DefeatAmount;
 	if (Character == nullptr) Character = Cast<AHumanCharacter>(GetPawn());
 	if (Character)
 	{
 		if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
 		if (Controller)
 		{
-			Controller->SetHUDDefeats(Defeats);
+			Controller->SetHUDDefeat(Defeat);
 		}
 	}
 }
 
-void AHumanState::OnRep_Defeats()
+void AHumanState::OnRep_Defeat()
 {
 	if (Character == nullptr) Character = Cast<AHumanCharacter>(GetPawn());
 	if (Character)
@@ -66,7 +66,7 @@ void AHumanState::OnRep_Defeats()
 		if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
 		if (Controller)
 		{
-			Controller->SetHUDDefeats(Defeats);
+			Controller->SetHUDDefeat(Defeat);
 		}
 	}
 }

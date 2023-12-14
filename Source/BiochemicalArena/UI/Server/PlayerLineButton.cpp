@@ -1,8 +1,8 @@
-#include "PlayerLine.h"
+#include "PlayerLineButton.h"
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 
-void UPlayerLine::NativeConstruct()
+void UPlayerLineButton::NativeConstruct()
 {
 	Super::NativeConstruct();
 

@@ -1,15 +1,14 @@
 #include "HumanController.h"
-#include "BiochemicalArena/HUD/HumanHUD.h"
-#include "BiochemicalArena/HUD/CharacterOverlay.h"
-#include "Components/ProgressBar.h"
+#include "CommonTextBlock.h"
 #include "Components/TextBlock.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
-#include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
 #include "Net/UnrealNetwork.h"
-#include "BiochemicalArena/HUD/Announcement.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
+#include "BiochemicalArena/UI/HUD/CommonHUD.h"
+#include "BiochemicalArena/UI/HUD/HUDContainer.h"
+#include "BiochemicalArena/UI/HUD/TeamDeadMatch.h"
 #include "BiochemicalArena/Weapons/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -19,9 +18,10 @@ void AHumanController::BeginPlay()
 
 	if (IsLocalController())
 	{
-		HumanHUD = Cast<AHumanHUD>(GetHUD());
-		RequestServerMatchState();
 		HandleClientServerDelta();
+		RequestServerMatchState();
+
+		HUDContainer->TeamDeadMatch->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
@@ -104,10 +104,6 @@ void AHumanController::ReturnServerMatchState_Implementation(FName StateOfMatch,
 	LevelStartTime = StartingTime;
 	MatchState = StateOfMatch;
 	OnMatchStateSet(MatchState);
-	if (HumanHUD && MatchState == MatchState::WaitingToStart)
-	{
-		HumanHUD->AddAnnouncement();
-	}
 }
 
 void AHumanController::OnMatchStateSet(FName State)
@@ -138,42 +134,17 @@ void AHumanController::OnRep_MatchState()
 
 void AHumanController::HandleMatchHasStarted()
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD)
+	if (HUDContainer)
 	{
-		if (HumanHUD->CharacterOverlay == nullptr)
-		{
-			HumanHUD->AddCharacterOverlay();
-		}
-		if (HumanHUD->Announcement)
-		{
-			HumanHUD->Announcement->SetVisibility(ESlateVisibility::Hidden);
-		}
+		HUDContainer->CommonHUD->AnnouncementText->SetText(FText());
 	}
 }
 
 void AHumanController::HandleCooldown()
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD)
+	if (HUDContainer)
 	{
-		HumanHUD->CharacterOverlay->RemoveFromParent();
-		if (HumanHUD->Announcement && HumanHUD->Announcement->AnnouncementText)
-		{
-			HumanHUD->Announcement->SetVisibility(ESlateVisibility::Visible);
-			if (TeamDeadMatchState == nullptr) TeamDeadMatchState = Cast<ATeamDeadMatchState>(UGameplayStatics::GetGameState(this));
-			if (HumanState == nullptr) HumanState = GetPlayerState<AHumanState>();
-			if (TeamDeadMatchState && HumanState)
-			{
-				FString AnnouncementString = FString("Game over");
-				TArray<AHumanState*> TopPlayers = TeamDeadMatchState->TopScoringPlayers;
-				if (TopPlayers.Num() == 1)
-				{
-					AnnouncementString.Append(FString::Printf(TEXT(" Winner: \n%s"), *TopPlayers[0]->GetPlayerName()));
-				}
-				HumanHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementString));
-			}
-		}
+		HUDContainer->CommonHUD->AnnouncementText->SetText(FText::FromString("Game over"));
 	}
 }
 
@@ -182,20 +153,18 @@ void AHumanController::InitDefaultHUD()
 	if (bHasInitDefaultHUD) return;
 
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetPawn());
-	if (CharacterOverlay == nullptr && HumanHUD && HumanHUD->CharacterOverlay) CharacterOverlay = HumanHUD->CharacterOverlay;
 	if (HumanState == nullptr) HumanState = GetPlayerState<AHumanState>();
 
 	if (HumanCharacter &&
 		HumanCharacter->GetCombat() &&
 		HumanCharacter->GetCombat()->GetCurrentWeapon() &&
-		CharacterOverlay &&
 		HumanState)
 	{
 		SetHUDAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetAmmo());
 		SetHUDCarriedAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetCarriedAmmo());
 		SetHUDHealth(HumanCharacter->GetHealth(), HumanCharacter->GetMaxHealth());
 		SetHUDScore(HumanState->GetScore());
-		SetHUDDefeats(HumanState->GetDefeats());
+		SetHUDDefeat(HumanState->GetDefeat());
 
 		bHasInitDefaultHUD = true;
 	}
@@ -235,82 +204,58 @@ void AHumanController::SetHUDTime()
 	}
 }
 
-void AHumanController::SetHUDWarmupCountdown(float CountdownTime)
+void AHumanController::SetHUDWarmupCountdown(uint32 CountdownTime)
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD && HumanHUD->Announcement && HumanHUD->Announcement->AnnouncementText)
+	if (HUDContainer)
 	{
-		if (CountdownTime < 0.f)
-		{
-			HumanHUD->Announcement->AnnouncementText->SetText(FText());
-			return;
-		}
 		int32 Minutes = FMath::FloorToInt(CountdownTime / 60.f);
 		int32 Seconds = CountdownTime - Minutes * 60;
 		FString AnnouncementString = FString::Printf(TEXT("Game starts in %02d:%02d"), Minutes, Seconds);
-		HumanHUD->Announcement->AnnouncementText->SetText(FText::FromString(AnnouncementString));
+		HUDContainer->CommonHUD->AnnouncementText->SetText(FText::FromString(AnnouncementString));
 	}
 }
 
-void AHumanController::SetHUDMatchCountdown(float CountdownTime)
+void AHumanController::SetHUDMatchCountdown(uint32 CountdownTime)
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	bool bHUDValid = HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->MatchCountdownText;
-	if (bHUDValid)
+	if (HUDContainer)
 	{
-		if (CountdownTime < 0.f)
-		{
-			HumanHUD->CharacterOverlay->MatchCountdownText->SetText(FText());
-			return;
-		}
 		int32 Minutes = FMath::FloorToInt(CountdownTime / 60.f);
 		int32 Seconds = CountdownTime - Minutes * 60;
 		FString CountdownText = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
-		HumanHUD->CharacterOverlay->MatchCountdownText->SetText(FText::FromString(CountdownText));
+		HUDContainer->TeamDeadMatch->MatchCountdownText->SetText(FText::FromString(CountdownText));
 	}
 }
 
 void AHumanController::SetHUDHealth(float Health, float MaxHealth)
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->HealthValue)
+	if (HUDContainer)
 	{
-		HumanHUD->CharacterOverlay->HealthValue->SetText(FText::AsNumber(Health));
+		HUDContainer->TeamDeadMatch->HealthText->SetText(FText::AsNumber(Health));
 	}
 }
 
 void AHumanController::SetHUDAmmo(int32 Ammo)
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->WeaponAmmoAmount)
+	if (HUDContainer)
 	{
-		HumanHUD->CharacterOverlay->WeaponAmmoAmount->SetText(FText::AsNumber(Ammo));
+		HUDContainer->TeamDeadMatch->WeaponAmmoText->SetText(FText::AsNumber(Ammo));
 	}
 }
 
 void AHumanController::SetHUDCarriedAmmo(int32 Ammo)
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->CarriedAmmoAmount)
+	if (HUDContainer)
 	{
-		HumanHUD->CharacterOverlay->CarriedAmmoAmount->SetText(FText::AsNumber(Ammo));
+		HUDContainer->TeamDeadMatch->CarriedAmmoText->SetText(FText::AsNumber(Ammo));
 	}
 }
 
 void AHumanController::SetHUDScore(float Score)
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->ScoreAmount)
-	{
-		HumanHUD->CharacterOverlay->ScoreAmount->SetText(FText::AsNumber(Score));
-	}
+	// UE_LOG(LogTemp, Warning, TEXT("SetHUDScore Score: %d"), Score);
 }
 
-void AHumanController::SetHUDDefeats(int32 Defeats)
+void AHumanController::SetHUDDefeat(int32 Defeat)
 {
-	if (HumanHUD == nullptr) HumanHUD = Cast<AHumanHUD>(GetHUD());
-	if (HumanHUD && HumanHUD->CharacterOverlay && HumanHUD->CharacterOverlay->DefeatsAmount)
-	{
-		HumanHUD->CharacterOverlay->DefeatsAmount->SetText(FText::AsNumber(Defeats));
-	}
+	// UE_LOG(LogTemp, Warning, TEXT("SetHUDDefeat Defeat: %d"), Defeat);
 }

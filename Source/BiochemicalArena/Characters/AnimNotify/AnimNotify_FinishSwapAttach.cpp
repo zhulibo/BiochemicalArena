@@ -4,7 +4,11 @@
 
 UAnimNotify_FinishSwapAttach::UAnimNotify_FinishSwapAttach()
 {
-	WeaponNameEnum = FindObject<UEnum>(nullptr, TEXT("/Script/BIOCHEMICALARENA.EWeaponName"));
+	WeaponDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Weapons/Data/DT_WeaponData.DT_WeaponData'"));
+	if (WeaponDataTable)
+	{
+		WeaponDataTable->GetAllRows<FWeaponData>("", WeaponDataRows);
+	}
 }
 
 void UAnimNotify_FinishSwapAttach::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
@@ -14,39 +18,17 @@ void UAnimNotify_FinishSwapAttach::Notify(USkeletalMeshComponent* MeshComp, UAni
 
 	AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(MeshComp->GetOwner());
 	FName MontageSectionName = MeshComp->GetAnimInstance()->Montage_GetCurrentSection();
-	if (WeaponNameEnum == nullptr) WeaponNameEnum = FindObject<UEnum>(nullptr, TEXT("/Script/BIOCHEMICALARENA.EWeaponName"));
 
-	if (HumanCharacter && HumanCharacter->GetCombat() && !MontageSectionName.IsNone() && WeaponNameEnum)
+	if (!MontageSectionName.IsNone() && HumanCharacter && HumanCharacter->GetCombat())
 	{
-		// 循环EWeaponName，根据MontageSectionName找到对应枚举项的WeaponType
-		FName WeaponName_Meta_WeaponType;
-		for (int32 i = 0; i < static_cast<int32>(EWeaponName::MAX); ++i)
+		for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
 		{
-			FName SectionName = FName(WeaponNameEnum->GetMetaData(TEXT("MontageSectionName"), i));
-			if (SectionName == MontageSectionName)
+			FString WeaponName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
+			WeaponName = WeaponName.Right(WeaponName.Len() - WeaponName.Find("::") - 2);
+			if (WeaponName == MontageSectionName)
 			{
-				WeaponName_Meta_WeaponType = FName(WeaponNameEnum->GetMetaData(TEXT("WeaponType"), i));
-				break;
+				HumanCharacter->GetCombat()->FinishSwapAttach(WeaponDataRows[i]->WeaponType);
 			}
 		}
-		EWeaponType WeaponType = EWeaponType::Melee;
-		if (WeaponName_Meta_WeaponType == "Primary")
-		{
-			WeaponType = EWeaponType::Primary;
-		}
-		else if (WeaponName_Meta_WeaponType == "Secondary")
-		{
-			WeaponType = EWeaponType::Secondary;
-		}
-		else if (WeaponName_Meta_WeaponType == "Melee")
-		{
-			WeaponType = EWeaponType::Melee;
-		}
-		else if (WeaponName_Meta_WeaponType == "Throwing")
-		{
-			WeaponType = EWeaponType::Throwing;
-		}
-
-		HumanCharacter->GetCombat()->FinishSwapAttach(WeaponType);
 	}
 }

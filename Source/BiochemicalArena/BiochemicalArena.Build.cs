@@ -12,12 +12,14 @@ public class BiochemicalArena : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"InputCore",
+				"EnhancedInput",
+				"OnlineServicesInterface",
+				"CoreOnline"
 			}
 		);
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[] {
-				"EnhancedInput",
 				"Slate",
 				"SlateCore",
 				"UMG",
