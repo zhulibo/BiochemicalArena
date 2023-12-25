@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
 #include "BiochemicalArena/Interfaces/CrosshairInterface.h"
-#include "BiochemicalArena/Weapons/WeaponType.h"
 #include "Components/CombatState.h"
 #include "HumanCharacter.generated.h"
 
@@ -18,23 +17,29 @@ public:
 
 	void EquipOverlappingWeapon(class AWeapon* Weapon);
 
-	void Elim();
+	void Kill();
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastElim();
+	void MulticastKill();
 	void SetDefaultWeapon();
+
+	void SwapPrimaryWeapon();
+	void SwapSecondaryWeapon();
+	void SwapMeleeWeapon();
+	void SwapThrowingWeapon();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+
 	virtual void Landed(const FHitResult& Hit) override;
 	void PollInit();
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
-	class UCameraComponent* CameraComponent;
+	class UCameraComponent* Camera;
 
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimButtonReleased(const FInputActionValue& Value);
@@ -98,17 +103,17 @@ private:
 	UPROPERTY()
 	class AHumanState* HumanState;
 
-	bool bElimmed = false;
-	FTimerHandle ElimTimer;
+	bool bIsKilled = false;
+	FTimerHandle KillTimer;
 	UPROPERTY(EditDefaultsOnly)
-	float ElimDelay = 3.f;
-	void ElimTimerFinished();
+	float KillDelay = 3.f;
+	void KillTimerFinished();
 
 public:
-	FORCEINLINE UCameraComponent* GetCamera() const { return CameraComponent; }
+	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
 	bool IsAiming();
 	AWeapon* GetCurrentWeapon();
-	FORCEINLINE bool IsElimmed() const { return bElimmed; }
+	FORCEINLINE bool IsKilled() const { return bIsKilled; }
 	FVector GetHitTarget() const;
 	FORCEINLINE float GetHealth() const { return Health; }
 	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }

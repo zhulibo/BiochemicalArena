@@ -84,7 +84,7 @@ void AWeapon::DropWeapon()
 		if (CameraComponent)
 		{
 			float ImpulsePerKg =  300.f;
-			if (OwnerCharacter->IsElimmed()) ImpulsePerKg = ImpulsePerKg / 2;
+			if (OwnerCharacter->IsKilled()) ImpulsePerKg = ImpulsePerKg / 2;
 			WeaponMesh->AddImpulse(CameraComponent->GetForwardVector() * ImpulsePerKg * WeaponMesh->GetMass());
 		}
 	}
@@ -132,10 +132,10 @@ void AWeapon::OnDropped()
 	 * HACK 延迟开启AreaSphere碰撞
 	 * 1 避免DropWeapon未执行完，发生OnSphereOverlap > EquipWeapon
 	 * 2 确保武器已被丢出该角色Overlap区域
-	 * 2 角色死亡时，等待bElimmed属性本地已设置，因为伤害只在服务端计算，需等待Elim() > MulticastElim()
+	 * 2 角色死亡时，等待bIsKilled属性本地已设置，因为伤害只在服务端计算，需等待Kill() > MulticastKill()
 	 */
 	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &AWeapon::SetAreaSphereCollision, .4f);
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::SetAreaSphereCollision, .4f);
 
 	WeaponMesh->SetSimulatePhysics(true);
 	WeaponMesh->SetEnableGravity(true);

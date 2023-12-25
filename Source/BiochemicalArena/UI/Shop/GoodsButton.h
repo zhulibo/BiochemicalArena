@@ -11,8 +11,8 @@ class BIOCHEMICALARENA_API UGoodsButton : public UCommonButtonBase
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* GoodsNameText;
+	class UCommonTextBlock* GoodsName;
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* PriceText;
+	UCommonTextBlock* Price;
 
 };

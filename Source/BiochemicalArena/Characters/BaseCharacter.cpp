@@ -47,22 +47,28 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 		if (Subsystem)
 		{
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			Subsystem->AddMappingContext(BaseMappingContext, 0);
 		}
 	}
 	// Set up action bindings
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Move);
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABaseCharacter::Look);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABaseCharacter::JumpButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABaseCharacter::CrouchButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABaseCharacter::CrouchButtonReleased);
-		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &ABaseCharacter::CrouchControllerButtonPressed);
-		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Triggered, this, &ABaseCharacter::ScoreboardButtonPressed);
-		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Completed, this, &ABaseCharacter::ScoreboardButtonReleased);
-		EnhancedInputComponent->BindAction(PauseMenuAction, ETriggerEvent::Triggered, this, &ABaseCharacter::PauseMenuButtonPressed);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
+		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
+
+		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
+		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
+		EnhancedInputComponent->BindAction(PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
+
+		EnhancedInputComponent->BindAction(RadialMenuAction, ETriggerEvent::Started, this, &ThisClass::RadialMenuButtonPressed);
+		EnhancedInputComponent->BindAction(RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
+		EnhancedInputComponent->BindAction(RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
+		EnhancedInputComponent->BindAction(RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChange);
 	}
 }
 
@@ -72,11 +78,11 @@ void ABaseCharacter::PlayFootstepSound()
 	FVector Start = GetActorLocation();
 	FVector End = Start - FVector(0.f, 0.f, 100.f);
 
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.bReturnPhysicalMaterial = true;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	Params.bReturnPhysicalMaterial = true;
 
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, QueryParams);
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
 
 	if (HitResult.bBlockingHit)
 	{
@@ -106,26 +112,22 @@ void ABaseCharacter::PlayFootstepSound()
 
 void ABaseCharacter::Move(const FInputActionValue& Value)
 {
-	FVector2D MovementVector = Value.Get<FVector2D>();
-	if (Controller)
-	{
-		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);
-	}
+	FVector2D AxisVector = Value.Get<FVector2D>();
+	AddMovementInput(GetActorForwardVector(), AxisVector.Y);
+	AddMovementInput(GetActorRightVector(), AxisVector.X);
 }
 
 void ABaseCharacter::Look(const FInputActionValue& Value)
 {
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
-	if (Controller)
-	{
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
-	}
+	if (bIsRadialMenuOpen) return;
+	FVector2D AxisVector = Value.Get<FVector2D>();
+	AddControllerYawInput(AxisVector.X);
+	AddControllerPitchInput(AxisVector.Y);
 }
 
 void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
 {
+	if (bIsRadialMenuOpen) return;
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -161,19 +163,61 @@ void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Valu
 void ABaseCharacter::ScoreboardButtonPressed(const FInputActionValue& Value)
 {
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	BaseController->ShowScoreboard(true);
+	if (BaseController) BaseController->ShowScoreboard(true);
 }
 
 void ABaseCharacter::ScoreboardButtonReleased(const FInputActionValue& Value)
 {
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	BaseController->ShowScoreboard(false);
+	if (BaseController) BaseController->ShowScoreboard(false);
 }
 
 void ABaseCharacter::PauseMenuButtonPressed(const FInputActionValue& Value)
 {
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	BaseController->ShowPauseMenu();
+	if (BaseController) BaseController->ShowPauseMenu();
+}
+
+void ABaseCharacter::RadialMenuButtonPressed(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->ShowRadialMenu();
+		bIsRadialMenuOpen = true;
+	}
+}
+
+void ABaseCharacter::RadialMenuButtonReleased(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->CloseRadialMenu();
+		bIsRadialMenuOpen = false;
+	}
+}
+
+void ABaseCharacter::RadialMenuChange(const FInputActionValue& Value)
+{
+	if (!bIsRadialMenuOpen) return;
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->ChangeRadialMenu();
+	}
+}
+
+void ABaseCharacter::RadialMenuSelect(const FInputActionValue& Value)
+{
+	if (!bIsRadialMenuOpen) return;
+	FVector2D AxisVector = Value.Get<FVector2D>();
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		// UE_LOG(LogTemp, Warning, TEXT("X: %f, Y: %f"), AxisVector.X, AxisVector.Y);
+		BaseController->SelectRadialMenu(AxisVector.X, AxisVector.Y);
+	}
 }
 
 void ABaseCharacter::CalculateAO_Pitch()

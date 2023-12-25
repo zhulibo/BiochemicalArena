@@ -1,9 +1,11 @@
 #include "HUDContainer.h"
-#include "Infect.h"
-#include "InfectHuman.h"
-#include "InfectZombie.h"
+#include "Mutation.h"
+#include "MutationHuman.h"
+#include "MutationMutant.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "PauseMenu.h"
+#include "RadialMenuContainer.h"
+#include "Scoreboard.h"
 #include "TeamDeadMatch.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 
@@ -21,11 +23,12 @@ void UHUDContainer::NativeConstruct()
 
 	TeamDeadMatch->SetVisibility(ESlateVisibility::Hidden);
 
-	Infect->SetVisibility(ESlateVisibility::Hidden);
-	InfectHuman->SetVisibility(ESlateVisibility::Hidden);
-	InfectZombie->SetVisibility(ESlateVisibility::Hidden);
+	Mutation->SetVisibility(ESlateVisibility::Hidden);
+	MutationHuman->SetVisibility(ESlateVisibility::Hidden);
+	MutationMutant->SetVisibility(ESlateVisibility::Hidden);
 
 	Scoreboard->SetVisibility(ESlateVisibility::Hidden);
+	RadialMenuContainer->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UHUDContainer::ShowPauseMenu()

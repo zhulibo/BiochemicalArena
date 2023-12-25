@@ -21,14 +21,16 @@ public:
 	class UTeamDeadMatch* TeamDeadMatch;
 
 	UPROPERTY(meta = (BindWidget))
-	class UInfect* Infect;
+	class UMutation* Mutation;
 	UPROPERTY(meta = (BindWidget))
-	class UInfectHuman* InfectHuman;
+	class UMutationHuman* MutationHuman;
 	UPROPERTY(meta = (BindWidget))
-	class UInfectZombie* InfectZombie;
+	class UMutationMutant* MutationMutant;
 
 	UPROPERTY(meta = (BindWidget))
-	class UCommonActivatableWidget* Scoreboard;
+	class UScoreboard* Scoreboard;
+	UPROPERTY(meta = (BindWidget))
+	class URadialMenuContainer* RadialMenuContainer;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetStack* MainStack;

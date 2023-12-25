@@ -39,7 +39,7 @@ protected:
 	void TraceUnderCrosshair(FHitResult& TraceHitResult);
 	void SetHUDCrosshair(float DeltaSeconds);
 
-	void SetAiming(bool bIsAiming);
+	void SetAiming(bool bNewAimingState);
 
 	void Fire();
 
@@ -54,7 +54,7 @@ private:
 	class USoundCue* ClickSound;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Aiming)
-	bool bAiming = false;
+	bool bIsAiming = false;
 	bool bAimButtonPressed = false;
 	UFUNCTION()
 	void OnRep_Aiming();
@@ -101,7 +101,7 @@ private:
 	ECombatState CombatState = ECombatState::MAX;
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetAiming(bool bIsAiming);
+	void ServerSetAiming(bool bNewAimingState);
 
 	UFUNCTION(Server, Reliable)
 	void ServerEquipWeapon(AWeapon* WeaponToEquip);

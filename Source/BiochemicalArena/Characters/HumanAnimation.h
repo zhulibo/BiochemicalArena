@@ -36,7 +36,7 @@ private:
 	bool bIsCrouched;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
-	bool bAiming;
+	bool bIsAiming;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
 	float AO_Pitch;
@@ -48,7 +48,7 @@ private:
 	FTransform LeftHandTransform;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
-	bool bElimmed;
+	bool bIsKilled;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
 	bool bUseLeftHandFABRIK;

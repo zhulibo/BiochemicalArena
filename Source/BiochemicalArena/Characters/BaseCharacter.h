@@ -30,6 +30,11 @@ protected:
 	void ScoreboardButtonReleased(const FInputActionValue& Value);
 	void PauseMenuButtonPressed(const FInputActionValue& Value);
 
+	void RadialMenuButtonPressed(const FInputActionValue& Value);
+	void RadialMenuButtonReleased(const FInputActionValue& Value);
+	void RadialMenuChange(const FInputActionValue& Value);
+	void RadialMenuSelect(const FInputActionValue& Value);
+
 	void CalculateAO_Pitch();
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual float CalcFallDamageCoefficient();
@@ -59,24 +64,34 @@ private:
 	UPROPERTY()
 	USoundCue* OuchSound3;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
-	class UInputMappingContext* DefaultMappingContext;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
+	class UInputMappingContext* BaseMappingContext;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* CrouchAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* CrouchControllerAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* ScoreboardAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Default", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* PauseMenuAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
+	UInputAction* RadialMenuAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
+	UInputAction* RadialMenuChangeAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
+	UInputAction* RadialMenuSelectAction;
+
 	float AO_Pitch;
+
+	bool bIsRadialMenuOpen; // 视角控制 or 径向菜单选择
 
 public:
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }

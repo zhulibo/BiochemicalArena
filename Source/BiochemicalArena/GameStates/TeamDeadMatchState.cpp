@@ -1,4 +1,5 @@
 #include "TeamDeadMatchState.h"
+#include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Net/UnrealNetwork.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
 
@@ -6,24 +7,41 @@ void ATeamDeadMatchState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ATeamDeadMatchState, TopScoringPlayers);
+	DOREPLIFETIME(ATeamDeadMatchState, Team1);
+	DOREPLIFETIME(ATeamDeadMatchState, Team2);
+	DOREPLIFETIME(ATeamDeadMatchState, Team1Score);
+	DOREPLIFETIME(ATeamDeadMatchState, Team2Score);
 }
 
-void ATeamDeadMatchState::UpdateTopScore(class AHumanState* ScoringPlayer)
+void ATeamDeadMatchState::AddTeamScore(ETeam Team)
 {
-	if (TopScoringPlayers.Num() == 0)
+	if (Team == ETeam::Team1)
 	{
-		TopScoringPlayers.Add(ScoringPlayer);
-		TopScore = ScoringPlayer->GetScore();
+		Team1Score++;
+		SetHUDTeamScore(Team1Score, 1);
 	}
-	else if (ScoringPlayer->GetScore() == TopScore)
+	else if (Team == ETeam::Team2)
 	{
-		TopScoringPlayers.AddUnique(ScoringPlayer);
+		Team2Score++;
+		SetHUDTeamScore(Team2Score, 2);
 	}
-	else if (ScoringPlayer->GetScore() > TopScore)
+}
+
+void ATeamDeadMatchState::SetHUDTeamScore(float Score, int32 Team)
+{
+	AHumanController* HumanController = Cast<AHumanController>(GetWorld()->GetFirstPlayerController());
+	if (HumanController)
 	{
-		TopScoringPlayers.Empty();
-		TopScoringPlayers.AddUnique(ScoringPlayer);
-		TopScore = ScoringPlayer->GetScore();
+		HumanController->SetHUDTeamScore(Score, Team);
 	}
+}
+
+void ATeamDeadMatchState::OnRep_Team1Score()
+{
+	SetHUDTeamScore(Team1Score, 1);
+}
+
+void ATeamDeadMatchState::OnRep_Team2Score()
+{
+	SetHUDTeamScore(Team2Score, 2);
 }

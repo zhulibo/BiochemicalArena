@@ -1,43 +1,32 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameMode.h"
+#include "BaseMode.h"
 #include "TeamDeadMatchMode.generated.h"
 
-namespace MatchState
-{
-	extern BIOCHEMICALARENA_API const FName Cooldown;
-}
-
 UCLASS()
-class BIOCHEMICALARENA_API ATeamDeadMatchMode : public AGameMode
+class BIOCHEMICALARENA_API ATeamDeadMatchMode : public ABaseMode
 {
 	GENERATED_BODY()
 
 public:
-	ATeamDeadMatchMode();
 	virtual void Tick(float DeltaSeconds) override;
 
-	virtual void PlayerEliminated(class AHumanCharacter* ElimmedCharacter, class AHumanController* VictimController,
-		AHumanController* AttackerController);
-	virtual void RequestRespawn(ACharacter* ElimmedCharacter, AController* ElimmedController);
-
-	float LevelStartTime = 0.f;
-	UPROPERTY(EditDefaultsOnly)
-	float WarmupTime = 5.f;
-	UPROPERTY(EditDefaultsOnly)
-	float MatchTime = 600.f;
-	UPROPERTY(EditDefaultsOnly)
-	float CooldownTime = 5.f;
+	virtual void KillPlayer(class AHumanCharacter* KilledCharacter, class AHumanController* KilledController,
+		AHumanController* AttackerController, AActor* DamageCauser);
+	virtual void Respawn(ACharacter* KilledCharacter, AController* KilledController);
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void OnMatchStateSet() override;
+	UPROPERTY()
+	class ATeamDeadMatchState* TeamDeadMatchState;
+	UPROPERTY()
+	UClass* HumanCharacterClass;
 
-private:
-	float CountdownTime = 0.f;
+	virtual void HandleMatchHasStarted() override;
+	virtual void OnPostLogin(AController* NewPlayer) override;
 
-public:
-	FORCEINLINE float GetCountdownTime() const { return CountdownTime; }
+	AHumanCharacter* SpawnHumanCharacter(AController* KilledController);
+	void AssignPlayerTeam(AHumanController* HumanController);
 
 };

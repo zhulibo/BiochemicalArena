@@ -22,7 +22,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UCombatComponent, bAiming);
+	DOREPLIFETIME(UCombatComponent, bIsAiming);
 	DOREPLIFETIME(UCombatComponent, CombatState);
 
 	DOREPLIFETIME(UCombatComponent, PrimaryWeapon);
@@ -121,7 +121,7 @@ void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 			CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 0.f, DeltaSeconds, 30.f);
 		}
 
-		if (bAiming)
+		if (bIsAiming)
 		{
 			CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.58f, DeltaSeconds, 10.f);
 		}
@@ -150,7 +150,7 @@ void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 void UCombatComponent::InterpFOV(float DeltaSeconds)
 {
 	if (GetCurrentWeapon() == nullptr) return;
-	if (bAiming)
+	if (bIsAiming)
 	{
 		CurrentFOV = FMath::FInterpTo(CurrentFOV, GetCurrentWeapon()->GetZoomedFOV(), DeltaSeconds, GetCurrentWeapon()->GetZoomInterpSpeed());
 	}
@@ -320,10 +320,10 @@ void UCombatComponent::AttachActorToBodySocket(AWeapon* ActorToAttach)
 	}
 }
 
-void UCombatComponent::SetAiming(bool bIsAiming)
+void UCombatComponent::SetAiming(bool bNewAimingState)
 {
-	bAimButtonPressed = bIsAiming;
-	bAiming = bIsAiming;
+	bAimButtonPressed = bNewAimingState;
+	bIsAiming = bNewAimingState;
 	ServerSetAiming(bIsAiming);
 	if (Character)
 	{
@@ -331,9 +331,9 @@ void UCombatComponent::SetAiming(bool bIsAiming)
 	}
 }
 
-void UCombatComponent::ServerSetAiming_Implementation(bool bIsAiming)
+void UCombatComponent::ServerSetAiming_Implementation(bool bNewAimingState)
 {
-	bAiming = bIsAiming;
+	bIsAiming = bNewAimingState;
 	if (Character)
 	{
 		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
@@ -344,7 +344,7 @@ void UCombatComponent::OnRep_Aiming()
 {
 	if (Character && Character->IsLocallyControlled())
 	{
-		bAiming = bAimButtonPressed;
+		bIsAiming = bAimButtonPressed;
 	}
 }
 
@@ -370,7 +370,7 @@ void UCombatComponent::Fire()
 			Character->GetWorldTimerManager().SetTimer(
 				FireTimer,
 				this,
-				&UCombatComponent::LoadNewBulletFinished,
+				&ThisClass::LoadNewBulletFinished,
 				GetCurrentWeapon()->FireDelay
 			);
 		}

@@ -22,9 +22,9 @@ void AGeneralWeapon::Fire(const FVector& HitTarget)
 		FRotator TargetRotation = ToTarget.Rotation();
 		if (ProjectileClass && InstigatorPawn)
 		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = GetOwner();
-			SpawnParams.Instigator = InstigatorPawn;
+			FActorSpawnParameters Params;
+			Params.Owner = this;
+			Params.Instigator = InstigatorPawn;
 			UWorld* World = GetWorld();
 			if (World)
 			{
@@ -32,7 +32,7 @@ void AGeneralWeapon::Fire(const FVector& HitTarget)
 					ProjectileClass,
 					SocketTransform.GetLocation(),
 					TargetRotation,
-					SpawnParams
+					Params
 				);
 				SpawnedProjectile->Damage = Damage;
 			}

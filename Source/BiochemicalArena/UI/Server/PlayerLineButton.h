@@ -19,8 +19,7 @@ public:
 	class UCommonTextBlock* PlayerName;
 
 private:
-
 	UPROPERTY(meta = (BindWidget))
-	class UCommonButton* KickButton;
+	UCommonButton* KickButton;
 
 };

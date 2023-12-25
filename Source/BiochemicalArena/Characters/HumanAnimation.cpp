@@ -25,8 +25,8 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 	bIsInAir = HumanCharacter->GetCharacterMovement()->IsFalling();
 	bIsAccelerating = HumanCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
 	bIsCrouched = HumanCharacter->bIsCrouched;
-	bAiming = HumanCharacter->IsAiming();
-	bElimmed = HumanCharacter->IsElimmed();
+	bIsAiming = HumanCharacter->IsAiming();
+	bIsKilled = HumanCharacter->IsKilled();
 	AO_Pitch = HumanCharacter->GetAO_Pitch();
 
 	// 瞄准方向与移动方向的偏移量，用于控制脚步朝向

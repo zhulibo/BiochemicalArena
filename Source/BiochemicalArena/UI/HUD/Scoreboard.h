@@ -1,18 +1,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonActivatableWidget.h"
+#include "CommonUserWidget.h"
 #include "Scoreboard.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UScoreboard : public UCommonActivatableWidget
+class BIOCHEMICALARENA_API UScoreboard : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void NativeConstruct() override;
+	UPROPERTY()
+	class ATeamDeadMatchState* TeamDeadMatchState;
 
-	void RefreshScoreBoard();
+	UFUNCTION()
+	void RefreshScoreBoard(ESlateVisibility NewVisibility);
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* GameTitle;

@@ -21,9 +21,9 @@ void AShotgun::Fire(const FVector& HitTarget)
 		FVector ToTarget = HitTarget - SocketTransform.GetLocation();
 		if (ProjectileClass && InstigatorPawn)
 		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = GetOwner();
-			SpawnParams.Instigator = InstigatorPawn;
+			FActorSpawnParameters Params;
+			Params.Owner = this;
+			Params.Instigator = InstigatorPawn;
 			UWorld* World = GetWorld();
 			if (World)
 			{
@@ -34,7 +34,7 @@ void AShotgun::Fire(const FVector& HitTarget)
 						ProjectileClass,
 						SocketTransform.GetLocation(),
 						ToTargetRandom.Rotation(),
-						SpawnParams
+						Params
 					);
 					SpawnedProjectile->Damage = Damage;
 				}

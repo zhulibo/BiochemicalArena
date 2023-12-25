@@ -2,23 +2,19 @@
 
 #include "CoreMinimal.h"
 #include "CommonUserWidget.h"
-#include "TeamDeadMatch.generated.h"
+#include "MutationHuman.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UTeamDeadMatch : public UCommonUserWidget
+class BIOCHEMICALARENA_API UMutationHuman : public UCommonUserWidget
 {
 	GENERATED_BODY()
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* MatchCountdown;
-	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* Team1Score;
-	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* Team2Score;
+	class UCommonTextBlock* Health;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* Health;
+	UCommonTextBlock* DamagePercent;
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* WeaponAmmo;

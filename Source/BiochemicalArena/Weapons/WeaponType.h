@@ -13,7 +13,7 @@ enum class EWeaponType : uint8
 	Melee UMETA(DisplayName = "Melee"),
 	Throwing UMETA(DisplayName = "Throwing"),
 
-	MAX UMETA(Hidden)
+	MAX UMETA(Hidden),
 };
 
 UENUM(BlueprintType)
@@ -34,7 +34,7 @@ enum class EWeaponName : uint8
 
 	Kukri UMETA(DisplayName = "Kukri"),
 
-	MAX UMETA(Hidden)
+	MAX UMETA(Hidden),
 };
 
 UENUM(BlueprintType)
