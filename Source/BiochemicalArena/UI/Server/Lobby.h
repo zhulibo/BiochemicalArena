@@ -11,60 +11,63 @@ class BIOCHEMICALARENA_API ULobby : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 public:
-	virtual void NativeConstruct() override;
-
 	void InitPlayerList();
 
 protected:
+	virtual void NativeConstruct() override;
+
 	UPROPERTY()
 	class AMenuController* MenuController;
-	UFUNCTION()
-	void OnSendMsgButtonClicked();
-	UFUNCTION()
-	void OnJoinServerButtonClicked();
-	UFUNCTION()
-	void OnStartServerButtonClicked();
-	UFUNCTION()
-	void OnTeam1ButtonClicked();
-	UFUNCTION()
-	void OnTeam2ButtonClicked();
-	UFUNCTION()
-	void OnBackButtonClicked();
+	UPROPERTY()
+	UEOS* EOS;
 
-	void OnLeaveLobbyComplete(bool bWasSuccessful);
-	void OnModifyLobbyAttributesComplete(bool bWasSuccessful);
-	void OnModifyLobbyMemberAttributesComplete(bool bWasSuccessful);
-
-	void OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined);
-	void OnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft);
-	void OnLobbyLeft(const FLobbyLeft& LobbyLeft);
-	void OnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged);
-	void OnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged);
-	void OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged);
-
-private:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonButton* SendMsgButton;
-	UPROPERTY(meta = (BindWidget))
-	UCommonButton* JoinServerButton;
+	UFUNCTION()
+	void OnSendMsgButtonClicked();
+
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* StartServerButton;
+	UFUNCTION()
+	void OnStartServerButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* JoinServerButton;
+	UFUNCTION()
+	void OnJoinServerButtonClicked();
+
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* Team1Button;
+	UFUNCTION()
+	void OnTeam1ButtonClicked();
+
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* Team2Button;
-	UPROPERTY(meta = (BindWidget))
-	UCommonButton* BackButton;
+	UFUNCTION()
+	void OnTeam2ButtonClicked();
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* Team1Container;
 	UPROPERTY(meta = (BindWidget))
 	UCommonHierarchicalScrollBox* Team2Container;
-
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UPlayerLineButton> PlayerLineButtonClass;
+	void OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined);
+	void OnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft);
+	void OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged);
 
-	UPROPERTY()
-	UEOS* EOS;
+	// TODO 修改大厅属性事件
+	void OnModifyLobbyAttributesComplete(bool bWasSuccessful);
+	void OnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged);
+	// TODO 修改大厅成员属性事件
+	void OnModifyLobbyMemberAttributesComplete(bool bWasSuccessful);
+	void OnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged);
+
+	void OnLobbyLeft(const FLobbyLeft& LobbyLeft);
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* BackButton;
+	UFUNCTION()
+	void OnBackButtonClicked();
+	void OnLeaveLobbyComplete(bool bWasSuccessful);
 
 };

@@ -20,23 +20,23 @@ void UScoreboard::RefreshScoreBoard(ESlateVisibility NewVisibility)
 	if (ScoreBoardContainer && TeamDeadMatchState && ScoreBoardLineButtonClass)
 	{
 		ScoreBoardContainer->ClearChildren();
-		for (int i = 0; i < TeamDeadMatchState->Team1.Num(); ++i)
+		for (int32 i = 0; i < TeamDeadMatchState->GetTeam(ETeam::Team1).Num(); ++i)
 		{
 			UScoreBoardLineButton* ScoreBoardLineButton = CreateWidget<UScoreBoardLineButton>(this, ScoreBoardLineButtonClass);
 			if (ScoreBoardLineButton)
 			{
-				ScoreBoardLineButton->Player->SetText(FText::FromString(TeamDeadMatchState->Team1[i]->GetPlayerName()));
-				ScoreBoardLineButton->Kill->SetText(FText::FromString(FString::FromInt(TeamDeadMatchState->Team1[i]->GetScore())));
+				ScoreBoardLineButton->Player->SetText(FText::FromString(TeamDeadMatchState->GetTeam(ETeam::Team1)[i]->GetPlayerName()));
+				ScoreBoardLineButton->Score->SetText(FText::FromString(FString::FromInt(TeamDeadMatchState->GetTeam(ETeam::Team1)[i]->GetScore())));
 				ScoreBoardContainer->AddChild(ScoreBoardLineButton);
 			}
 		}
-		for (int i = 0; i < TeamDeadMatchState->Team2.Num(); ++i)
+		for (int32 i = 0; i < TeamDeadMatchState->GetTeam(ETeam::Team2).Num(); ++i)
 		{
 			UScoreBoardLineButton* ScoreBoardLineButton = CreateWidget<UScoreBoardLineButton>(this, ScoreBoardLineButtonClass);
 			if (ScoreBoardLineButton)
 			{
-				ScoreBoardLineButton->Player->SetText(FText::FromString(TeamDeadMatchState->Team2[i]->GetPlayerName()));
-				ScoreBoardLineButton->Kill->SetText(FText::FromString(FString::FromInt(TeamDeadMatchState->Team2[i]->GetScore())));
+				ScoreBoardLineButton->Player->SetText(FText::FromString(TeamDeadMatchState->GetTeam(ETeam::Team2)[i]->GetPlayerName()));
+				ScoreBoardLineButton->Score->SetText(FText::FromString(FString::FromInt(TeamDeadMatchState->GetTeam(ETeam::Team2)[i]->GetScore())));
 				ScoreBoardContainer->AddChild(ScoreBoardLineButton);
 			}
 		}

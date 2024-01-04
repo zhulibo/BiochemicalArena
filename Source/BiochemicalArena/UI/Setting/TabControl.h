@@ -14,40 +14,41 @@ public:
 
 protected:
 	void SetDefaultValue();
-	UFUNCTION()
-	void OnMouseSensitivityChanged(float Value);
-	UFUNCTION()
-	void OnMouseAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
-	UFUNCTION()
-	void OnMouseAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
-	UFUNCTION()
-	void OnControllerSensitivityChanged(float Value);
-	UFUNCTION()
-	void OnControllerAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
-	UFUNCTION()
-	void OnControllerAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
-private:
-	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* MouseSensitivityValue;
+	// 键鼠
 	UPROPERTY(meta = (BindWidget))
 	class UAnalogSlider* MouseSensitivityController;
+	UPROPERTY(meta = (BindWidget))
+	class UCommonTextBlock* MouseSensitivityValue;
+	UFUNCTION()
+	void OnMouseSensitivityChanged(float Value);
 
 	UPROPERTY(meta = (BindWidget))
 	class UComboBoxString* MouseAimAssistSteeringController;
+	UFUNCTION()
+	void OnMouseAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	UPROPERTY(meta = (BindWidget))
 	UComboBoxString* MouseAimAssistSlowdownController;
+	UFUNCTION()
+	void OnMouseAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
-	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* ControllerSensitivityValue;
+	// 手柄
 	UPROPERTY(meta = (BindWidget))
 	UAnalogSlider* ControllerSensitivityController;
+	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* ControllerSensitivityValue;
+	UFUNCTION()
+	void OnControllerSensitivityChanged(float Value);
 
 	UPROPERTY(meta = (BindWidget))
 	UComboBoxString* ControllerAimAssistSteeringController;
+	UFUNCTION()
+	void OnControllerAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	UPROPERTY(meta = (BindWidget))
 	UComboBoxString* ControllerAimAssistSlowdownController;
+	UFUNCTION()
+	void OnControllerAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 };

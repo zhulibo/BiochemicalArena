@@ -1,7 +1,7 @@
 #include "AmmoPickup.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
-#include "BiochemicalArena/Weapons/Weapon.h"
+#include "BiochemicalArena/Equipments/Weapon.h"
 
 void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -14,12 +14,12 @@ void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AAct
 		UCombatComponent* Combat = HumanCharacter->GetCombat();
 		if (Combat)
 		{
-			AWeapon* PrimaryWeapon = Combat->GetPrimaryWeapon();
+			AWeapon* PrimaryEquipment = Combat->GetPrimaryEquipment();
 			// 不判断武器是否处于满弹匣状态
-			if (PrimaryWeapon)
+			if (PrimaryEquipment)
 			{
-				PrimaryWeapon->SetAmmo(PrimaryWeapon->GetMagCapacity());
-				PrimaryWeapon->SetCarriedAmmo(PrimaryWeapon->GetMaxCarriedAmmo());
+				PrimaryEquipment->SetAmmo(PrimaryEquipment->GetMagCapacity()); // TODO server
+				PrimaryEquipment->SetCarriedAmmo(PrimaryEquipment->GetMaxCarriedAmmo());
 				Destroy();
 			}
 		}

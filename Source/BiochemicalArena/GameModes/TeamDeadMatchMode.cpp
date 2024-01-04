@@ -3,7 +3,7 @@
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
-#include "BiochemicalArena/Weapons/Weapon.h"
+#include "BiochemicalArena/Equipments/Equipment.h"
 
 void ATeamDeadMatchMode::BeginPlay()
 {
@@ -24,22 +24,33 @@ void ATeamDeadMatchMode::KillPlayer(AHumanCharacter* KilledCharacter, AHumanCont
 	AHumanState* AttackerState = AttackerController ? Cast<AHumanState>(AttackerController->PlayerState) : nullptr;
 	AHumanState* KilledState = KilledController ? Cast<AHumanState>(KilledController->PlayerState) : nullptr;
 
-	if (KilledCharacter) KilledCharacter->Kill();
-
 	if (KilledState) KilledState->AddDefeat(1);
 	if (AttackerState) AttackerState->AddScore(1.f);
 
 	if (TeamDeadMatchState && AttackerState)
 	{
-		TeamDeadMatchState->AddTeamScore(AttackerState->Team);
+		TeamDeadMatchState->AddTeamScore(AttackerState->GetTeam());
 	}
 
 	if (TeamDeadMatchState && AttackerState && DamageCauser && KilledState)
 	{
-		EWeaponName TemWeaponName = Cast<AWeapon>(DamageCauser->GetOwner())->GetWeaponName(); // Sacrifice checking for performance
-		FString WeaponName = UEnum::GetValueAsString(TemWeaponName);
-		WeaponName = WeaponName.Right(WeaponName.Len() - WeaponName.Find("::") - 2);
-		TeamDeadMatchState->MulticastAddKillLog(AttackerState, WeaponName, KilledState);
+		EEquipmentName TemEquipmentName;
+		if (AEquipment* DamageCauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner())) // Projectile can has owner
+		{
+			TemEquipmentName = DamageCauserEquipment->GetEquipmentName();
+		}
+		else // Melee
+		{
+			TemEquipmentName = Cast<AEquipment>(DamageCauser)->GetEquipmentName();
+		}
+		FString EquipmentName = UEnum::GetValueAsString(TemEquipmentName);
+		EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
+		TeamDeadMatchState->MulticastAddKillLog(AttackerState, EquipmentName, KilledState);
+	}
+
+	if (KilledCharacter)
+	{
+		KilledCharacter->Kill();
 	}
 }
 
@@ -69,11 +80,14 @@ void ATeamDeadMatchMode::HandleMatchHasStarted()
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		AHumanController* HumanController = Cast<AHumanController>(*It);
-		AHumanCharacter* HumanCharacter = SpawnHumanCharacter(HumanController);
-		if (HumanCharacter)
+		if (HumanController)
 		{
-			HumanController->Possess(HumanCharacter);
-			AssignPlayerTeam(HumanController);
+			AHumanCharacter* HumanCharacter = SpawnHumanCharacter(HumanController);
+			if (HumanCharacter)
+			{
+				HumanController->Possess(HumanCharacter);
+				AssignPlayerTeam(HumanController);
+			}
 		}
 	}
 }
@@ -97,12 +111,16 @@ void ATeamDeadMatchMode::OnPostLogin(AController* NewPlayerController)
 // 生成角色
 AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerController)
 {
-	if (HumanCharacterClass == nullptr) return nullptr;
+	if (HumanCharacterClass == nullptr || NewPlayerController == nullptr) return nullptr;
 	AActor* StartSpot = ChoosePlayerStart(NewPlayerController);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	AHumanCharacter* HumanCharacter = GetWorld()->SpawnActor<AHumanCharacter>(HumanCharacterClass, StartSpot->GetActorLocation(), StartSpot->GetActorRotation(), SpawnParams);
-	return HumanCharacter;
+	return GetWorld()->SpawnActor<AHumanCharacter>(
+		HumanCharacterClass,
+		StartSpot->GetActorLocation(),
+		StartSpot->GetActorRotation(),
+		SpawnParams
+	);
 }
 
 // 分配队伍
@@ -113,14 +131,15 @@ void ATeamDeadMatchMode::AssignPlayerTeam(AHumanController* HumanController)
 	AHumanState* HumanState = HumanController->GetPlayerState<AHumanState>();
 	if (HumanState)
 	{
-		if (TeamDeadMatchState->Team1.Num() > TeamDeadMatchState->Team2.Num())
+
+		if (TeamDeadMatchState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchState->GetTeam(ETeam::Team2).Num())
 		{
-			TeamDeadMatchState->Team2.AddUnique(HumanState);
+			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team2);
 			HumanState->SetTeam(ETeam::Team2);
 		}
 		else
 		{
-			TeamDeadMatchState->Team1.AddUnique(HumanState);
+			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team1);
 			HumanState->SetTeam(ETeam::Team1);
 		}
 	}

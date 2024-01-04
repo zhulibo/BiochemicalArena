@@ -11,14 +11,14 @@ class BIOCHEMICALARENA_API UPlayerLineButton : public UCommonButtonBase
 	GENERATED_BODY()
 
 public:
-	virtual void NativeConstruct() override;
 
 	TSharedPtr<const FLobbyMember> Member;
-
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;
 
-private:
+protected:
+	virtual void NativeConstruct() override;
+
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* KickButton;
 

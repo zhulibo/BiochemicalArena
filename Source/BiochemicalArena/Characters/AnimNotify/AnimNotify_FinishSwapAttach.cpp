@@ -4,10 +4,10 @@
 
 UAnimNotify_FinishSwapAttach::UAnimNotify_FinishSwapAttach()
 {
-	WeaponDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Weapons/Data/DT_WeaponData.DT_WeaponData'"));
-	if (WeaponDataTable)
+	EquipmentDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Equipments/Data/DT_EquipmentData.DT_EquipmentData'"));
+	if (EquipmentDataTable)
 	{
-		WeaponDataTable->GetAllRows<FWeaponData>("", WeaponDataRows);
+		EquipmentDataTable->GetAllRows<FEquipmentData>("", EquipmentDataRows);
 	}
 }
 
@@ -16,18 +16,18 @@ void UAnimNotify_FinishSwapAttach::Notify(USkeletalMeshComponent* MeshComp, UAni
 {
 	Super::Notify(MeshComp, Animation, EventReference);
 
-	AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(MeshComp->GetOwner());
 	FName MontageSectionName = MeshComp->GetAnimInstance()->Montage_GetCurrentSection();
+	AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(MeshComp->GetOwner());
 
 	if (!MontageSectionName.IsNone() && HumanCharacter && HumanCharacter->GetCombat())
 	{
-		for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
+		for (int32 i = 0; i < EquipmentDataRows.Num(); ++i)
 		{
-			FString WeaponName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
-			WeaponName = WeaponName.Right(WeaponName.Len() - WeaponName.Find("::") - 2);
-			if (WeaponName == MontageSectionName)
+			FString EquipmentName = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
+			EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
+			if (EquipmentName == MontageSectionName)
 			{
-				HumanCharacter->GetCombat()->FinishSwapAttach(WeaponDataRows[i]->WeaponType);
+				HumanCharacter->GetCombat()->FinishSwapAttach(EquipmentDataRows[i]->EquipmentType);
 			}
 		}
 	}

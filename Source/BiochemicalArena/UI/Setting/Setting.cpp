@@ -1,11 +1,13 @@
 #include "Setting.h"
 #include "CommonTextBlock.h"
+#include "BiochemicalArena/GameModes/MenuMode.h"
 #include "BiochemicalArena/PlayerControllers/MenuController.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/UI/Menu.h"
 #include "BiochemicalArena/UI/MenuContainer.h"
 #include "BiochemicalArena/UI/HUD/HUDContainer.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
+#include "Kismet/GameplayStatics.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 
 void USetting::NativeConstruct()
@@ -18,17 +20,22 @@ void USetting::NativeConstruct()
 
 void USetting::OnBackButtonClicked()
 {
-	// 菜单退出
-	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
-	if (MenuController && MenuController->MenuContainer)
+	if (Cast<AMenuMode>(UGameplayStatics::GetGameMode(GetWorld())))
 	{
-		MenuController->MenuContainer->MainStack->RemoveWidget(*MenuController->MenuContainer->MainStack->GetActiveWidget());
+		// 主菜单设置界面返回
+		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
+		if (MenuController && MenuController->MenuContainer)
+		{
+			MenuController->MenuContainer->MainStack->RemoveWidget(*MenuController->MenuContainer->MainStack->GetActiveWidget());
+		}
 	}
-
-	// 游戏内退出
-	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
-	if (BaseController && BaseController->HUDContainer)
+	else
 	{
-		BaseController->HUDContainer->MainStack->RemoveWidget(*BaseController->HUDContainer->MainStack->GetActiveWidget());
+		// 游戏内设置界面返回
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+		if (BaseController && BaseController->HUDContainer)
+		{
+			BaseController->HUDContainer->MainStack->RemoveWidget(*BaseController->HUDContainer->MainStack->GetActiveWidget());
+		}
 	}
 }

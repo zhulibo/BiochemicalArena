@@ -14,13 +14,12 @@ public:
 
 protected:
 	void SetDefaultValue();
-	UFUNCTION()
-	void OnVolumeChanged(float Value);
 
-private:
-	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* VolumeValue;
 	UPROPERTY(meta = (BindWidget))
 	class UAnalogSlider* VolumeController;
+	UPROPERTY(meta = (BindWidget))
+	class UCommonTextBlock* VolumeValue;
+	UFUNCTION()
+	void OnVolumeChanged(float Value);
 
 };

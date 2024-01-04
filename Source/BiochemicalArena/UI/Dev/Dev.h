@@ -9,7 +9,7 @@ class BIOCHEMICALARENA_API UDev : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void NativeConstruct() override;
 
 };

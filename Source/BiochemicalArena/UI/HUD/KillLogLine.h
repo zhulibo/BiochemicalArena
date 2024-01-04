@@ -13,7 +13,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* AttackerPlayer;
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* WeaponName;
+	UCommonTextBlock* EquipmentName;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* KilledPlayer;
 

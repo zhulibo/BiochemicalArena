@@ -13,7 +13,11 @@ void UServer::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	MenuController = Cast<AMenuController>(GetOwningPlayer());
+	Login1Button->ButtonText->SetText(FText::FromString("Login1"));
+	Login1Button->OnClicked().AddUObject(this, &ThisClass::OnLogin1ButtonClicked);
+
+	Login2Button->ButtonText->SetText(FText::FromString("Login2"));
+	Login2Button->OnClicked().AddUObject(this, &ThisClass::OnLogin2ButtonClicked);
 
 	ServerNameInput->OnTextChanged.AddUniqueDynamic(this, &ThisClass::OnServerNameInputTextChanged);
 
@@ -26,51 +30,15 @@ void UServer::NativeConstruct()
 	ServerCreateButton->ButtonText->SetText(FText::FromString("Create Server"));
 	ServerCreateButton->OnClicked().AddUObject(this, &ThisClass::OnServerCreateButtonClicked);
 
-	Login1Button->ButtonText->SetText(FText::FromString("Login1"));
-	Login1Button->OnClicked().AddUObject(this, &ThisClass::OnLogin1ButtonClicked);
-
-	Login2Button->ButtonText->SetText(FText::FromString("Login2"));
-	Login2Button->OnClicked().AddUObject(this, &ThisClass::OnLogin2ButtonClicked);
-
 	EOS = GetGameInstance()->GetSubsystem<UEOS>();
-	// 绑定委托
-	if (EOS) EOS->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
-	if (EOS) EOS->OnFindLobbyComplete.AddUObject(this, &ThisClass::OnFindLobbyComplete);
-	if (EOS) EOS->OnJoinLobbyComplete.AddUObject(this, &ThisClass::OnJoinLobbyComplete);
-
-	if (EOS) EOS->OnLobbyInvitationAdded.AddUObject(this, &ThisClass::OnLobbyInvitationAdded);
-	if (EOS) EOS->OnUILobbyJoinRequested.AddUObject(this, &ThisClass::OnUILobbyJoinRequested);
-
-}
-
-void UServer::OnServerNameInputTextChanged(const FText& Text)
-{
-	ServerName = Text;
-	UE_LOG(LogTemp, Warning, TEXT("ServerName: %s"), *ServerName.ToString());
-}
-
-void UServer::OnServerReFreshButtonClicked()
-{
-	if (EOS == nullptr) EOS = GetGameInstance()->GetSubsystem<UEOS>();
 	if (EOS)
 	{
-		EOS->FindLobby();
-	}
-}
+		EOS->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
+		EOS->OnFindLobbyComplete.AddUObject(this, &ThisClass::OnFindLobbyComplete);
+		EOS->OnJoinLobbyComplete.AddUObject(this, &ThisClass::OnJoinLobbyComplete);
 
-void UServer::OnServerResetButtonClicked()
-{
-	UE_LOG(LogTemp, Warning, TEXT("OnServerResetButtonClicked"));
-	ServerNameInput->SetText(FText::FromString(""));
-	ServerName = FText::FromString("");
-}
-
-void UServer::OnServerCreateButtonClicked()
-{
-	if (EOS == nullptr) EOS = GetGameInstance()->GetSubsystem<UEOS>();
-	if (EOS)
-	{
-		EOS->CreateLobby();
+		EOS->OnLobbyInvitationAdded.AddUObject(this, &ThisClass::OnLobbyInvitationAdded);
+		EOS->OnUILobbyJoinRequested.AddUObject(this, &ThisClass::OnUILobbyJoinRequested);
 	}
 }
 
@@ -92,6 +60,16 @@ void UServer::OnLogin2ButtonClicked()
 	}
 }
 
+// 创建大厅
+void UServer::OnServerCreateButtonClicked()
+{
+	if (EOS)
+	{
+		EOS->CreateLobby();
+	}
+}
+
+// 创建大厅完成事件
 void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
@@ -108,6 +86,29 @@ void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 	}
 }
 
+void UServer::OnServerNameInputTextChanged(const FText& Text)
+{
+	ServerName = Text;
+	UE_LOG(LogTemp, Warning, TEXT("ServerName: %s"), *ServerName.ToString());
+}
+
+// 重置查询条件
+void UServer::OnServerResetButtonClicked()
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnServerResetButtonClicked"));
+	ServerNameInput->SetText(FText::FromString(""));
+	ServerName = FText::FromString("");
+}
+
+// 查找大厅
+void UServer::OnServerReFreshButtonClicked()
+{
+	if (EOS)
+	{
+		EOS->FindLobby();
+	}
+}
+
 // 查找大厅完成事件
 void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies)
 {
@@ -117,7 +118,7 @@ void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<c
 		{
 			if (ServerLineButtonContainer && ServerLineButtonClass)
 			{
-				for (int i = 0; i < Lobbies.Num(); ++i)
+				for (int32 i = 0; i < Lobbies.Num(); ++i)
 				{
 					UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass);
 					if (ServerLineButton)
@@ -146,9 +147,9 @@ void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<c
 	}
 }
 
+// 加入大厅
 void UServer::OnServerLineButtonClicked(UServerLineButton* ServerLineButton)
 {
-	if (EOS == nullptr) EOS = GetGameInstance()->GetSubsystem<UEOS>();
 	if (EOS && ServerLineButton->Lobby.IsValid())
 	{
 		EOS->JoinLobby(ServerLineButton->Lobby.ToSharedRef());
@@ -173,11 +174,10 @@ void UServer::OnJoinLobbyComplete(bool bWasSuccessful)
 	}
 }
 
-// 收到邀请事件
+// 收到邀请
 void UServer::OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
 {
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("OnLobbyInvitationAdded"));
-	if (EOS == nullptr) EOS = GetGameInstance()->GetSubsystem<UEOS>();
 	if (EOS)
 	{
 		EOS->JoinLobby(LobbyInvitationAdded.Lobby);

@@ -4,7 +4,7 @@
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "Components/VerticalBox.h"
 
-void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& WeaponName, ABasePlayerState* KilledState)
+void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState)
 {
 	if (KillLogContainer && KillLogLineClass)
 	{
@@ -19,7 +19,7 @@ void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& Weap
 				KillLogLine->AttackerPlayer->SetText(FText::FromString(AttackerState->GetPlayerName()));
 				if (LocalPlayerState)
 				{
-					if (LocalPlayerState->Team == AttackerState->Team)
+					if (LocalPlayerState->GetTeam() == AttackerState->GetTeam())
 					{
 						KillLogLine->AttackerPlayer->SetColorAndOpacity(FLinearColor::Green);
 					}
@@ -29,13 +29,13 @@ void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& Weap
 					}
 				}
 			}
-			KillLogLine->WeaponName->SetText(FText::FromString(WeaponName));
+			KillLogLine->EquipmentName->SetText(FText::FromString(EquipmentName));
 			if (KilledState)
 			{
 				KillLogLine->KilledPlayer->SetText(FText::FromString(KilledState->GetPlayerName()));
 				if (LocalPlayerState)
 				{
-					if (LocalPlayerState->Team == KilledState->Team)
+					if (LocalPlayerState->GetTeam() == KilledState->GetTeam())
 					{
 						KillLogLine->KilledPlayer->SetColorAndOpacity(FLinearColor::Green);
 					}

@@ -1,17 +1,19 @@
 #include "BasePlayerState.h"
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/Characters/BaseCharacter.h"
 #include "Net/UnrealNetwork.h"
-
-void ABasePlayerState::BeginPlay()
-{
-	Super::BeginPlay();
-}
 
 void ABasePlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ABasePlayerState, Defeat);
-	DOREPLIFETIME(ABasePlayerState, Team);
+	DOREPLIFETIME(ThisClass, Team);
+	DOREPLIFETIME(ThisClass, Defeat);
+}
+
+void ABasePlayerState::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 void ABasePlayerState::SetTeam(ETeam TeamToSet)
@@ -21,7 +23,6 @@ void ABasePlayerState::SetTeam(ETeam TeamToSet)
 
 void ABasePlayerState::OnRep_Team()
 {
-
 }
 
 void ABasePlayerState::AddScore(float ScoreAmount)
@@ -41,5 +42,4 @@ void ABasePlayerState::AddDefeat(int32 DefeatAmount)
 
 void ABasePlayerState::OnRep_Defeat()
 {
-
 }

@@ -15,19 +15,19 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UFUNCTION()
-	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-	UPROPERTY(VisibleAnywhere)
-	bool bFirstOnHit; // 第一次触地时播放声音
-
-private:
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* CasingMesh;
 
 	UPROPERTY(EditAnywhere)
-	class USoundCue* ShellSound;
-
-	UPROPERTY(EditAnywhere)
 	float ShellEjectionImpulsePerKg = 200.f;;
+
+	UPROPERTY()
+	bool bIsFirstOnHit;
+	UFUNCTION()
+	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+private:
+	UPROPERTY(EditAnywhere)
+	USoundCue* ShellSound;
 
 };

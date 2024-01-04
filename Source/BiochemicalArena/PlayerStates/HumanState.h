@@ -9,4 +9,7 @@ class BIOCHEMICALARENA_API AHumanState : public ABasePlayerState
 {
 	GENERATED_BODY()
 
+protected:
+	virtual void BeginPlay() override;
+
 };

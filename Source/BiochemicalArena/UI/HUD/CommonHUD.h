@@ -12,15 +12,14 @@ class BIOCHEMICALARENA_API UCommonHUD : public UCommonUserWidget
 public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Announcement;
+
 	UPROPERTY(meta = (BindWidget))
 	class UVerticalBox* KillLogContainer;
-
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UKillLogLine> KillLogLineClass;
+	void AddKillLog(class ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState);
 
-	void AddKillLog(class ABasePlayerState* AttackerState, const FString& WeaponName, ABasePlayerState* KilledState);
-
-private:
+protected:
 	UPROPERTY()
 	ABasePlayerState* LocalPlayerState;
 

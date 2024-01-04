@@ -1,12 +1,9 @@
 #include "HumanController.h"
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
-#include "BiochemicalArena/PlayerStates/HumanState.h"
 #include "BiochemicalArena/UI/HUD/HUDContainer.h"
 #include "BiochemicalArena/UI/HUD/TeamDeadMatch.h"
-#include "BiochemicalArena/Weapons/Weapon.h"
 #include "Kismet/GameplayStatics.h"
 
 void AHumanController::BeginPlay()
@@ -15,12 +12,7 @@ void AHumanController::BeginPlay()
 
 	if (IsLocalController())
 	{
-		HandleClientServerDelta();
-		RequestServerMatchState();
-
 		if (HUDContainer) HUDContainer->TeamDeadMatch->SetVisibility(ESlateVisibility::Visible);
-
-		TeamDeadMatchState = Cast<ATeamDeadMatchState>(UGameplayStatics::GetGameState(GetWorld()));
 	}
 }
 
@@ -28,35 +20,33 @@ void AHumanController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (IsLocalController())
+	if (IsLocalController() && !bHasInitDefaultHUD)
 	{
 		InitDefaultHUD();
 	}
 }
 
+void AHumanController::SetHasInitDefaultHUD(bool bHasInit)
+{
+	bHasInitDefaultHUD = bHasInit;
+}
+
 void AHumanController::InitDefaultHUD()
 {
-	if (bHasInitDefaultHUD) return;
-
+	if (TeamDeadMatchState == nullptr) TeamDeadMatchState = Cast<ATeamDeadMatchState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetPawn());
-	if (HumanState == nullptr) HumanState = GetPlayerState<AHumanState>();
 
-	if (HumanCharacter &&
-		HumanCharacter->GetCombat() &&
-		HumanCharacter->GetCombat()->GetCurrentWeapon() &&
-		HumanState)
+	if (TeamDeadMatchState && HumanCharacter)
 	{
-		SetHUDAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetAmmo());
-		SetHUDCarriedAmmo(HumanCharacter->GetCombat()->GetCurrentWeapon()->GetCarriedAmmo());
-		SetHUDHealth(HumanCharacter->GetHealth(), HumanCharacter->GetMaxHealth());
-		SetHUDTeamScore(TeamDeadMatchState->Team1Score, 1);
-		SetHUDTeamScore(TeamDeadMatchState->Team2Score, 2);
+		SetHUDHealth(HumanCharacter->GetMaxHealth());
+		SetHUDTeamScore(TeamDeadMatchState->GetTeamScore(ETeam::Team1), ETeam::Team1);
+		SetHUDTeamScore(TeamDeadMatchState->GetTeamScore(ETeam::Team2), ETeam::Team2);
 
 		bHasInitDefaultHUD = true;
 	}
 }
 
-void AHumanController::SetHUDHealth(float Health, float MaxHealth)
+void AHumanController::SetHUDHealth(float Health)
 {
 	if (HUDContainer)
 	{
@@ -68,7 +58,7 @@ void AHumanController::SetHUDAmmo(int32 Ammo)
 {
 	if (HUDContainer)
 	{
-		HUDContainer->TeamDeadMatch->WeaponAmmo->SetText(FText::AsNumber(Ammo));
+		HUDContainer->TeamDeadMatch->Ammo->SetText(FText::AsNumber(Ammo));
 	}
 }
 
@@ -80,15 +70,16 @@ void AHumanController::SetHUDCarriedAmmo(int32 Ammo)
 	}
 }
 
-void AHumanController::SetHUDTeamScore(float Score, int32 Team)
+void AHumanController::SetHUDTeamScore(float Score, ETeam Team)
 {
 	if (HUDContainer == nullptr) return;
-	if (Team == 1)
+	switch (Team)
 	{
+	case ETeam::Team1:
 		HUDContainer->TeamDeadMatch->Team1Score->SetText(FText::AsNumber(Score));
-	}
-	else if (Team == 2)
-	{
+		break;
+	case ETeam::Team2:
 		HUDContainer->TeamDeadMatch->Team2Score->SetText(FText::AsNumber(Score));
+		break;
 	}
 }

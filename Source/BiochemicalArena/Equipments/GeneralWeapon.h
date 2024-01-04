@@ -13,7 +13,7 @@ public:
 	AGeneralWeapon();
 	virtual void Fire(const FVector& HitTarget) override;
 
-private:
+protected:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AProjectile> ProjectileClass;
 

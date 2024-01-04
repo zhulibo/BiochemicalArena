@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "BaseGameState.h"
-#include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerStates/Team.h"
 #include "TeamDeadMatchState.generated.h"
 
@@ -12,6 +11,13 @@ class BIOCHEMICALARENA_API ATeamDeadMatchState : public ABaseGameState
 	GENERATED_BODY()
 
 public:
+	float GetTeamScore(ETeam Team);
+	void AddTeamScore(ETeam Team);
+
+	TArray<class AHumanState*> GetTeam(ETeam Team);
+	void AddToTeam(AHumanState* AHumanState, ETeam Team);
+
+protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(Replicated)
@@ -24,14 +30,11 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_Team2Score)
 	float Team2Score = 0.f;
 
-	void AddTeamScore(ETeam Team);
-
-protected:
 	UFUNCTION()
 	void OnRep_Team1Score();
 	UFUNCTION()
 	void OnRep_Team2Score();
 
-	void SetHUDTeamScore(float Score, int32 Team);
+	void SetHUDTeamScore(float Score, ETeam Team);
 
 };

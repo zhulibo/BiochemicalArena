@@ -7,7 +7,6 @@ void UServerContainer::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-
 	AMenuController* MenuController = Cast<AMenuController>(GetOwningPlayer());
 	if (MenuController)
 	{

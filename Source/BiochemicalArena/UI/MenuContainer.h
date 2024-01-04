@@ -10,12 +10,13 @@ class BIOCHEMICALARENA_API UMenuContainer : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 public:
-	virtual void NativeConstruct() override;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetStack* MainStack;
 
-private:
+protected:
+	virtual void NativeConstruct() override;
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UMenu> MenuClass;
 

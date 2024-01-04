@@ -12,10 +12,12 @@ class BIOCHEMICALARENA_API UMutation : public UCommonUserWidget
 public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* MatchCountdown;
+
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* HumanNumber;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* MutantNumber;
+
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Round;
 

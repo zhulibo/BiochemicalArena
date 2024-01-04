@@ -1,5 +1,4 @@
 #include "CombatComponent.h"
-#include "BiochemicalArena/Weapons/Weapon.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Net/UnrealNetwork.h"
@@ -8,36 +7,32 @@
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
+#include "BiochemicalArena/Equipments/Melee.h"
+#include "BiochemicalArena/Equipments/Weapon.h"
 #include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-
-	BaseWalkSpeed = 600.f;
-	AimWalkSpeed = 450.f;
 }
 
 void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UCombatComponent, bIsAiming);
-	DOREPLIFETIME(UCombatComponent, CombatState);
+	DOREPLIFETIME(ThisClass, CombatState);
 
-	DOREPLIFETIME(UCombatComponent, PrimaryWeapon);
-	DOREPLIFETIME(UCombatComponent, SecondaryWeapon);
-	DOREPLIFETIME(UCombatComponent, MeleeWeapon);
-	DOREPLIFETIME(UCombatComponent, ThrowingWeapon);
-	DOREPLIFETIME(UCombatComponent, CurrentWeaponType);
-	DOREPLIFETIME(UCombatComponent, LastWeaponType);
+	DOREPLIFETIME(ThisClass, PrimaryEquipment);
+	DOREPLIFETIME(ThisClass, SecondaryEquipment);
+	DOREPLIFETIME(ThisClass, MeleeEquipment);
+	DOREPLIFETIME(ThisClass, ThrowingEquipment);
+	DOREPLIFETIME(ThisClass, CurrentEquipmentType);
+	DOREPLIFETIME(ThisClass, LastEquipmentType);
 }
 
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 
 	if (Character)
 	{
@@ -49,6 +44,8 @@ void UCombatComponent::BeginPlay()
 			CurrentFOV = DefaultFOV;
 		}
 	}
+
+	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 }
 
 void UCombatComponent::TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -60,6 +57,7 @@ void UCombatComponent::TickComponent(float DeltaSeconds, ELevelTick TickType, FA
 		FHitResult HitResult;
 		TraceUnderCrosshair(HitResult);
 		HitTarget = HitResult.ImpactPoint;
+
 		SetHUDCrosshair(DeltaSeconds);
 		InterpFOV(DeltaSeconds);
 	}
@@ -90,28 +88,23 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 		{
 			TraceHitResult.ImpactPoint = End;
 		}
-		// if (TraceHitResult.GetActor() && TraceHitResult.GetActor()->Implements<UCrosshairInterface>())
-		// {
-		// 	HUDPackage.CrosshairColor = FLinearColor::Red;
-		// }
 	}
 }
 
 void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;
-
 	if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
+
 	if (Controller)
 	{
-		// Calculate crosshair spread
-		// [0, 600] -> [0, 1]
+		// Calculate crosshair spread [0, 600] -> [0, 1]
 		FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
 		FVector2D VelocityMultiplierRange(0.f, 1.f);
 		FVector Velocity = Character->GetVelocity();
 		Velocity.Z = 0.f;
-
 		CrosshairVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
+
 		if (Character->GetCharacterMovement()->IsFalling())
 		{
 			CrosshairInAirFactor = FMath::FInterpTo(CrosshairInAirFactor, 2.25f, DeltaSeconds, 2.25f);
@@ -130,7 +123,7 @@ void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 			CrosshairAimFactor = FMath::FInterpTo(CrosshairAimFactor, 0.f, DeltaSeconds, 20.f);
 		}
 
-		if (GetCurrentWeapon() && bFireButtonPressed)
+		if (GetCurrentEquipment() && bFireButtonPressed)
 		{
 			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, .75f, DeltaSeconds, 20.f);
 		}
@@ -139,24 +132,20 @@ void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 			CrosshairShootingFactor = FMath::FInterpTo(CrosshairShootingFactor, 0.f, DeltaSeconds, 10.f);
 		}
 
-		 float CrosshairSpread = 0.5f +
-			CrosshairVelocityFactor +
-			CrosshairInAirFactor -
-			CrosshairAimFactor +
-			CrosshairShootingFactor;
+		float CrosshairSpread = 0.5f + CrosshairVelocityFactor + CrosshairInAirFactor - CrosshairAimFactor + CrosshairShootingFactor;
 	}
 }
 
 void UCombatComponent::InterpFOV(float DeltaSeconds)
 {
-	if (GetCurrentWeapon() == nullptr) return;
+	if (GetCurrentShotEquipment() == nullptr) return;
 	if (bIsAiming)
 	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, GetCurrentWeapon()->GetZoomedFOV(), DeltaSeconds, GetCurrentWeapon()->GetZoomInterpSpeed());
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, GetCurrentShotEquipment()->GetAimingFOVFactor() * DefaultFOV, DeltaSeconds, GetCurrentShotEquipment()->GetAimSpeed());
 	}
 	else
 	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaSeconds, ZoomInterpSpeed);
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaSeconds, GetCurrentShotEquipment()->GetAimSpeed());
 	}
 	if (Character && Character->GetCamera())
 	{
@@ -164,104 +153,205 @@ void UCombatComponent::InterpFOV(float DeltaSeconds)
 	}
 }
 
-void UCombatComponent::EquipWeapon(AWeapon* WeaponToEquip)
+AEquipment* UCombatComponent::GetCurrentEquipment()
 {
-	LocalEquipWeapon(WeaponToEquip);
-	ServerEquipWeapon(WeaponToEquip);
+	return GetEquipmentByType(CurrentEquipmentType);
 }
 
-void UCombatComponent::ServerEquipWeapon_Implementation(AWeapon* WeaponToEquip)
+AWeapon* UCombatComponent::GetCurrentShotEquipment()
 {
-	MulticastEquipWeapon(WeaponToEquip);
+	switch (CurrentEquipmentType)
+	{
+	case EEquipmentType::Primary:
+		return PrimaryEquipment;
+	case EEquipmentType::Secondary:
+		return SecondaryEquipment;
+	default:
+		return nullptr;
+	}
 }
 
-void UCombatComponent::MulticastEquipWeapon_Implementation(AWeapon* WeaponToEquip)
+AMelee* UCombatComponent::GetCurrentMeleeEquipment()
+{
+	switch (CurrentEquipmentType)
+	{
+	case EEquipmentType::Melee:
+		return MeleeEquipment;
+	default:
+		return nullptr;
+	}
+}
+
+AEquipment* UCombatComponent::GetLastEquipment()
+{
+	return GetEquipmentByType(LastEquipmentType);
+}
+
+AEquipment* UCombatComponent::GetEquipmentByType(EEquipmentType EquipmentType)
+{
+	switch (EquipmentType)
+	{
+	case EEquipmentType::Primary:
+		return PrimaryEquipment;
+	case EEquipmentType::Secondary:
+		return SecondaryEquipment;
+	case EEquipmentType::Melee:
+		return MeleeEquipment;
+	case EEquipmentType::Throwing:
+		return ThrowingEquipment;
+	default:
+		return nullptr;
+	}
+}
+
+bool UCombatComponent::HasEquippedThisTypeEquipment(EEquipmentType EquipmentType)
+{
+	switch (EquipmentType)
+	{
+	case EEquipmentType::Primary:
+		return PrimaryEquipment != nullptr;
+	case EEquipmentType::Secondary:
+		return SecondaryEquipment != nullptr;
+	case EEquipmentType::Melee:
+		return MeleeEquipment != nullptr;
+	case EEquipmentType::Throwing:
+		return ThrowingEquipment != nullptr;
+	default:
+		return false;
+	}
+}
+
+void UCombatComponent::EquipEquipment(AEquipment* Equipment)
+{
+	LocalEquipEquipment(Equipment);
+	ServerEquipEquipment(Equipment);
+}
+
+void UCombatComponent::ServerEquipEquipment_Implementation(AEquipment* Equipment)
+{
+	MulticastEquipEquipment(Equipment);
+}
+
+void UCombatComponent::MulticastEquipEquipment_Implementation(AEquipment* Equipment)
 {
 	if (Character && !Character->IsLocallyControlled())
 	{
-		LocalEquipWeapon(WeaponToEquip);
+		LocalEquipEquipment(Equipment);
 	}
 }
 
-void UCombatComponent::LocalEquipWeapon(AWeapon* WeaponToEquip)
+void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 {
-	if (WeaponToEquip == nullptr || Character == nullptr) return;
-	WeaponToEquip->SetOwner(Character);
-	WeaponToEquip->SetWeaponState(EWeaponState::Equipped);
-	EWeaponType WeaponType = WeaponToEquip->GetWeaponType();
-	switch (WeaponType)
+	if (Equipment == nullptr || Character == nullptr) return;
+	Equipment->SetOwner(Character);
+	Equipment->SetEquipmentState(EEquipmentState::Equipped);
+	switch (Equipment->GetEquipmentType())
 	{
-	case EWeaponType::Primary:
-		PrimaryWeapon = WeaponToEquip;
+	case EEquipmentType::Primary:
+		if (AWeapon* TemEquipment = Cast<AWeapon>(Equipment)) PrimaryEquipment = TemEquipment;
 		break;
-	case EWeaponType::Secondary:
-		SecondaryWeapon = WeaponToEquip;
+	case EEquipmentType::Secondary:
+		if (AWeapon* TemEquipment = Cast<AWeapon>(Equipment)) SecondaryEquipment = TemEquipment;
 		break;
-	case EWeaponType::Melee:
-		MeleeWeapon = WeaponToEquip;
+	case EEquipmentType::Melee:
+		if (AMelee* TemEquipment = Cast<AMelee>(Equipment)) MeleeEquipment = TemEquipment;
 		break;
-	case EWeaponType::Throwing:
-		ThrowingWeapon = WeaponToEquip;
+	case EEquipmentType::Throwing:
+		ThrowingEquipment = Equipment;
 		break;
 	}
-	AttachActorToBodySocket(WeaponToEquip);
+	AttachEquipmentToBodySocket(Equipment);
 }
 
-void UCombatComponent::SwapWeapon(EWeaponType NewWeaponType)
+void UCombatComponent::AttachEquipmentToBodySocket(AEquipment* Equipment)
+{
+	if (Equipment == nullptr || Character == nullptr || Character->GetMesh() == nullptr) return;
+	FName BodySocketName;
+	switch (Equipment->GetEquipmentType())
+	{
+	case EEquipmentType::Primary:
+		BodySocketName = FName("RightShoulderSocket");
+		break;
+	case EEquipmentType::Secondary:
+		BodySocketName = FName("RightCrotchSocket");
+		break;
+	case EEquipmentType::Melee:
+		BodySocketName = FName("LeftShoulderSocket");
+		break;
+	case EEquipmentType::Throwing:
+		BodySocketName = FName("LeftCrotchSocket");
+		break;
+	}
+	const USkeletalMeshSocket* BodyScoket = Character->GetMesh()->GetSocketByName(BodySocketName);
+	if (BodyScoket)
+	{
+		BodyScoket->AttachActor(Equipment, Character->GetMesh());
+	}
+}
+
+void UCombatComponent::SwapEquipment(EEquipmentType EquipmentType)
 {
 	if (CombatState == ECombatState::Ready)
 	{
-		LocalSwapWeapon(NewWeaponType);
-		ServerSwapWeapon(NewWeaponType);
+		LocalSwapEquipment(EquipmentType);
+		ServerSwapEquipment(EquipmentType);
 	}
 }
 
-void UCombatComponent::ServerSwapWeapon_Implementation(EWeaponType NewWeaponType)
+void UCombatComponent::ServerSwapEquipment_Implementation(EEquipmentType EquipmentType)
 {
-	MulticastSwapWeapon(NewWeaponType);
+	MulticastSwapEquipment(EquipmentType);
 }
 
-void UCombatComponent::MulticastSwapWeapon_Implementation(EWeaponType NewWeaponType)
+void UCombatComponent::MulticastSwapEquipment_Implementation(EEquipmentType EquipmentType)
 {
 	if (Character && !Character->IsLocallyControlled())
 	{
-		LocalSwapWeapon(NewWeaponType);
+		LocalSwapEquipment(EquipmentType);
 	}
 }
 
-void UCombatComponent::LocalSwapWeapon(EWeaponType NewWeaponType)
+void UCombatComponent::LocalSwapEquipment(EEquipmentType EquipmentType)
 {
 	if (Character == nullptr) return;
-	AWeapon* NewWeapon = GetWeaponByType(NewWeaponType);
-	if (NewWeapon)
+	AEquipment* Equipment = GetEquipmentByType(EquipmentType);
+	if (Equipment)
 	{
-		PlaySwapMontage(NewWeapon);
+		PlaySwapMontage(Equipment);
 		CombatState = ECombatState::Swapping;
 	}
 }
 
-void UCombatComponent::FinishSwapAttach(EWeaponType NewWeaponType)
+void UCombatComponent::PlaySwapMontage(AEquipment* Equipment)
+{
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	UAnimMontage* SwapMontage = Equipment->SwapMontage;
+	if (AnimInstance && SwapMontage)
+	{
+		AnimInstance->Montage_Play(SwapMontage);
+	}
+}
+
+void UCombatComponent::FinishSwapAttach(EEquipmentType EquipmentType)
 {
 	if (Character == nullptr) return;
-	AWeapon* OldWeapon = GetCurrentWeapon();
-	if (OldWeapon) // if DropWeapon, OldWeapon is nullptr
+	AEquipment* CurrentEquipment = GetCurrentEquipment();
+	if (CurrentEquipment) AttachEquipmentToBodySocket(CurrentEquipment); // If DropEquipment, OldEquipment is nullptr
+
+	LastEquipmentType = CurrentEquipmentType;
+	switch (EquipmentType)
 	{
-		AttachActorToBodySocket(OldWeapon);
-		LastWeaponType = OldWeapon->GetWeaponType();
-	}
-	switch (NewWeaponType)
-	{
-	case EWeaponType::Primary:
-		UseWeapon(PrimaryWeapon);
+	case EEquipmentType::Primary:
+		UseEquipment(PrimaryEquipment);
 		break;
-	case EWeaponType::Secondary:
-		UseWeapon(SecondaryWeapon);
+	case EEquipmentType::Secondary:
+		UseEquipment(SecondaryEquipment);
 		break;
-	case EWeaponType::Melee:
-		UseWeapon(MeleeWeapon);
+	case EEquipmentType::Melee:
+		UseEquipment(MeleeEquipment);
 		break;
-	case EWeaponType::Throwing:
-		UseWeapon(ThrowingWeapon);
+	case EEquipmentType::Throwing:
+		UseEquipment(ThrowingEquipment);
 		break;
 	}
 }
@@ -274,77 +364,73 @@ void UCombatComponent::FinishSwap()
 	}
 }
 
-void UCombatComponent::UseWeapon(AWeapon* WeaponToUse)
+void UCombatComponent::UseEquipment(AEquipment* Equipment)
 {
-	if (Character == nullptr || WeaponToUse == nullptr) return;
-	AttachActorToRightHand(WeaponToUse);
-	CurrentWeaponType = WeaponToUse->GetWeaponType();
-	GetCurrentWeapon()->SetAmmo(WeaponToUse->GetAmmo());
-	GetCurrentWeapon()->SetCarriedAmmo(WeaponToUse->GetCarriedAmmo());
-	PlayUseWeaponSound();
+	if (Character == nullptr || Equipment == nullptr) return;
+	AttachEquipmentToRightHand(Equipment);
+	CurrentEquipmentType = Equipment->GetEquipmentType();
+	if (GetCurrentEquipment())
+	{
+		if (GetCurrentShotEquipment())
+		{
+			AWeapon* TemEquipment = Cast<AWeapon>(Equipment);
+			if (TemEquipment)
+			{
+				GetCurrentShotEquipment()->SetAmmo(TemEquipment->GetAmmo());
+				GetCurrentShotEquipment()->SetCarriedAmmo(TemEquipment->GetCarriedAmmo());
+			}
+		}
+		else
+		{
+			// TODO SetHUDAmmo
+		}
+	}
+	PlayUseEquipmentSound();
 }
 
-void UCombatComponent::AttachActorToRightHand(AActor* ActorToAttach)
+void UCombatComponent::AttachEquipmentToRightHand(AEquipment* Equipment)
 {
-	if (Character == nullptr || Character->GetMesh() == nullptr || ActorToAttach == nullptr) return;
+	if (Character == nullptr || Character->GetMesh() == nullptr || Equipment == nullptr) return;
 	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
 	if (HandSocket)
 	{
-		HandSocket->AttachActor(ActorToAttach, Character->GetMesh());
+		HandSocket->AttachActor(Equipment, Character->GetMesh());
 	}
 }
 
-void UCombatComponent::AttachActorToBodySocket(AWeapon* ActorToAttach)
+void UCombatComponent::PlayUseEquipmentSound()
 {
-	if (ActorToAttach == nullptr || Character == nullptr || Character->GetMesh() == nullptr) return;
-	FName BodySocketName;
-	switch (ActorToAttach->GetWeaponType())
+	if (Character && GetCurrentEquipment() && GetCurrentEquipment()->UseEquipmentSound)
 	{
-	case EWeaponType::Primary:
-		BodySocketName = FName("RightShoulderSocket");
-		break;
-	case EWeaponType::Secondary:
-		BodySocketName = FName("RightCrotchSocket");
-		break;
-	case EWeaponType::Melee:
-		BodySocketName = FName("LeftShoulderSocket");
-		break;
-	case EWeaponType::Throwing:
-		BodySocketName = FName("LeftCrotchSocket");
-		break;
-	}
-	const USkeletalMeshSocket* BodyScoket = Character->GetMesh()->GetSocketByName(BodySocketName);
-	if (BodyScoket)
-	{
-		BodyScoket->AttachActor(ActorToAttach, Character->GetMesh());
+		UGameplayStatics::PlaySoundAtLocation(this, GetCurrentEquipment()->UseEquipmentSound, Character->GetActorLocation());
 	}
 }
 
 void UCombatComponent::SetAiming(bool bNewAimingState)
 {
-	bAimButtonPressed = bNewAimingState;
-	bIsAiming = bNewAimingState;
-	ServerSetAiming(bIsAiming);
-	if (Character)
-	{
-		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
-	}
+	LocalSetAiming(bNewAimingState);
+	ServerSetAiming(bNewAimingState);
 }
 
 void UCombatComponent::ServerSetAiming_Implementation(bool bNewAimingState)
 {
+	MulticastSetAiming(bNewAimingState);
+}
+
+void UCombatComponent::MulticastSetAiming_Implementation(bool bNewAimingState)
+{
+	if (Character && !Character->IsLocallyControlled())
+	{
+		LocalSetAiming(bNewAimingState);
+	}
+}
+
+void UCombatComponent::LocalSetAiming(bool bNewAimingState)
+{
 	bIsAiming = bNewAimingState;
 	if (Character)
 	{
 		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
-	}
-}
-
-void UCombatComponent::OnRep_Aiming()
-{
-	if (Character && Character->IsLocallyControlled())
-	{
-		bIsAiming = bAimButtonPressed;
 	}
 }
 
@@ -365,15 +451,37 @@ void UCombatComponent::Fire()
 		CrosshairShootingFactor = .75f;
 		LocalFire(HitTarget);
 		ServerFire(HitTarget);
-		if (GetCurrentWeapon() && Character)
+		if (GetCurrentShotEquipment() && Character)
 		{
 			Character->GetWorldTimerManager().SetTimer(
 				FireTimer,
 				this,
 				&ThisClass::LoadNewBulletFinished,
-				GetCurrentWeapon()->FireDelay
+				GetCurrentShotEquipment()->GetFireDelay()
 			);
 		}
+	}
+	else if (GetCurrentShotEquipment() && GetCurrentShotEquipment()->GetAmmo() <= 0 && ClickSound && Character)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ClickSound, Character->GetActorLocation());
+	}
+}
+
+bool UCombatComponent::CanFire()
+{
+	if (GetCurrentShotEquipment() == nullptr || GetCurrentShotEquipment()->IsEmpty() || !bCanFire) return false;
+
+	if (CombatState == ECombatState::Reloading && GetCurrentShotEquipment()->GetEquipmentCate() == EEquipmentCate::Shotgun) return true;
+
+	return CombatState == ECombatState::Ready;
+}
+
+void UCombatComponent::LoadNewBulletFinished()
+{
+	bCanFire = true;
+	if (bFireButtonPressed && GetCurrentShotEquipment() && GetCurrentShotEquipment()->IsAutomatic())
+	{
+		Fire();
 	}
 }
 
@@ -392,11 +500,11 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 
 void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 {
-	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
-	if (CombatState == ECombatState::Reloading && GetCurrentWeapon()->GetWeaponCate() == EWeaponCate::Shotgun)
+	if (Character == nullptr || GetCurrentShotEquipment() == nullptr) return;
+	if (CombatState == ECombatState::Reloading && GetCurrentShotEquipment()->GetEquipmentCate() == EEquipmentCate::Shotgun)
 	{
 		PlayFireMontage();
-		GetCurrentWeapon()->Fire(TraceHitTarget);
+		GetCurrentShotEquipment()->Fire(TraceHitTarget);
 		CombatState = ECombatState::Ready;
 		return;
 	}
@@ -404,42 +512,28 @@ void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 	if (CombatState == ECombatState::Ready)
 	{
 		PlayFireMontage();
-		GetCurrentWeapon()->Fire(TraceHitTarget);
+		GetCurrentShotEquipment()->Fire(TraceHitTarget);
 	}
 }
 
-void UCombatComponent::LoadNewBulletFinished()
+void UCombatComponent::PlayFireMontage()
 {
-	bCanFire = true;
-	if (bFireButtonPressed && GetCurrentWeapon() && GetCurrentWeapon()->bAutomatic)
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (AnimInstance && GetCurrentShotEquipment())
 	{
-		Fire();
+		UAnimMontage* FireMontage = GetCurrentShotEquipment()->FireMontage;
+		if (FireMontage)
+		{
+			AnimInstance->Montage_Play(FireMontage);
+		}
 	}
-}
-
-bool UCombatComponent::CanFire()
-{
-	if (GetCurrentWeapon() == nullptr) return false;
-	if (Character && GetCurrentWeapon()->IsEmpty())
-	{
-		if (ClickSound) UGameplayStatics::PlaySoundAtLocation(this, ClickSound, Character->GetActorLocation());
-	}
-	bool bShotgunReloadingWithBulletIn = !GetCurrentWeapon()->IsEmpty() &&
-		bCanFire &&
-		CombatState == ECombatState::Reloading &&
-		GetCurrentWeapon()->GetWeaponCate() == EWeaponCate::Shotgun;
-	if (bShotgunReloadingWithBulletIn) return true;
-	if (!GetCurrentWeapon()->IsEmpty() && bCanFire && CombatState == ECombatState::Ready) return true;
-	return false;
 }
 
 void UCombatComponent::Reload()
 {
-	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCarriedAmmo() > 0 &&
-		CombatState == ECombatState::Ready && !GetCurrentWeapon()->IsFull())
+	if (GetCurrentShotEquipment() && GetCurrentShotEquipment()->GetCarriedAmmo() > 0 && !GetCurrentShotEquipment()->IsFull() && CombatState == ECombatState::Ready)
 	{
-		CombatState = ECombatState::Reloading;
-		PlayReloadMontage();
+		LocalReload();
 		ServerReload();
 	}
 }
@@ -451,43 +545,61 @@ void UCombatComponent::ServerReload_Implementation()
 
 void UCombatComponent::MulticastReload_Implementation()
 {
-	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
-	if (!Character->IsLocallyControlled())
+	if (Character && !Character->IsLocallyControlled())
 	{
-		CombatState = ECombatState::Reloading;
-		PlayReloadMontage();
+		LocalReload();
+	}
+}
+
+void UCombatComponent::LocalReload()
+{
+	CombatState = ECombatState::Reloading;
+	PlayReloadMontage();
+}
+
+void UCombatComponent::PlayReloadMontage()
+{
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	if (AnimInstance && GetCurrentShotEquipment())
+	{
+		UAnimMontage* ReloadMontage = GetCurrentShotEquipment()->ReloadMontage;
+		if (ReloadMontage)
+		{
+			AnimInstance->Montage_Play(ReloadMontage);
+		}
 	}
 }
 
 void UCombatComponent::FinishReload()
 {
-	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
+	if (Character == nullptr || GetCurrentShotEquipment() == nullptr) return;
 	CombatState = ECombatState::Ready;
-	// 设置ammo和CarriedAmmo
-	int32 Ammo = GetCurrentWeapon()->GetAmmo();
-	int32 MagCapacity = GetCurrentWeapon()->GetMagCapacity();
-	int32 CarriedAmmo = GetCurrentWeapon()->GetCarriedAmmo();
+
+	int32 Ammo = GetCurrentShotEquipment()->GetAmmo();
+	int32 MagCapacity = GetCurrentShotEquipment()->GetMagCapacity();
+	int32 CarriedAmmo = GetCurrentShotEquipment()->GetCarriedAmmo();
 	int32 NeedAmmoNum = MagCapacity - Ammo;
+
 	if (CarriedAmmo > NeedAmmoNum)
 	{
-		GetCurrentWeapon()->SetAmmo(MagCapacity);
-		GetCurrentWeapon()->SetCarriedAmmo(CarriedAmmo - NeedAmmoNum);
+		GetCurrentShotEquipment()->SetAmmo(MagCapacity);
+		GetCurrentShotEquipment()->SetCarriedAmmo(CarriedAmmo - NeedAmmoNum);
 	}
 	else
 	{
-		GetCurrentWeapon()->SetAmmo(Ammo + CarriedAmmo);
-		GetCurrentWeapon()->SetCarriedAmmo(0);
+		GetCurrentShotEquipment()->SetAmmo(Ammo + CarriedAmmo);
+		GetCurrentShotEquipment()->SetCarriedAmmo(0);
 	}
 }
 
 void UCombatComponent::ShellReload()
 {
-	if (Character == nullptr || GetCurrentWeapon() == nullptr) return;
-	GetCurrentWeapon()->SetAmmo(GetCurrentWeapon()->GetAmmo() + 1);
-	GetCurrentWeapon()->SetCarriedAmmo(GetCurrentWeapon()->GetCarriedAmmo() - 1);
+	if (Character == nullptr || GetCurrentShotEquipment() == nullptr) return;
+	GetCurrentShotEquipment()->SetAmmo(GetCurrentShotEquipment()->GetAmmo() + 1);
+	GetCurrentShotEquipment()->SetCarriedAmmo(GetCurrentShotEquipment()->GetCarriedAmmo() - 1);
 	// 装入一发可立即开火
 	bCanFire = true;
-	if (GetCurrentWeapon()->IsFull() || GetCurrentWeapon()->GetCarriedAmmo() == 0)
+	if (GetCurrentShotEquipment()->IsFull() || GetCurrentShotEquipment()->GetCarriedAmmo() == 0)
 	{
 		JumpToShotgunEnd();
 	}
@@ -496,129 +608,107 @@ void UCombatComponent::ShellReload()
 void UCombatComponent::JumpToShotgunEnd()
 {
 	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance && GetCurrentWeapon()->ReloadMontage)
+	if (AnimInstance && GetCurrentShotEquipment() && GetCurrentShotEquipment()->ReloadMontage)
 	{
 		AnimInstance->Montage_JumpToSection(FName("ReloadEnd"));
 	}
 }
 
-void UCombatComponent::DropWeapon()
+void UCombatComponent::DropEquipment()
 {
-	LocalDropWeapon();
-	ServerDropWeapon();
+	LocalDropEquipment();
+	ServerDropEquipment();
 }
 
-void UCombatComponent::ServerDropWeapon_Implementation()
+void UCombatComponent::ServerDropEquipment_Implementation()
 {
-	MulticastDropWeapon();
+	MulticastDropEquipment();
 }
 
-void UCombatComponent::MulticastDropWeapon_Implementation()
+void UCombatComponent::MulticastDropEquipment_Implementation()
 {
 	if (Character && !Character->IsLocallyControlled())
 	{
-		LocalDropWeapon();
+		LocalDropEquipment();
 	}
 }
 
-void UCombatComponent::LocalDropWeapon()
+void UCombatComponent::MulticastDropEquipment2_Implementation()
 {
-	LastWeaponType = CurrentWeaponType;
-	GetCurrentWeapon()->DropWeapon();
-	EWeaponType WeaponType = GetCurrentWeapon()->GetWeaponType();
-	switch (WeaponType)
+	LocalDropEquipment();
+}
+
+void UCombatComponent::LocalDropEquipment()
+{
+	if (GetCurrentEquipment() == nullptr) return;
+	GetCurrentEquipment()->DropEquipment();
+	switch (GetCurrentEquipment()->GetEquipmentType())
 	{
-	case EWeaponType::Primary:
-		PrimaryWeapon = nullptr;
+	case EEquipmentType::Primary:
+		PrimaryEquipment = nullptr;
 		break;
-	case EWeaponType::Secondary:
-		SecondaryWeapon = nullptr;
-		break;
-	case EWeaponType::Throwing:
-		ThrowingWeapon = nullptr;
+	case EEquipmentType::Secondary:
+		SecondaryEquipment = nullptr;
 		break;
 	}
 }
 
-AWeapon* UCombatComponent::GetCurrentWeapon()
+void UCombatComponent::MulticastDestroyEquipment_Implementation()
 {
-	return GetWeaponByType(CurrentWeaponType);
+	if (SecondaryEquipment) SecondaryEquipment->Destroy();
+	if (MeleeEquipment) MeleeEquipment->Destroy();
+	if (ThrowingEquipment) ThrowingEquipment->Destroy();
 }
 
-AWeapon* UCombatComponent::GetWeaponByType(EWeaponType WeaponType)
+void UCombatComponent::MeleeAttack(int32 Type)
 {
-	switch (WeaponType)
+	LocalMeleeAttack(Type);
+	ServerMeleeAttack(Type);
+}
+
+void UCombatComponent::ServerMeleeAttack_Implementation(int32 Type)
+{
+	MulticastMeleeAttack(Type);
+}
+
+void UCombatComponent::MulticastMeleeAttack_Implementation(int32 Type)
+{
+	if (Character && !Character->IsLocallyControlled())
 	{
-	case EWeaponType::Primary:
-		return PrimaryWeapon;
-	case EWeaponType::Secondary:
-		return SecondaryWeapon;
-	case EWeaponType::Melee:
-		return MeleeWeapon;
-	case EWeaponType::Throwing:
-		return ThrowingWeapon;
-	default:
-		return nullptr;
+		LocalMeleeAttack(Type);
 	}
 }
 
-bool UCombatComponent::HasEquippedThisTypeWeapon(EWeaponType WeaponType)
+void UCombatComponent::LocalMeleeAttack(int32 Type)
 {
-	switch (WeaponType)
-	{
-	case EWeaponType::Primary:
-		return PrimaryWeapon == nullptr ? false : true;
-	case EWeaponType::Secondary:
-		return SecondaryWeapon == nullptr ? false : true;
-	case EWeaponType::Melee:
-		return MeleeWeapon == nullptr ? false : true;
-	case EWeaponType::Throwing:
-		return ThrowingWeapon == nullptr ? false : true;
-	default:
-		return false;
-	}
-}
-
-void UCombatComponent::PlayUseWeaponSound()
-{
-	if (Character && GetCurrentWeapon() && GetCurrentWeapon()->UseWeaponSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, GetCurrentWeapon()->UseWeaponSound, Character->GetActorLocation());
-	}
-}
-
-void UCombatComponent::PlayFireMontage()
-{
+	if (CombatState != ECombatState::Ready) return;
 	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance && GetCurrentWeapon())
+	if (AnimInstance == nullptr || GetCurrentMeleeEquipment() == nullptr) return;
+
+	UAnimMontage* AttackMontage = GetCurrentMeleeEquipment()->AttackMontage;
+	if (AttackMontage == nullptr) return;
+
+	AnimInstance->Montage_Play(AttackMontage);
+	if (Type == 0)
 	{
-		UAnimMontage* FireMontage = GetCurrentWeapon()->FireMontage;
-		if (FireMontage)
-		{
-			AnimInstance->Montage_Play(FireMontage);
-		}
+		AnimInstance->Montage_JumpToSection(FName("LightAttack"));
+		CombatState = ECombatState::LightAttacking;
+	}
+	else
+	{
+		AnimInstance->Montage_JumpToSection(FName("HeavyAttack"));
+		CombatState = ECombatState::HeavyAttacking;
 	}
 }
 
-void UCombatComponent::PlayReloadMontage()
+void UCombatComponent::EnableMeshCollision(bool bIsEnabled)
 {
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance && GetCurrentWeapon())
+	if (MeleeEquipment)
 	{
-		UAnimMontage* ReloadMontage = GetCurrentWeapon()->ReloadMontage;
-		if (ReloadMontage)
-		{
-			AnimInstance->Montage_Play(ReloadMontage);
-		}
+		MeleeEquipment->EnableMeshCollision(bIsEnabled);
 	}
-}
-
-void UCombatComponent::PlaySwapMontage(AWeapon* Weapon)
-{
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	UAnimMontage* SwapMontage = Weapon->SwapMontage;
-	if (AnimInstance && SwapMontage)
+	if (!bIsEnabled)
 	{
-		AnimInstance->Montage_Play(SwapMontage);
+		CombatState = ECombatState::Ready;
 	}
 }

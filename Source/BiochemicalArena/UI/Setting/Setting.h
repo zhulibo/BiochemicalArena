@@ -9,19 +9,17 @@ class BIOCHEMICALARENA_API USetting : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void NativeConstruct() override;
 
-protected:
-	UPROPERTY()
-	class AMenuController* MenuController;
 	UPROPERTY()
 	class ABaseController* BaseController;
-	UFUNCTION()
-	void OnBackButtonClicked();
+	UPROPERTY()
+	class AMenuController* MenuController;
 
-private:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonButton* BackButton;
+	UFUNCTION()
+	void OnBackButtonClicked();
 
 };

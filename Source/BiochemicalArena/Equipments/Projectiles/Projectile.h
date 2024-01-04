@@ -12,13 +12,14 @@ class BIOCHEMICALARENA_API AProjectile : public AActor
 public:
 	AProjectile();
 
-	UPROPERTY()
-	float Damage;
-	UPROPERTY(EditAnywhere)
-	float InitialSpeed = 100000;
+	void SetDamage(float TemDamage);
 
 protected:
+	// virtual void PostActorCreated() override;
 	virtual void BeginPlay() override;
+
+	UPROPERTY()
+	float Damage;
 
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
@@ -38,9 +39,13 @@ private:
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* ImpactParticles;
 	UPROPERTY(EditAnywhere)
-	class USoundCue* ImpactSound;
+	USoundCue* ImpactSound;
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_OnHit();
+
+public:
+	FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }
+	FORCEINLINE float GetDamage() const { return Damage; }
 
 };

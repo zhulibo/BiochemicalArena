@@ -19,12 +19,15 @@ UEOS::UEOS()
 		{
 			(void) LobbyPtr->OnLobbyMemberJoined().Add(this, &ThisClass::BroadcastOnLobbyMemberJoined);
 			(void) LobbyPtr->OnLobbyMemberLeft().Add(this, &ThisClass::BroadcastOnLobbyMemberLeft);
-			(void) LobbyPtr->OnLobbyLeft().Add(this, &ThisClass::BroadcastOnLobbyLeft); // 玩家被踢出大厅时会收到此广播事件
-			(void) LobbyPtr->OnLobbyAttributesChanged().Add(this, &ThisClass::BroadcastOnLobbyAttributesChanged);
-			(void) LobbyPtr->OnLobbyMemberAttributesChanged().Add(this, &ThisClass::BroadcastOnLobbyMemberAttributesChanged);
+			(void) LobbyPtr->OnLobbyLeaderChanged().Add(this, &ThisClass::BroadcastOnLobbyLeaderChanged);
+
 			(void) LobbyPtr->OnLobbyInvitationAdded().Add(this, &ThisClass::BroadcastOnLobbyInvitationAdded);
 			(void) LobbyPtr->OnUILobbyJoinRequested().Add(this, &ThisClass::BroadcastOnUILobbyJoinRequested);
-			(void) LobbyPtr->OnLobbyLeaderChanged().Add(this, &ThisClass::BroadcastOnLobbyLeaderChanged);
+
+			(void) LobbyPtr->OnLobbyAttributesChanged().Add(this, &ThisClass::BroadcastOnLobbyAttributesChanged);
+			(void) LobbyPtr->OnLobbyMemberAttributesChanged().Add(this, &ThisClass::BroadcastOnLobbyMemberAttributesChanged);
+
+			(void) LobbyPtr->OnLobbyLeft().Add(this, &ThisClass::BroadcastOnLobbyLeft);
 		}
 		if (SessionPtr)
 		{
@@ -33,7 +36,7 @@ UEOS::UEOS()
 }
 
 // 登录
-void UEOS::Login(FPlatformUserId ID, int Type)
+void UEOS::Login(FPlatformUserId ID, int32 Type)
 {
 	if (AuthPtr == nullptr) return;
 	PlatformUserId = ID;
@@ -88,21 +91,6 @@ void UEOS::Login(FPlatformUserId ID, int Type)
 	});
 }
 
-// 获取玩家账号信息
-TSharedPtr<FAccountInfo> UEOS::GetAccountInfo(FPlatformUserId ID)
-{
-	TSharedPtr<FAccountInfo> AccountInfo;
-	if (AuthPtr == nullptr) return AccountInfo;
-
-	FAuthGetLocalOnlineUserByPlatformUserId::Params Params = { ID };
-	TOnlineResult<FAuthGetLocalOnlineUserByPlatformUserId> Result = AuthPtr->GetLocalOnlineUserByPlatformUserId(MoveTemp(Params));
-	if (Result.IsOk())
-	{
-		AccountInfo = Result.GetOkValue().AccountInfo;
-	}
-	return AccountInfo;
-}
-
 // 获取玩家DisplayName
 void UEOS::GetUserInfo()
 {
@@ -124,6 +112,26 @@ void UEOS::GetUserInfo()
 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GetUserInfo Failed!"));
 	}
+}
+
+// 获取玩家账号信息
+TSharedPtr<FAccountInfo> UEOS::GetAccountInfo(FPlatformUserId ID)
+{
+	TSharedPtr<FAccountInfo> AccountInfo;
+	if (AuthPtr == nullptr) return AccountInfo;
+
+	FAuthGetLocalOnlineUserByPlatformUserId::Params Params = { ID };
+	TOnlineResult<FAuthGetLocalOnlineUserByPlatformUserId> Result = AuthPtr->GetLocalOnlineUserByPlatformUserId(MoveTemp(Params));
+	if (Result.IsOk())
+	{
+		AccountInfo = Result.GetOkValue().AccountInfo;
+	}
+	return AccountInfo;
+}
+
+void UEOS::BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged)
+{
+	OnLoginStatusChanged.Broadcast(AuthLoginStatusChanged);
 }
 
 // 创建大厅
@@ -218,37 +226,24 @@ void UEOS::JoinLobby(TSharedRef<const FLobby> Lobby)
 	});
 }
 
-// 离开大厅
-void UEOS::LeaveLobby()
+void UEOS::BroadcastOnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
 {
-	if (LobbyPtr == nullptr) return;
+	OnLobbyInvitationAdded.Broadcast(LobbyInvitationAdded);
+}
 
-	// 如果是房主离开大厅，则提升另一名成员为房主
-	if(CurrentLobby->OwnerAccountId == GetAccountInfo(PlatformUserId)->AccountId && CurrentLobby->Members.Num() > 1)
-	{
-		PromoteLobbyMember();
-		return;
-	}
+void UEOS::BroadcastOnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested)
+{
+	OnUILobbyJoinRequested.Broadcast(UILobbyJoinRequested);
+}
 
-	FLeaveLobby::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
-	Params.LobbyId = CurrentLobby->LobbyId;
+void UEOS::BroadcastOnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
+{
+	OnLobbyMemberJoined.Broadcast(LobbyMemberJoined);
+}
 
-	LobbyPtr->LeaveLobby(MoveTemp(Params))
-	.OnComplete([this](const TOnlineResult<FLeaveLobby>& Result)
-	{
-		if (Result.IsOk())
-		{
-			CurrentLobby = nullptr;
-			OnLeaveLobbyComplete.Broadcast(true);
-		}
-		else
-		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-			OnLeaveLobbyComplete.Broadcast(false);
-		}
-	});
+void UEOS::BroadcastOnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLef)
+{
+	OnLobbyMemberLeft.Broadcast(LobbyMemberLef);
 }
 
 // 房主提升另一名成员为房主
@@ -285,6 +280,11 @@ void UEOS::PromoteLobbyMember()
 	});
 }
 
+void UEOS::BroadcastOnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
+{
+	OnLobbyLeaderChanged.Broadcast(LobbyLeaderChanged);
+}
+
 // 修改大厅属性
 void UEOS::ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes)
 {
@@ -310,6 +310,11 @@ void UEOS::ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> Update
 			OnModifyLobbyAttributesComplete.Broadcast(false);
 		}
 	});
+}
+
+void UEOS::BroadcastOnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged)
+{
+	OnLobbyAttributesChanged.Broadcast(LobbyAttributesChanged);
 }
 
 // 修改大厅成员属性
@@ -339,19 +344,9 @@ void UEOS::ModifyLobbyMemberAttributes()
 	});
 }
 
-void UEOS::BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged)
+void UEOS::BroadcastOnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
 {
-	OnLoginStatusChanged.Broadcast(AuthLoginStatusChanged);
-}
-
-void UEOS::BroadcastOnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
-{
-	OnLobbyMemberJoined.Broadcast(LobbyMemberJoined);
-}
-
-void UEOS::BroadcastOnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLef)
-{
-	OnLobbyMemberLeft.Broadcast(LobbyMemberLef);
+	OnLobbyMemberAttributesChanged.Broadcast(LobbyMemberAttributesChanged);
 }
 
 void UEOS::BroadcastOnLobbyLeft(const FLobbyLeft& LobbyLeft)
@@ -359,29 +354,37 @@ void UEOS::BroadcastOnLobbyLeft(const FLobbyLeft& LobbyLeft)
 	OnLobbyLeft.Broadcast(LobbyLeft);
 }
 
-void UEOS::BroadcastOnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged)
+// 离开大厅
+void UEOS::LeaveLobby()
 {
-	OnLobbyAttributesChanged.Broadcast(LobbyAttributesChanged);
-}
+	if (LobbyPtr == nullptr) return;
 
-void UEOS::BroadcastOnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
-{
-	OnLobbyMemberAttributesChanged.Broadcast(LobbyMemberAttributesChanged);
-}
+	// 如果是房主离开大厅，则提升另一名成员为房主
+	if(CurrentLobby->OwnerAccountId == GetAccountInfo(PlatformUserId)->AccountId && CurrentLobby->Members.Num() > 1)
+	{
+		PromoteLobbyMember();
+		return;
+	}
 
-void UEOS::BroadcastOnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
-{
-	OnLobbyInvitationAdded.Broadcast(LobbyInvitationAdded);
-}
+	FLeaveLobby::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LobbyId = CurrentLobby->LobbyId;
 
-void UEOS::BroadcastOnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested)
-{
-	OnUILobbyJoinRequested.Broadcast(UILobbyJoinRequested);
-}
-
-void UEOS::BroadcastOnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
-{
-	OnLobbyLeaderChanged.Broadcast(LobbyLeaderChanged);
+	LobbyPtr->LeaveLobby(MoveTemp(Params))
+	.OnComplete([this](const TOnlineResult<FLeaveLobby>& Result)
+	{
+		if (Result.IsOk())
+		{
+			CurrentLobby = nullptr;
+			OnLeaveLobbyComplete.Broadcast(true);
+		}
+		else
+		{
+			FOnlineError Error = Result.GetErrorValue();
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			OnLeaveLobbyComplete.Broadcast(false);
+		}
+	});
 }
 
 // 创建会话

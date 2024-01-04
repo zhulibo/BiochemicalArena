@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BaseController.h"
+#include "BiochemicalArena/PlayerStates/Team.h"
 #include "HumanController.generated.h"
 
 UCLASS()
@@ -10,19 +11,17 @@ class BIOCHEMICALARENA_API AHumanController : public ABaseController
 	GENERATED_BODY()
 
 public:
-	virtual void Tick(float DeltaSeconds) override;
+	void SetHasInitDefaultHUD(bool bHasInit);
 
-	void SetHUDHealth(float Health, float MaxHealth);
+	void SetHUDHealth(float Health);
 	void SetHUDAmmo(int32 Ammo);
 	void SetHUDCarriedAmmo(int32 Ammo);
-	void SetHUDTeamScore(float Score, int32 Team);
+	void SetHUDTeamScore(float Score, ETeam Team);
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
-	void InitDefaultHUD();
-
-private:
 	UPROPERTY()
 	class ATeamDeadMatchMode* TeamDeadMatchMode;
 	UPROPERTY()
@@ -33,6 +32,7 @@ private:
 	class AHumanState* HumanState;
 
 	bool bHasInitDefaultHUD = false;
+	void InitDefaultHUD();
 
 	float HUDHealth;
 	float HUDMaxHealth;

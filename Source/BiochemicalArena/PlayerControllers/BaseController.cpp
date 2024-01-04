@@ -9,6 +9,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+void ABaseController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, MatchState);
+}
+
 void ABaseController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -17,8 +24,6 @@ void ABaseController::BeginPlay()
 	{
 		HandleClientServerDelta();
 		RequestServerMatchState();
-
-		BaseMode = Cast<ABaseMode>(UGameplayStatics::GetGameMode(GetWorld()));
 
 		AddHUDContainer();
 	}
@@ -34,22 +39,6 @@ void ABaseController::Tick(float DeltaSeconds)
 	}
 }
 
-void ABaseController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ABaseController, MatchState);
-}
-
-float ABaseController::GetServerTime()
-{
-	if (HasAuthority())
-	{
-		return GetWorld()->GetTimeSeconds();
-	}
-	return GetWorld()->GetTimeSeconds() + ClientServerDelta;
-}
-
 void ABaseController::HandleClientServerDelta()
 {
 	// 周期性获取ClientServerDelta
@@ -59,13 +48,7 @@ void ABaseController::HandleClientServerDelta()
 		RequestServerTime(GetWorld()->GetTimeSeconds());
 	};
 	TimerDelegate.BindWeakLambda(this, Lambda);
-	GetWorldTimerManager().SetTimer(
-		TimerHandle,
-		TimerDelegate,
-		RefreshFrequency,
-		true,
-		0.f
-	);
+	GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, RefreshFrequency, true, 0.f);
 }
 
 void ABaseController::RequestServerTime_Implementation(float TimeClientRequest)
@@ -80,28 +63,13 @@ void ABaseController::ReturnServerTime_Implementation(float TimeClientRequest, f
 	ClientServerDelta = TimeServerReceived - TimeClientRequest - 0.5f * RoundTripNetworkDelay;
 }
 
-void ABaseController::RequestServerMatchState_Implementation()
+float ABaseController::GetServerTime()
 {
-	if (BaseMode == nullptr) BaseMode = Cast<ABaseMode>(UGameplayStatics::GetGameMode(GetWorld()));
-	if (BaseMode)
+	if (HasAuthority())
 	{
-		WarmupTime = BaseMode->WarmupTime;
-		MatchTime = BaseMode->MatchTime;
-		CooldownTime = BaseMode->CooldownTime;
-		LevelStartTime = BaseMode->LevelStartTime;
-		MatchState = BaseMode->GetMatchState();
-		ReturnServerMatchState(MatchState, WarmupTime, MatchTime, CooldownTime, LevelStartTime);
+		return GetWorld()->GetTimeSeconds();
 	}
-}
-
-void ABaseController::ReturnServerMatchState_Implementation(FName StateOfMatch, float Warmup, float Match, float Cooldown, float StartingTime)
-{
-	WarmupTime = Warmup;
-	MatchTime = Match;
-	CooldownTime = Cooldown;
-	LevelStartTime = StartingTime;
-	MatchState = StateOfMatch;
-	OnMatchStateSet(MatchState);
+	return GetWorld()->GetTimeSeconds() + ClientServerDelta;
 }
 
 void ABaseController::OnMatchStateSet(FName State)
@@ -118,6 +86,30 @@ void ABaseController::OnMatchStateSet(FName State)
 	}
 }
 
+void ABaseController::RequestServerMatchState_Implementation()
+{
+	if (BaseMode == nullptr) BaseMode = Cast<ABaseMode>(UGameplayStatics::GetGameMode(GetWorld()));
+	if (BaseMode)
+	{
+		WarmupTime = BaseMode->GetWarmupTime();
+		MatchTime = BaseMode->GetMatchTime();
+		CooldownTime = BaseMode->GetCooldownTime();
+		LevelStartTime = BaseMode->GetLevelStartTime();
+		MatchState = BaseMode->GetMatchState();
+		ReturnServerMatchState(MatchState, WarmupTime, MatchTime, CooldownTime, LevelStartTime);
+	}
+}
+
+void ABaseController::ReturnServerMatchState_Implementation(FName StateOfMatch, float Warmup, float Match, float Cooldown, float StartingTime)
+{
+	WarmupTime = Warmup;
+	MatchTime = Match;
+	CooldownTime = Cooldown;
+	LevelStartTime = StartingTime;
+	MatchState = StateOfMatch;
+	OnMatchStateSet(MatchState);
+}
+
 void ABaseController::OnRep_MatchState()
 {
 	if (MatchState == MatchState::InProgress)
@@ -130,19 +122,14 @@ void ABaseController::OnRep_MatchState()
 	}
 }
 
-void ABaseController::HandleMatchHasStarted()
+void ABaseController::AddHUDContainer()
 {
+	if (!IsLocalController()) return;
+	UObject* HUDContainerClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/HUD/W_HUDContainer.W_HUDContainer_C'"));
+	if (HUDContainerClass) HUDContainer = CreateWidget<UHUDContainer>(this, Cast<UClass>(HUDContainerClass));
 	if (HUDContainer)
 	{
-		HUDContainer->CommonHUD->Announcement->SetText(FText());
-	}
-}
-
-void ABaseController::HandleCooldown()
-{
-	if (HUDContainer)
-	{
-		HUDContainer->CommonHUD->Announcement->SetText(FText::FromString("Game over"));
+		HUDContainer->AddToViewport();
 	}
 }
 
@@ -163,7 +150,7 @@ void ABaseController::SetHUDTime()
 		TimeLeft = LevelStartTime + CooldownTime + WarmupTime + MatchTime - GetServerTime();
 	}
 
-	uint32 SecondsLeft = FMath::CeilToInt(TimeLeft);
+	int32 SecondsLeft = FMath::CeilToInt(TimeLeft);
 	// 当前时间秒数变化时更新HUD
 	if (SecondsLeft != CountdownSeconds)
 	{
@@ -180,7 +167,7 @@ void ABaseController::SetHUDTime()
 	}
 }
 
-void ABaseController::SetHUDWarmupCountdown(uint32 CountdownTime)
+void ABaseController::SetHUDWarmupCountdown(int32 CountdownTime)
 {
 	if (HUDContainer)
 	{
@@ -191,7 +178,7 @@ void ABaseController::SetHUDWarmupCountdown(uint32 CountdownTime)
 	}
 }
 
-void ABaseController::SetHUDMatchCountdown(uint32 CountdownTime)
+void ABaseController::SetHUDMatchCountdown(int32 CountdownTime)
 {
 	if (HUDContainer)
 	{
@@ -202,15 +189,19 @@ void ABaseController::SetHUDMatchCountdown(uint32 CountdownTime)
 	}
 }
 
-
-void ABaseController::AddHUDContainer()
+void ABaseController::HandleMatchHasStarted()
 {
-	if (!IsLocalController()) return;
-	UObject* HUDContainerClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/UMGEditor.WidgetBlueprint'/Game/UI/HUD/W_HUDContainer.W_HUDContainer_C'"));
-	if (HUDContainerClass) HUDContainer = CreateWidget<UHUDContainer>(this, Cast<UClass>(HUDContainerClass));
 	if (HUDContainer)
 	{
-		HUDContainer->AddToViewport();
+		HUDContainer->CommonHUD->Announcement->SetText(FText());
+	}
+}
+
+void ABaseController::HandleCooldown()
+{
+	if (HUDContainer)
+	{
+		HUDContainer->CommonHUD->Announcement->SetText(FText::FromString("Game over"));
 	}
 }
 
@@ -218,40 +209,61 @@ void ABaseController::ShowScoreboard(bool bIsShow)
 {
 	if (HUDContainer && HUDContainer->Scoreboard)
 	{
-		if (bIsShow) HUDContainer->Scoreboard->SetVisibility(ESlateVisibility::Visible);
-		else HUDContainer->Scoreboard->SetVisibility(ESlateVisibility::Hidden);
+		if (bIsShow)
+		{
+			HUDContainer->Scoreboard->SetVisibility(ESlateVisibility::Visible);
+		}
+		else
+		{
+			HUDContainer->Scoreboard->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 }
 
 void ABaseController::ShowPauseMenu()
 {
-	if (HUDContainer) HUDContainer->ShowPauseMenu();
+	if (HUDContainer)
+	{
+		HUDContainer->ShowPauseMenu();
+	}
 }
 
-void ABaseController::AddKillLog(ABasePlayerState* AttackerState, const FString& WeaponName, ABasePlayerState* KilledState)
+void ABaseController::AddKillLog(ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState)
 {
 	if (HUDContainer)
 	{
-		HUDContainer->CommonHUD->AddKillLog(AttackerState, WeaponName, KilledState);
+		HUDContainer->CommonHUD->AddKillLog(AttackerState, EquipmentName, KilledState);
 	}
 }
 
 void ABaseController::ShowRadialMenu()
 {
-	if (HUDContainer) HUDContainer->RadialMenuContainer->ShowRadialMenu();
-}
-
-void ABaseController::CloseRadialMenu()
-{
-	if (HUDContainer) HUDContainer->RadialMenuContainer->CloseRadialMenu();
+	if (HUDContainer)
+	{
+		HUDContainer->RadialMenuContainer->ShowRadialMenu();
+	}
 }
 
 void ABaseController::ChangeRadialMenu()
 {
-	if (HUDContainer) HUDContainer->RadialMenuContainer->ChangeRadialMenu();
+	if (HUDContainer)
+	{
+		HUDContainer->RadialMenuContainer->ChangeRadialMenu();
+	}
 }
 
 void ABaseController::SelectRadialMenu(double X, double Y)
 {
-	if (HUDContainer) HUDContainer->RadialMenuContainer->SelectRadialMenu(X, Y);
+	if (HUDContainer)
+	{
+		HUDContainer->RadialMenuContainer->SelectRadialMenu(X, Y);
+	}
+}
+
+void ABaseController::CloseRadialMenu()
+{
+	if (HUDContainer)
+	{
+		HUDContainer->RadialMenuContainer->CloseRadialMenu();
+	}
 }

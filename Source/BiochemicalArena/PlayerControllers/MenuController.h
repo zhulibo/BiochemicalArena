@@ -11,8 +11,6 @@ class BIOCHEMICALARENA_API AMenuController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	virtual void Tick(float DeltaSeconds) override;
-
 	UPROPERTY()
 	class UMenuContainer* MenuContainer;
 	UPROPERTY()
@@ -24,17 +22,16 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
-	void AddMenuContainer();
-
-	void OnLoginComplete(bool bWasSuccessful);
-	void OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
-
-private:
 	UPROPERTY(EditAnywhere, Category = "UI")
 	TSubclassOf<UMenuContainer> MenuContainerClass;
+	void AddMenuContainer();
 
 	UPROPERTY()
 	UEOS* EOS;
+	void OnLoginComplete(bool bWasSuccessful);
+	void OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
+
 
 };

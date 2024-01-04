@@ -1,11 +1,11 @@
 #include "BaseGameState.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 
-void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* AttackerState, const FString& WeaponName, ABasePlayerState* KilledState)
+void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState)
 {
-	ABaseController* BaseController = Cast<ABaseController>(GetWorld()->GetFirstPlayerController()); // 本地玩家控制器
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetWorld()->GetFirstPlayerController()); // 获取本地玩家控制器
 	if (BaseController)
 	{
-		BaseController->AddKillLog(AttackerState, WeaponName, KilledState);
+		BaseController->AddKillLog(AttackerState, EquipmentName, KilledState);
 	}
 }

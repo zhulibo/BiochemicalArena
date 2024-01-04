@@ -13,33 +13,80 @@ class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter, public ICros
 
 public:
 	AHumanCharacter();
-	virtual void Tick(float DeltaSeconds) override;
 
-	void EquipOverlappingWeapon(class AWeapon* Weapon);
+	void EquipOverlappingEquipment(class AEquipment* Equipment);
+
+	void SwapPrimaryEquipmentButtonPressed();
+	void SwapSecondaryEquipmentButtonPressed();
+	void SwapMeleeEquipmentButtonPressed();
+	void SwapThrowingEquipmentButtonPressed();
 
 	void Kill();
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastKill();
-	void SetDefaultWeapon();
-
-	void SwapPrimaryWeapon();
-	void SwapSecondaryWeapon();
-	void SwapMeleeWeapon();
-	void SwapThrowingWeapon();
 
 protected:
-	virtual void BeginPlay() override;
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PostInitializeComponents() override;
+	virtual void BeginPlay() override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
+
+	void PollInit();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetDefaultEquipment();
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimaryEquipment)
+	class AWeapon* DefaultPrimaryEquipment;
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultSecondaryEquipment)
+	AWeapon* DefaultSecondaryEquipment;
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultMeleeEquipment)
+	class AMelee* DefaultMeleeEquipment;
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultThrowingEquipment)
+	AEquipment* DefaultThrowingEquipment;
+	UFUNCTION()
+	void OnRep_DefaultPrimaryEquipment();
+	UFUNCTION()
+	void OnRep_DefaultSecondaryEquipment();
+	UFUNCTION()
+	void OnRep_DefaultMeleeEquipment();
+	UFUNCTION()
+	void OnRep_DefaultThrowingEquipment();
 
 	virtual void Landed(const FHitResult& Hit) override;
-	void PollInit();
+
+	UPROPERTY()
+	class ATeamDeadMatchMode* TeamDeadMatchMode;
+	UPROPERTY()
+	class AHumanController* HumanController;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	class UCameraComponent* Camera;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* OverheadWidget;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UCombatComponent* Combat;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputMappingContext* EquipmentMappingContext;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* AimAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* FireAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* ReloadAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* DropAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapPrimaryEquipmentAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapSecondaryEquipmentAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapMeleeEquipmentAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapThrowingEquipmentAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
+	UInputAction* SwapLastEquipmentAction;
 
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimButtonReleased(const FInputActionValue& Value);
@@ -47,63 +94,24 @@ protected:
 	void FireButtonReleased(const FInputActionValue& Value);
 	void ReloadButtonPressed(const FInputActionValue& Value);
 	void DropButtonPressed(const FInputActionValue& Value);
-	void SwapPrimaryWeaponButtonPressed(const FInputActionValue& Value);
-	void SwapSecondaryWeaponButtonPressed(const FInputActionValue& Value);
-	void SwapMeleeWeaponButtonPressed(const FInputActionValue& Value);
-	void SwapThrowingWeaponButtonPressed(const FInputActionValue& Value);
-	void SwapLastWeaponButtonPressed(const FInputActionValue& Value);
+	void SwapLastEquipmentButtonPressed(const FInputActionValue& Value);
 
-	UFUNCTION()
-	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
-	void UpdateHUDHealth();
-
-private:
-	UPROPERTY()
-	class ATeamDeadMatchMode* TeamDeadMatchMode;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UWidgetComponent* OverheadWidget;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UCombatComponent* Combat;
-	UPROPERTY(VisibleAnywhere)
-	class UPickupComponent* Pickup;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* WeaponMappingContext;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* AimAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* FireAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* ReloadAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* DropAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapPrimaryWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapSecondaryWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapMeleeWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapThrowingWeaponAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Weapon", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapLastWeaponAction;
-
-	void DetectOverlappingWeapon();
+	void DetectOverlappingEquipment();
 
 	UPROPERTY(EditAnywhere, Category = "Player")
 	float MaxHealth = 200.f;
 	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player")
-	float Health = 200.f;
+	float Health = MaxHealth;
+
+	UFUNCTION()
+	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
+	void UpdateHUDHealth();
 	UFUNCTION()
 	void OnRep_Health();
 
-	UPROPERTY()
-	class AHumanController* HumanController;
-	UPROPERTY()
-	class AHumanState* HumanState;
-
 	bool bIsKilled = false;
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastKill();
 	FTimerHandle KillTimer;
 	UPROPERTY(EditDefaultsOnly)
 	float KillDelay = 3.f;
@@ -111,14 +119,15 @@ private:
 
 public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
-	bool IsAiming();
-	AWeapon* GetCurrentWeapon();
-	FORCEINLINE bool IsKilled() const { return bIsKilled; }
-	FVector GetHitTarget() const;
-	FORCEINLINE float GetHealth() const { return Health; }
-	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	FORCEINLINE UCombatComponent* GetCombat() const { return Combat; }
 	ECombatState GetCombatState() const;
 
-	FORCEINLINE UCombatComponent* GetCombat() const { return Combat; }
+	bool IsAiming();
+	AEquipment* GetCurrentEquipment();
+	FVector GetHitTarget() const;
+
+	FORCEINLINE float GetHealth() const { return Health; }
+	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
+	FORCEINLINE bool IsKilled() const { return bIsKilled; }
 
 };

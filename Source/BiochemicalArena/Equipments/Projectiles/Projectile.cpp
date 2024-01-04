@@ -1,5 +1,4 @@
 #include "Projectile.h"
-#include "BiochemicalArena/BiochemicalArena.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -18,7 +17,6 @@ AProjectile::AProjectile()
 	CollisionBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	CollisionBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	CollisionBox->SetCollisionResponseToChannel(ECC_SkeletalMesh, ECollisionResponse::ECR_Block);
 
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(RootComponent);
@@ -27,9 +25,28 @@ AProjectile::AProjectile()
 	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
 	ProjectileMovementComponent->bRotationFollowsVelocity = true;
 	ProjectileMovementComponent->SetIsReplicated(true);
-	ProjectileMovementComponent->InitialSpeed = InitialSpeed; // TODO Weapon->ProjectileSpeed
-	ProjectileMovementComponent->MaxSpeed = InitialSpeed;
+	ProjectileMovementComponent->InitialSpeed = 100000.f;
+	ProjectileMovementComponent->MaxSpeed = 100000.f;
 }
+
+void AProjectile::SetDamage(float TemDamage)
+{
+	Damage = TemDamage;
+}
+
+// Don't do this for now, Avoid cast
+// void AProjectile::PostActorCreated()
+// {
+// 	Super::PostActorCreated();
+//
+// 	AWeapon* Weapon = Cast<AWeapon>(GetOwner());
+// 	if (Weapon)
+// 	{
+// 		ProjectileMovementComponent->InitialSpeed = Weapon->GetProjectileSpeed();
+// 		ProjectileMovementComponent->MaxSpeed = Weapon->GetProjectileSpeed();
+// 		Damage = Weapon->GetDamage();
+// 	}
+// }
 
 void AProjectile::BeginPlay()
 {
@@ -49,7 +66,7 @@ void AProjectile::BeginPlay()
 
 	if (HasAuthority())
 	{
-		CollisionBox->OnComponentHit.AddDynamic(this, &AProjectile::OnHit);
+		CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
 	}
 
 	SetLifeSpan(2.f);

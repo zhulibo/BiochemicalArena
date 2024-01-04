@@ -11,11 +11,11 @@ class BIOCHEMICALARENA_API APickup : public AActor
 	
 public:	
 	APickup();
-	virtual void Tick(float DeltaSeconds) override;
-	virtual void Destroyed() override;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void Destroyed() override;
 
 	UFUNCTION()
 	virtual void OnSphereOverlap(
@@ -27,12 +27,13 @@ protected:
 		const FHitResult& SweepResult
 	);
 
-private:
 	UPROPERTY(EditAnywhere)
 	class USphereComponent* OverlapSphere;
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* PickupMesh;
 	UPROPERTY(EditAnywhere)
-	class USoundCue* PickupSound;
+	USoundCue* PickupSound;
+
+private:
 
 };

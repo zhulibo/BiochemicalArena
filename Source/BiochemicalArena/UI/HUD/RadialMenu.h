@@ -28,6 +28,6 @@ public:
 	UCommonTextBlock* Item8;
 
 	UPROPERTY()
-	int SelectedItem;
+	int32 SelectedItem;
 
 };

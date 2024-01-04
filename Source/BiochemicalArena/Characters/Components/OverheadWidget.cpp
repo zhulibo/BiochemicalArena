@@ -12,6 +12,7 @@ void UOverheadWidget::NativeConstruct()
 	// 等待所有玩家加载完毕再设置PlayerName
 	FTimerHandle TimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::SetPlayerName, 1.f);
+
 	// 判断角色是否被阻挡
 	FTimerHandle TimerHandle2;
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle2, this, &ThisClass::RefreshPlayerName, .2f, true, 1.f);
@@ -27,7 +28,7 @@ void UOverheadWidget::SetPlayerName()
 		{
 			PlayerName->SetText(FText::FromString(HumanState->GetPlayerName()));
 
-			if (LocalHumanState->Team != HumanState->Team)
+			if (LocalHumanState->GetTeam() != HumanState->GetTeam())
 			{
 				PlayerName->SetColorAndOpacity(FLinearColor::Red);
 			}

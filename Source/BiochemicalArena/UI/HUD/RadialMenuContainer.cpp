@@ -13,14 +13,14 @@ void URadialMenuContainer::ShowRadialMenu()
 	TitleRadio->SetColorAndOpacity(FLinearColor::White);
 	TitlePaint->SetColorAndOpacity(FLinearColor::White);
 
-	ActiveRadialMenu = 1;
+	ActiveRadialMenuIndex = 1;
 
 	SetVisibility(ESlateVisibility::Visible);
 }
 
 void URadialMenuContainer::ChangeRadialMenu()
 {
-	if (ActiveRadialMenu == 1)
+	if (ActiveRadialMenuIndex == 1)
 	{
 		RadialMenuEquipment->SetVisibility(ESlateVisibility::Hidden);
 		RadialMenuRadio->SetVisibility(ESlateVisibility::Visible);
@@ -28,9 +28,9 @@ void URadialMenuContainer::ChangeRadialMenu()
 		TitleEquipment->SetColorAndOpacity(FLinearColor::White);
 		TitleRadio->SetColorAndOpacity(FLinearColor::Green);
 
-		ActiveRadialMenu = 2;
+		ActiveRadialMenuIndex = 2;
 	}
-	else if (ActiveRadialMenu == 2)
+	else if (ActiveRadialMenuIndex == 2)
 	{
 		RadialMenuRadio->SetVisibility(ESlateVisibility::Hidden);
 		RadialMenuPaint->SetVisibility(ESlateVisibility::Visible);
@@ -38,9 +38,9 @@ void URadialMenuContainer::ChangeRadialMenu()
 		TitleRadio->SetColorAndOpacity(FLinearColor::White);
 		TitlePaint->SetColorAndOpacity(FLinearColor::Green);
 
-		ActiveRadialMenu = 3;
+		ActiveRadialMenuIndex = 3;
 	}
-	else if (ActiveRadialMenu == 3)
+	else if (ActiveRadialMenuIndex == 3)
 	{
 		RadialMenuPaint->SetVisibility(ESlateVisibility::Hidden);
 		RadialMenuEquipment->SetVisibility(ESlateVisibility::Visible);
@@ -48,12 +48,13 @@ void URadialMenuContainer::ChangeRadialMenu()
 		TitlePaint->SetColorAndOpacity(FLinearColor::White);
 		TitleEquipment->SetColorAndOpacity(FLinearColor::Green);
 
-		ActiveRadialMenu = 1;
+		ActiveRadialMenuIndex = 1;
 	}
 }
 
 void URadialMenuContainer::SelectRadialMenu(double X, double Y)
 {
+	if (GetActiveRadialMenu() == nullptr) return;
 	// UE_LOG(LogTemp, Warning, TEXT("Select %f, %f"), X, Y);
 	if (X * X + Y * Y > .6)
 	{
@@ -113,62 +114,65 @@ void URadialMenuContainer::SelectRadialMenu(double X, double Y)
 
 void URadialMenuContainer::CloseRadialMenu()
 {
-	if (ActiveRadialMenu == 1)
+	if (GetActiveRadialMenu())
 	{
-		AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
-		if (HumanCharacter)
+		if (ActiveRadialMenuIndex == 1)
 		{
-			if (GetActiveRadialMenu()->SelectedItem == 1)
+			AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
+			if (HumanCharacter)
 			{
-				HumanCharacter->SwapPrimaryWeapon();
+				if (GetActiveRadialMenu()->SelectedItem == 1)
+				{
+					HumanCharacter->SwapPrimaryEquipmentButtonPressed();
+				}
+				else if (GetActiveRadialMenu()->SelectedItem == 2)
+				{
+					HumanCharacter->SwapSecondaryEquipmentButtonPressed();
+				}
+				else if (GetActiveRadialMenu()->SelectedItem == 3)
+				{
+					HumanCharacter->SwapMeleeEquipmentButtonPressed();
+				}
+				else if (GetActiveRadialMenu()->SelectedItem == 4)
+				{
+					HumanCharacter->SwapThrowingEquipmentButtonPressed();
+				}
 			}
-			else if (GetActiveRadialMenu()->SelectedItem == 2)
-			{
-				HumanCharacter->SwapSecondaryWeapon();
-			}
-			else if (GetActiveRadialMenu()->SelectedItem == 3)
-			{
-				HumanCharacter->SwapMeleeWeapon();
-			}
-			else if (GetActiveRadialMenu()->SelectedItem == 4)
-			{
-				HumanCharacter->SwapThrowingWeapon();
-			}
-		}
 
-		// AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
-		// if (MutantCharacter)
-		// {
-		// 	MutantCharacter->SelectCharacter(GetActiveRadialMenu()->SelectedItem);
-		// }
-	}
-	else if (ActiveRadialMenu == 2)
-	{
-		// AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
-		// if (HumanCharacter)
-		// {
-		// 	HumanCharacter->SendRadio(GetActiveRadialMenu()->SelectedItem);
-		// }
-		//
-		// AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
-		// if (MutantCharacter)
-		// {
-		// 	MutantCharacter->SendRadio(GetActiveRadialMenu()->SelectedItem);
-		// }
-	}
-	else if (ActiveRadialMenu == 3)
-	{
-		// AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
-		// if (HumanCharacter)
-		// {
-		// 	HumanCharacter->SprayPaint(GetActiveRadialMenu()->SelectedItem);
-		// }
-		//
-		// AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
-		// if (MutantCharacter)
-		// {
-		// 	MutantCharacter->SprayPaint(GetActiveRadialMenu()->SelectedItem);
-		// }
+			// AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
+			// if (MutantCharacter)
+			// {
+			// 	MutantCharacter->SelectCharacter(GetActiveRadialMenu()->SelectedItem);
+			// }
+		}
+		else if (ActiveRadialMenuIndex == 2)
+		{
+			// AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
+			// if (HumanCharacter)
+			// {
+			// 	HumanCharacter->SendRadio(GetActiveRadialMenu()->SelectedItem);
+			// }
+			//
+			// AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
+			// if (MutantCharacter)
+			// {
+			// 	MutantCharacter->SendRadio(GetActiveRadialMenu()->SelectedItem);
+			// }
+		}
+		else if (ActiveRadialMenuIndex == 3)
+		{
+			// AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
+			// if (HumanCharacter)
+			// {
+			// 	HumanCharacter->SprayPaint(GetActiveRadialMenu()->SelectedItem);
+			// }
+			//
+			// AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
+			// if (MutantCharacter)
+			// {
+			// 	MutantCharacter->SprayPaint(GetActiveRadialMenu()->SelectedItem);
+			// }
+		}
 	}
 
 	SetVisibility(ESlateVisibility::Hidden);
@@ -176,7 +180,7 @@ void URadialMenuContainer::CloseRadialMenu()
 
 URadialMenu* URadialMenuContainer::GetActiveRadialMenu()
 {
-	switch (ActiveRadialMenu)
+	switch (ActiveRadialMenuIndex)
 	{
 	case 1:
 		return RadialMenuEquipment;
@@ -185,6 +189,6 @@ URadialMenu* URadialMenuContainer::GetActiveRadialMenu()
 	case 3:
 		return RadialMenuPaint;
 	default:
-		return RadialMenuEquipment;
+		return nullptr;
 	}
 }

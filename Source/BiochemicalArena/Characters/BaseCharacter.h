@@ -11,13 +11,17 @@ class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter
 
 public:
 	ABaseCharacter();
-	virtual void Tick(float DeltaSeconds) override;
-	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	void PlayFootstepSound();
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
+
+	bool HasInitMeshCollision = false;
+	void PollInitMeshCollision(); // TODO 回调方案
+	void CalculateAO_Pitch();
 
 	void Move(const struct FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
@@ -35,19 +39,21 @@ protected:
 	void RadialMenuChange(const FInputActionValue& Value);
 	void RadialMenuSelect(const FInputActionValue& Value);
 
-	void CalculateAO_Pitch();
-	virtual void Landed(const FHitResult& Hit) override;
-	virtual float CalcFallDamageCoefficient();
-	void PlayOuchWeaponSound(float DamageCoefficient);
+	virtual float CalcFallDamageFactor();
+	void PlayOuchSound(float DamageFactor);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayOuchWeaponSound(float DamageCoefficient);
+	void MulticastPlayOuchSound(float DamageFactor);
 
 private:
 	UPROPERTY()
 	class ABaseController* BaseController;
+	UPROPERTY()
+	class ABasePlayerState* BasePlayerState;
+
+	float AO_Pitch; // 俯仰
 
 	UPROPERTY()
-	class USoundCue* MetalSound;
+	USoundCue* MetalSound;
 	UPROPERTY()
 	USoundCue* WaterSound;
 	UPROPERTY()
@@ -89,9 +95,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* RadialMenuSelectAction;
 
-	float AO_Pitch;
-
-	bool bIsRadialMenuOpen; // 视角控制 or 径向菜单选择
+	bool bIsRadialMenuOpened; // 径向菜单是否已打开
 
 public:
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }

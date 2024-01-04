@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "BiochemicalArena/Weapons/WeaponType.h"
+#include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "Storage.generated.h"
 
 USTRUCT(BlueprintType)
@@ -23,42 +23,39 @@ class BIOCHEMICALARENA_API UStorage : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void NativeConstruct() override;
 
-protected:
-	void AddEquipmentTypeButton();
-	void OnEquipmentTypeButtonClicked(class UCommonButton* CommonButton);
-	TArray<FText> FilterWeapon(FString WeaponTypeToFilter);
+	UPROPERTY()
+	UDataTable* EquipmentDataTable;
+	TArray<FEquipmentData*> EquipmentDataRows;
 
-	void AddWeaponButton(TArray<FText> WeaponNames);
+	UPROPERTY(meta = (BindWidget))
+	class UCommonHierarchicalScrollBox* StorageTypeButtonContainer;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UCommonButton> StorageTypeButtonClass;
+	void AddStorageTypeButton();
+
+	void OnStorageTypeButtonClicked(UCommonButton* CommonButton);
+	TArray<FText> FilterEquipment(FString EquipmentType);
+
+	UPROPERTY(meta = (BindWidget))
+	class UWrapBox* StorageButtonContainer;
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<class UStorageButton> EquipmentButtonClass;
+	void AddEquipmentButton(TArray<FText> EquipmentNames);
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UStorageButton> CharacterButtonClass;
 	void AddCharacterButton();
 
-	void OnWeaponButtonClicked(class UEquipmentButton* CommonButton);
-	void OnCharacterButtonClicked(UEquipmentButton* CommonButton);
-
-	void SetBagContent(EWeaponType& WeaponType, FString& WeaponName);
-	void SaveBag();
-
-private:
-	UPROPERTY()
-	UDataTable* WeaponDataTable;
-	TArray<FWeaponData*> WeaponDataRows;
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UCommonButton> EquipmentTypeButtonClass;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UEquipmentButton> WeaponButtonClass;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UEquipmentButton> CharacterButtonClass;
-
-	UPROPERTY(meta = (BindWidget))
-	class UCommonHierarchicalScrollBox* EquipmentTypeButtonContainer;
-	UPROPERTY(meta = (BindWidget))
-	class UWrapBox* EquipmentButtonContainer;
+	void OnEquipmentButtonClicked(class UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetSwitcher* BagSwitcher;
+	void SetBagContent(EEquipmentType& EquipmentType, FString& EquipmentName);
+	void SaveBag();
+
+	void OnCharacterButtonClicked(UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
-	UEquipmentButton* Character;
+	class UCommonTextBlock* Character;
 
 };

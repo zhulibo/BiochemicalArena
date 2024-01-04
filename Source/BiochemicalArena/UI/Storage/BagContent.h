@@ -11,12 +11,12 @@ class BIOCHEMICALARENA_API UBagContent : public UCommonActivatableWidget
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	class UEquipmentButton* Primary;
+	class UStorageButton* PrimaryEquipment;
 	UPROPERTY(meta = (BindWidget))
-	UEquipmentButton* Secondary;
+	UStorageButton* SecondaryEquipment;
 	UPROPERTY(meta = (BindWidget))
-	UEquipmentButton* Melee;
+	UStorageButton* MeleeEquipment;
 	UPROPERTY(meta = (BindWidget))
-	UEquipmentButton* Throwing;
+	UStorageButton* ThrowingEquipment;
 
 };

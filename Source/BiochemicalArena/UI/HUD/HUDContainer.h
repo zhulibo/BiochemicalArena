@@ -12,8 +12,6 @@ class BIOCHEMICALARENA_API UHUDContainer : public UCommonUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-	void ShowPauseMenu();
-
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHUD* CommonHUD;
 
@@ -29,17 +27,19 @@ public:
 
 	UPROPERTY(meta = (BindWidget))
 	class UScoreboard* Scoreboard;
+
 	UPROPERTY(meta = (BindWidget))
 	class URadialMenuContainer* RadialMenuContainer;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetStack* MainStack;
 
+	void ShowPauseMenu();
+
 protected:
 	UPROPERTY()
 	class ABaseController* BaseController;
 
-private:
 	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	TSubclassOf<class UPauseMenu> PauseMenuClass;
 

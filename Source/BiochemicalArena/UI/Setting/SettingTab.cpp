@@ -13,6 +13,7 @@ void USettingTab::NativeConstruct()
 	// 把ActionData绑定给CommonActionWidget
 	LeftTabAction->SetInputAction(PreviousTabInputActionData);
 	RightTabAction->SetInputAction(NextTabInputActionData);
+
 	LinkSwitcher();
 }
 
@@ -21,7 +22,7 @@ void USettingTab::LinkSwitcher()
 	if (SettingSwitcher && TabButtonContainer && TabButtonClass)
 	{
 		SetLinkedSwitcher(SettingSwitcher); // 链接Tab和Switcher
-		for (int i = 0; i < TabContent.Num(); ++i)
+		for (int32 i = 0; i < TabContent.Num(); ++i)
 		{
 			if (TabContent[i] == nullptr) break;
 			FString TabWidgetName = TabContent[i]->GetName();

@@ -3,7 +3,7 @@
 #include "CommonActivatableWidgetSwitcher.h"
 #include "CommonHierarchicalScrollBox.h"
 #include "CommonTextBlock.h"
-#include "EquipmentButton.h"
+#include "StorageButton.h"
 #include "BiochemicalArena/Characters/CharacterType.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/WrapBox.h"
@@ -12,81 +12,81 @@ void UStorage::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	WeaponDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Weapons/Data/DT_WeaponData.DT_WeaponData'"));
-	if (WeaponDataTable)
+	EquipmentDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Equipments/Data/DT_EquipmentData.DT_EquipmentData'"));
+	if (EquipmentDataTable)
 	{
-		WeaponDataTable->GetAllRows<FWeaponData>("", WeaponDataRows);
+		EquipmentDataTable->GetAllRows<FEquipmentData>("", EquipmentDataRows);
 	}
-	AddEquipmentTypeButton();
+
+	AddStorageTypeButton();
 }
 
 // 添加顶部装备类型按钮
-void UStorage::AddEquipmentTypeButton()
+void UStorage::AddStorageTypeButton()
 {
-	if (EquipmentTypeButtonContainer && EquipmentTypeButtonClass)
+	if (StorageTypeButtonContainer && StorageTypeButtonClass)
 	{
 		// 全部按钮
-		UCommonButton* AllTypeButton = CreateWidget<UCommonButton>(this, EquipmentTypeButtonClass);
+		UCommonButton* AllTypeButton = CreateWidget<UCommonButton>(this, StorageTypeButtonClass);
 		if (AllTypeButton)
 		{
 			AllTypeButton->ButtonText->SetText(FText::FromString("All"));
 			AllTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 			AllTypeButton->SetIsSelectable(true);
-			AllTypeButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentTypeButtonClicked, AllTypeButton);
-			EquipmentTypeButtonContainer->AddChild(AllTypeButton);
+			AllTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, AllTypeButton);
+			StorageTypeButtonContainer->AddChild(AllTypeButton);
 			// 默认显示全部装备，主动点击一下AllTypeButton(不知道怎么主动触发点击事件，先这样写吧！)
-			OnEquipmentTypeButtonClicked(AllTypeButton);
+			OnStorageTypeButtonClicked(AllTypeButton);
 			AllTypeButton->SetIsSelected(true);
 		}
 		// 武器分类按钮
-		for (int32 i = 0; i < (int32)EWeaponType::MAX; ++i)
+		for (int32 i = 0; i < (int32)EEquipmentType::MAX; ++i)
 		{
-			UCommonButton* WeaponTypeButton = CreateWidget<UCommonButton>(this, EquipmentTypeButtonClass);
-			if (WeaponTypeButton)
+			UCommonButton* EquipmentTypeButton = CreateWidget<UCommonButton>(this, StorageTypeButtonClass);
+			if (EquipmentTypeButton)
 			{
-				FString EnumItemName = UEnum::GetValueAsString(EWeaponType(i));
-				EnumItemName = EnumItemName.Right(EnumItemName.Len() - EnumItemName.Find("::") - 2);
-				WeaponTypeButton->ButtonText->SetText(FText::FromString(EnumItemName));
-				WeaponTypeButton->SetPadding(FMargin(0, 0, 20, 0));
-				WeaponTypeButton->SetIsSelectable(true);
-				WeaponTypeButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentTypeButtonClicked, WeaponTypeButton);
-				EquipmentTypeButtonContainer->AddChild(WeaponTypeButton);
+				FString EnumValue = UEnum::GetValueAsString(EEquipmentType(i));
+				EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+				EquipmentTypeButton->ButtonText->SetText(FText::FromString(EnumValue));
+				EquipmentTypeButton->SetPadding(FMargin(0, 0, 20, 0));
+				EquipmentTypeButton->SetIsSelectable(true);
+				EquipmentTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, EquipmentTypeButton);
+				StorageTypeButtonContainer->AddChild(EquipmentTypeButton);
 			}
 		}
 		// 角色按钮
-		UCommonButton* CharacterTypeButton = CreateWidget<UCommonButton>(this, EquipmentTypeButtonClass);
+		UCommonButton* CharacterTypeButton = CreateWidget<UCommonButton>(this, StorageTypeButtonClass);
 		if (CharacterTypeButton)
 		{
 			CharacterTypeButton->ButtonText->SetText(FText::FromString("Character"));
 			CharacterTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 			CharacterTypeButton->SetIsSelectable(true);
-			CharacterTypeButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentTypeButtonClicked, CharacterTypeButton);
-			EquipmentTypeButtonContainer->AddChild(CharacterTypeButton);
+			CharacterTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, CharacterTypeButton);
+			StorageTypeButtonContainer->AddChild(CharacterTypeButton);
 		}
 	}
 }
 
 // 点击装备类型按钮
-void UStorage::OnEquipmentTypeButtonClicked(UCommonButton* CommonButton)
+void UStorage::OnStorageTypeButtonClicked(UCommonButton* CommonButton)
 {
 	if (CommonButton->GetSelected()) return;
 	// 将其他按钮置为未选中状态
-	for (int32 i = 0; i < EquipmentTypeButtonContainer->GetChildrenCount(); ++i)
+	for (int32 i = 0; i < StorageTypeButtonContainer->GetChildrenCount(); ++i)
 	{
-		UCommonButton* EquipmentTypeButton = Cast<UCommonButton>(EquipmentTypeButtonContainer->GetChildAt(i));
+		UCommonButton* EquipmentTypeButton = Cast<UCommonButton>(StorageTypeButtonContainer->GetChildAt(i));
 		if (EquipmentTypeButton && EquipmentTypeButton != CommonButton)
 		{
 			EquipmentTypeButton->ClearSelection();
 		}
 	}
 
-	EquipmentButtonContainer->ClearChildren();
+	StorageButtonContainer->ClearChildren();
 
 	FString EquipmentType = CommonButton->ButtonText->GetText().ToString();
 	if (EquipmentType == "All")
 	{
-		TArray<FText> WeaponNames = FilterWeapon(EquipmentType);
-		AddWeaponButton(WeaponNames);
+		AddEquipmentButton(FilterEquipment(EquipmentType));
 		AddCharacterButton();
 	}
 	else if (EquipmentType == "Character")
@@ -95,59 +95,58 @@ void UStorage::OnEquipmentTypeButtonClicked(UCommonButton* CommonButton)
 	}
 	else
 	{
-		TArray<FText> WeaponNames = FilterWeapon(EquipmentType);
-		AddWeaponButton(WeaponNames);
+		AddEquipmentButton(FilterEquipment(EquipmentType));
 	}
 }
 
 // 根据武器类型筛选出武器名称
-TArray<FText> UStorage::FilterWeapon(FString WeaponTypeToFilter)
+TArray<FText> UStorage::FilterEquipment(FString EquipmentType)
 {
-	TArray<FText> WeaponNames;
+	TArray<FText> EquipmentNames;
 
-	if (WeaponTypeToFilter == "All")
+	if (EquipmentType == "All")
 	{
-		for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
+		for (int32 i = 0; i < EquipmentDataRows.Num(); ++i)
 		{
-			FString WeaponName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
-			WeaponName = WeaponName.Right(WeaponName.Len() - WeaponName.Find("::") - 2);
-			// TODO if (未购买WeaponName) continue;
-			WeaponNames.Add(FText::FromString(WeaponName));
+			FString EquipmentName = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
+			EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
+			// TODO if (未购买EquipmentName) continue;
+			EquipmentNames.Add(FText::FromString(EquipmentName));
 		}
 	}
 	else
 	{
-		for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
+		for (int32 i = 0; i < EquipmentDataRows.Num(); ++i)
 		{
-			FString WeaponType = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponType);
-			WeaponType = WeaponType.Right(WeaponType.Len() - WeaponType.Find("::") - 2);
-			// TODO if (未购买WeaponName) continue;
-			if (WeaponType == WeaponTypeToFilter)
+			FString EnumValue = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentType);
+			EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+			// TODO if (未购买EquipmentName) continue;
+			if (EnumValue == EquipmentType)
 			{
-				FString WeaponName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
-				WeaponName = WeaponName.Right(WeaponName.Len() - WeaponName.Find("::") - 2);
-				WeaponNames.Add(FText::FromString(WeaponName));
+				FString EquipmentName = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
+				EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
+				EquipmentNames.Add(FText::FromString(EquipmentName));
 			}
 		}
 	}
 
-	return WeaponNames;
+	return EquipmentNames;
 }
 
 // 添加武器
-void UStorage::AddWeaponButton(TArray<FText> WeaponNames)
+void UStorage::AddEquipmentButton(TArray<FText> EquipmentNames)
 {
-	if (WeaponButtonClass == nullptr) return;
+	if (EquipmentButtonClass == nullptr) return;
 
-	for (int i = 0; i < WeaponNames.Num(); ++i)
+	for (int32 i = 0; i < EquipmentNames.Num(); ++i)
 	{
-		UEquipmentButton* WeaponButton = CreateWidget<UEquipmentButton>(this, WeaponButtonClass);
-		if (WeaponButton)
+		UStorageButton* EquipmentButton = CreateWidget<UStorageButton>(this, EquipmentButtonClass);
+		if (EquipmentButton)
 		{
-			WeaponButton->ButtonText->SetText(WeaponNames[i]);
-			WeaponButton->SetPadding(FMargin(0, 0, 20, 20));
-			WeaponButton->OnClicked().AddUObject(this, &ThisClass::OnWeaponButtonClicked, WeaponButton);
-			EquipmentButtonContainer->AddChild(WeaponButton);
+			EquipmentButton->ButtonText->SetText(EquipmentNames[i]);
+			EquipmentButton->SetPadding(FMargin(0, 0, 20, 20));
+			EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentButtonClicked, EquipmentButton);
+			StorageButtonContainer->AddChild(EquipmentButton);
 		}
 	}
 }
@@ -159,59 +158,59 @@ void UStorage::AddCharacterButton()
 
 	for (int32 i = 0; i < (int32)EHumanCharacterName::MAX; ++i)
 	{
-		FString EnumItemName = UEnum::GetValueAsString(EHumanCharacterName(i));
-		EnumItemName = EnumItemName.Right(EnumItemName.Len() - EnumItemName.Find("::") - 2);
-		// TODO if (未购买EnumItemName) continue;
+		FString EnumValue = UEnum::GetValueAsString(EHumanCharacterName(i));
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		// TODO if (未购买EnumValue) continue;
 
-		UEquipmentButton* CharacterButton = CreateWidget<UEquipmentButton>(this, CharacterButtonClass);
+		UStorageButton* CharacterButton = CreateWidget<UStorageButton>(this, CharacterButtonClass);
 		if (CharacterButton)
 		{
-			CharacterButton->ButtonText->SetText(FText::FromString(EnumItemName));
+			CharacterButton->ButtonText->SetText(FText::FromString(EnumValue));
 			CharacterButton->SetPadding(FMargin(0, 0, 20, 20));
 			CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnCharacterButtonClicked, CharacterButton);
-			EquipmentButtonContainer->AddChild(CharacterButton);
+			StorageButtonContainer->AddChild(CharacterButton);
 		}
 	}
 }
 
-void UStorage::OnWeaponButtonClicked(UEquipmentButton* EquipmentButton)
+void UStorage::OnEquipmentButtonClicked(UStorageButton* EquipmentButton)
 {
-	FString WeaponName = EquipmentButton->ButtonText->GetText().ToString();
+	FString EquipmentName = EquipmentButton->ButtonText->GetText().ToString();
 
-	for (int32 i = 0; i < WeaponDataRows.Num(); ++i)
+	for (int32 i = 0; i < EquipmentDataRows.Num(); ++i)
 	{
-		FString EnumItemName = UEnum::GetValueAsString(WeaponDataRows[i]->WeaponName);
-		EnumItemName = EnumItemName.Right(EnumItemName.Len() - EnumItemName.Find("::") - 2);
-		if (EnumItemName == WeaponName)
+		FString EnumValue = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		if (EnumValue == EquipmentName)
 		{
-			SetBagContent(WeaponDataRows[i]->WeaponType, WeaponName);
+			SetBagContent(EquipmentDataRows[i]->EquipmentType, EquipmentName);
 			break;
 		}
 	}
 }
 
-void UStorage::SetBagContent(EWeaponType& WeaponType, FString& WeaponName)
+void UStorage::SetBagContent(EEquipmentType& EquipmentType, FString& EquipmentName)
 {
 	if (BagSwitcher)
 	{
 		UBagContent* ActiveBag = Cast<UBagContent>(BagSwitcher->GetActiveWidget());
 		if (ActiveBag)
 		{
-			if (WeaponType == EWeaponType::Primary)
+			if (EquipmentType == EEquipmentType::Primary)
 			{
-				ActiveBag->Primary->ButtonText->SetText(FText::FromString(WeaponName));
+				ActiveBag->PrimaryEquipment->ButtonText->SetText(FText::FromString(EquipmentName));
 			}
-			else if (WeaponType == EWeaponType::Secondary)
+			else if (EquipmentType == EEquipmentType::Secondary)
 			{
-				ActiveBag->Secondary->ButtonText->SetText(FText::FromString(WeaponName));
+				ActiveBag->SecondaryEquipment->ButtonText->SetText(FText::FromString(EquipmentName));
 			}
-			else if (WeaponType == EWeaponType::Melee)
+			else if (EquipmentType == EEquipmentType::Melee)
 			{
-				ActiveBag->Melee->ButtonText->SetText(FText::FromString(WeaponName));
+				ActiveBag->MeleeEquipment->ButtonText->SetText(FText::FromString(EquipmentName));
 			}
-			else if (WeaponType == EWeaponType::Throwing)
+			else if (EquipmentType == EEquipmentType::Throwing)
 			{
-				ActiveBag->Throwing->ButtonText->SetText(FText::FromString(WeaponName));
+				ActiveBag->ThrowingEquipment->ButtonText->SetText(FText::FromString(EquipmentName));
 			}
 		}
 	}
@@ -227,19 +226,19 @@ void UStorage::SaveBag()
 		if (BagContent)
 		{
 			FBag Bag;
-			Bag.Primary = BagContent->Primary->ButtonText->GetText().ToString();
-			Bag.Secondary = BagContent->Secondary->ButtonText->GetText().ToString();
-			Bag.Melee = BagContent->Melee->ButtonText->GetText().ToString();
-			Bag.Throwing = BagContent->Throwing->ButtonText->GetText().ToString();
+			Bag.Primary = BagContent->PrimaryEquipment->ButtonText->GetText().ToString();
+			Bag.Secondary = BagContent->SecondaryEquipment->ButtonText->GetText().ToString();
+			Bag.Melee = BagContent->MeleeEquipment->ButtonText->GetText().ToString();
+			Bag.Throwing = BagContent->ThrowingEquipment->ButtonText->GetText().ToString();
 			Bags.Add(Bag);
 		}
 	}
 	// TODO 保存
 }
 
-void UStorage::OnCharacterButtonClicked(UEquipmentButton* EquipmentButton)
+void UStorage::OnCharacterButtonClicked(UStorageButton* EquipmentButton)
 {
 	FString CharacterName = EquipmentButton->ButtonText->GetText().ToString();
-	Character->ButtonText->SetText(FText::FromString(CharacterName));
+	Character->SetText(FText::FromString(CharacterName));
 	// TODO 保存
 }

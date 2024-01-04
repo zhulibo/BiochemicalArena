@@ -10,8 +10,11 @@ void AMenuController::BeginPlay()
 	AddMenuContainer();
 
 	EOS = GetGameInstance()->GetSubsystem<UEOS>();
-	if (EOS) EOS->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
-	if (EOS) EOS->OnLoginStatusChanged.AddUObject(this, &ThisClass::OnLoginStatusChanged);
+	if (EOS)
+	{
+		EOS->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
+		EOS->OnLoginStatusChanged.AddUObject(this, &ThisClass::OnLoginStatusChanged);
+	}
 
 	// Login();
 }
@@ -44,7 +47,10 @@ void AMenuController::Login()
 	if (LocalPlayer)
 	{
 		FPlatformUserId PlatformUserId = LocalPlayer->GetPlatformUserId();
-		EOS->Login(PlatformUserId);
+		if (PlatformUserId)
+		{
+			EOS->Login(PlatformUserId);
+		}
 	}
 }
 
@@ -55,7 +61,10 @@ void AMenuController::Login1()
 	if (LocalPlayer)
 	{
 		FPlatformUserId PlatformUserId = LocalPlayer->GetPlatformUserId();
-		EOS->Login(PlatformUserId, 1);
+		if (PlatformUserId)
+		{
+			EOS->Login(PlatformUserId, 1);
+		}
 	}
 }
 
@@ -66,7 +75,10 @@ void AMenuController::Login2()
 	if (LocalPlayer)
 	{
 		FPlatformUserId PlatformUserId = LocalPlayer->GetPlatformUserId();
-		EOS->Login(PlatformUserId, 2);
+		if (PlatformUserId)
+		{
+			EOS->Login(PlatformUserId, 2);
+		}
 	}
 }
 

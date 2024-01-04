@@ -9,22 +9,17 @@ class BIOCHEMICALARENA_API UBagTab : public UCommonTabListWidgetBase
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void NativeConstruct() override;
 
-protected:
-	void LinkSwitcher();
-
-private:
 	UPROPERTY(EditInstanceOnly, Category = "UI")
 	class UCommonActivatableWidgetSwitcher* BagSwitcher;
-	UPROPERTY(EditInstanceOnly, Category = "UI")
-	TArray<class UCommonActivatableWidget*> TabContent;
-
 	UPROPERTY(meta = (BindWidget))
 	class UHorizontalBox* TabButtonContainer;
-
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UCommonButton> TabButtonClass;
+	UPROPERTY(EditInstanceOnly, Category = "UI")
+	TArray<class UCommonActivatableWidget*> TabContent;
+	void LinkSwitcher();
 
 };

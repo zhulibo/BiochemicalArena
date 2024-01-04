@@ -9,7 +9,6 @@ namespace MatchState
 ABaseMode::ABaseMode()
 {
 	bDelayedStart = true;
-
 }
 
 void ABaseMode::BeginPlay()

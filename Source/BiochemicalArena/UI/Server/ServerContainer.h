@@ -10,16 +10,16 @@ class BIOCHEMICALARENA_API UServerContainer : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 public:
-	virtual void NativeConstruct() override;
-
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetStack* ServerStack;
 
-	UPROPERTY()
-	class UServer* Server;
 
-private:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UServer> ServerClass;
+	UPROPERTY()
+	UServer* Server;
+
+protected:
+	virtual void NativeConstruct() override;
 
 };

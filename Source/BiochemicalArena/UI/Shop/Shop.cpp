@@ -7,20 +7,20 @@ void UShop::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	AddWeaponButton();
+	AddEquipmentButton();
 	AddCharacterButton();
 }
 
-void UShop::AddWeaponButton()
+void UShop::AddEquipmentButton()
 {
-	UGoodsButton* WeaponButton = CreateWidget<UGoodsButton>(this, WeaponButtonClass);
-	if (WeaponButton)
+	UGoodsButton* EquipmentButton = CreateWidget<UGoodsButton>(this, EquipmentButtonClass);
+	if (EquipmentButton)
 	{
-		WeaponButton->GoodsName->SetText(FText::FromString("Ak47 / one year"));
-		WeaponButton->Price->SetText(FText::FromString("5$"));
-		WeaponButton->SetPadding(FMargin(0, 0, 20, 20));
-		WeaponButton->OnClicked().AddUObject(this, &ThisClass::OnWeaponButtonClicked, WeaponButton);
-		GoodsButtonContainer->AddChild(WeaponButton);
+		EquipmentButton->GoodsName->SetText(FText::FromString("Ak47 / one year"));
+		EquipmentButton->Price->SetText(FText::FromString("5$"));
+		EquipmentButton->SetPadding(FMargin(0, 0, 20, 20));
+		EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentButtonClicked, EquipmentButton);
+		GoodsButtonContainer->AddChild(EquipmentButton);
 	}
 }
 
@@ -37,7 +37,7 @@ void UShop::AddCharacterButton()
 	}
 }
 
-void UShop::OnWeaponButtonClicked(UGoodsButton* GoodsButton)
+void UShop::OnEquipmentButtonClicked(UGoodsButton* GoodsButton)
 {
 }
 

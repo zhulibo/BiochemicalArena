@@ -2,14 +2,7 @@
 #include "HumanCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "BiochemicalArena/Weapons/Weapon.h"
-
-void UHumanAnimation::NativeInitializeAnimation()
-{
-	Super::NativeInitializeAnimation();
-
-	HumanCharacter = Cast<AHumanCharacter>(TryGetPawnOwner());
-}
+#include "BiochemicalArena/Equipments/Equipment.h"
 
 void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 {
@@ -23,7 +16,7 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 	Speed = Velocity.Size();
 
 	bIsInAir = HumanCharacter->GetCharacterMovement()->IsFalling();
-	bIsAccelerating = HumanCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f ? true : false;
+	bIsAccelerating = HumanCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f;
 	bIsCrouched = HumanCharacter->bIsCrouched;
 	bIsAiming = HumanCharacter->IsAiming();
 	bIsKilled = HumanCharacter->IsKilled();
@@ -35,13 +28,20 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 	FRotator DiffRotation = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
 	YawOffset = DiffRotation.Yaw;
 
-	CurrentWeapon = HumanCharacter->GetCurrentWeapon();
-	bUseLeftHandFABRIK = HumanCharacter->GetCombatState() == ECombatState::Ready;
+	CurrentEquipment = HumanCharacter->GetCurrentEquipment();
+	if (CurrentEquipment == nullptr)
+	{
+		bIsUseLeftHandFABRIK = false;
+		return;
+	}
 
-	if (bUseLeftHandFABRIK && CurrentWeapon && CurrentWeapon->GetWeaponMesh() && HumanCharacter->GetMesh())
+	bIsUseLeftHandFABRIK = (CurrentEquipment->GetEquipmentType() == EEquipmentType::Primary || CurrentEquipment->GetEquipmentType() == EEquipmentType::Secondary) &&
+		HumanCharacter->GetCombatState() == ECombatState::Ready;
+
+	if (bIsUseLeftHandFABRIK && CurrentEquipment->GetEquipmentMesh() && HumanCharacter->GetMesh())
 	{
 		// 获取武器左手插槽的世界坐标
-		LeftHandTransform = CurrentWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
+		LeftHandTransform = CurrentEquipment->GetEquipmentMesh()->GetSocketTransform(FName("LeftHandSocket"), RTS_World);
 		FVector OutPosition;
 		FRotator OutRotation;
 		// 转换为相对于右手骨骼空间的坐标
@@ -51,11 +51,10 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 		// 红色为准心指向，黄色为枪管指向
 		if (HumanCharacter->IsLocallyControlled())
 		{
-			FTransform MuzzleTipTransform = CurrentWeapon->GetWeaponMesh()->GetSocketTransform(FName("MuzzleSocket"), ERelativeTransformSpace::RTS_World);
+			FTransform MuzzleTipTransform = CurrentEquipment->GetEquipmentMesh()->GetSocketTransform(FName("MuzzleSocket"), ERelativeTransformSpace::RTS_World);
 			FVector MuzzleX(FRotationMatrix(MuzzleTipTransform.GetRotation().Rotator()).GetUnitAxis(EAxis::X));
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), MuzzleTipTransform.GetLocation() + MuzzleX * 2000.f, FColor::Yellow);
 			DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), HumanCharacter->GetHitTarget(), FColor::Red);
 		}
 	}
-
 }

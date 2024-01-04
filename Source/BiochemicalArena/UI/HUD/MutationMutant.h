@@ -12,6 +12,7 @@ class BIOCHEMICALARENA_API UMutationMutant : public UCommonUserWidget
 public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Health;
+
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* SkillStatus;
 

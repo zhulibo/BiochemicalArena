@@ -1,12 +1,12 @@
 ﻿#pragma once
 
 #include "Engine/DataTable.h"
-#include "WeaponType.generated.h"
+#include "EquipmentType.generated.h"
 
 #define TRACE_LENGTH 100000.f
 
 UENUM(BlueprintType)
-enum class EWeaponType : uint8
+enum class EEquipmentType : uint8 // 装备类型（装备的位置，共4个位置，未来扩充至8个）
 {
 	Primary UMETA(DisplayName = "Primary"),
 	Secondary UMETA(DisplayName = "Secondary"),
@@ -17,15 +17,16 @@ enum class EWeaponType : uint8
 };
 
 UENUM(BlueprintType)
-enum class EWeaponCate : uint8
+enum class EEquipmentCate : uint8 // 装备种类（武器自身属性）
 {
 	General UMETA(DisplayName = "General"),
 	Shotgun UMETA(DisplayName = "Shotgun"),
 	Melee UMETA(DisplayName = "Melee"),
+	Throwing UMETA(DisplayName = "Throwing"),
 };
 
 UENUM(BlueprintType)
-enum class EWeaponName : uint8
+enum class EEquipmentName : uint8 // 装备名字
 {
 	AK47 UMETA(DisplayName = "AK47"),
 	M870 UMETA(DisplayName = "M870"),
@@ -38,26 +39,25 @@ enum class EWeaponName : uint8
 };
 
 UENUM(BlueprintType)
-enum class EWeaponState : uint8
+enum class EEquipmentState : uint8
 {
-	InUse UMETA(DisplayName = "InUse"),
 	Equipped UMETA(DisplayName = "Equipped"),
 	Dropped UMETA(DisplayName = "Dropped"),
 };
 
 USTRUCT(BlueprintType)
-struct FWeaponData : public FTableRowBase
+struct FEquipmentData : public FTableRowBase
 {
 	GENERATED_BODY()
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EWeaponType WeaponType = EWeaponType::Primary;
+	EEquipmentType EquipmentType = EEquipmentType::Primary;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EWeaponCate WeaponCate = EWeaponCate::General;
+	EEquipmentCate EquipmentCate = EEquipmentCate::General;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EWeaponName WeaponName = EWeaponName::AK47;
+	EEquipmentName EquipmentName = EEquipmentName::AK47;
 
 };

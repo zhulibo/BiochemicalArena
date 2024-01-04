@@ -20,7 +20,7 @@ void UBagTab::LinkSwitcher()
 	{
 		// 链接Tab和Switcher
 		SetLinkedSwitcher(BagSwitcher);
-		for (int i = 0; i < TabContent.Num(); ++i)
+		for (int32 i = 0; i < TabContent.Num(); ++i)
 		{
 			if (TabContent[i] == nullptr) break;
 

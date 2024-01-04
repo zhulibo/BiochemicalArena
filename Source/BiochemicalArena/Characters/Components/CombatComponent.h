@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "CombatState.h"
-#include "BiochemicalArena/Weapons/WeaponType.h"
+#include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "CombatComponent.generated.h"
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -14,131 +14,153 @@ class BIOCHEMICALARENA_API UCombatComponent : public UActorComponent
 public:
 	UCombatComponent();
 	friend class AHumanCharacter;
-	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void EquipWeapon(class AWeapon* WeaponToEquip);
-	void SwapWeapon(EWeaponType NewWeaponType);
-	void FinishSwapAttach(EWeaponType NewWeaponType);
+	class AEquipment* GetCurrentEquipment(); // If has a equipment in use return it, or return nullptr
+	class AWeapon* GetCurrentShotEquipment(); // If primary or secondary equipment is in use return it, or return nullptr
+	class AMelee* GetCurrentMeleeEquipment(); // If MeleeEquipment is in use return it, or return nullptr
+
+	void FinishSwapAttach(EEquipmentType EquipmentType);
 	void FinishSwap();
-	void FireHandle(bool bPressed);
 
-	void Reload();
 	void ShellReload();
-	void JumpToShotgunEnd();
 	void FinishReload();
-	void DropWeapon();
 
-	AWeapon* GetCurrentWeapon();
-	AWeapon* GetWeaponByType(EWeaponType WeaponType);
-	bool HasEquippedThisTypeWeapon(EWeaponType WeaponType);
+	void EnableMeshCollision(bool bIsEnabled);
 
 protected:
-	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void TraceUnderCrosshair(FHitResult& TraceHitResult);
-	void SetHUDCrosshair(float DeltaSeconds);
-
-	void SetAiming(bool bNewAimingState);
-
-	void Fire();
-
-private:
 	UPROPERTY()
 	AHumanCharacter* Character;
 	UPROPERTY()
 	class AHumanController* Controller;
 	UPROPERTY()
 	UAnimInstance* AnimInstance;
-	UPROPERTY()
-	class USoundCue* ClickSound;
-
-	UPROPERTY(ReplicatedUsing = OnRep_Aiming)
-	bool bIsAiming = false;
-	bool bAimButtonPressed = false;
-	UFUNCTION()
-	void OnRep_Aiming();
 
 	UPROPERTY(Replicated)
-	AWeapon* PrimaryWeapon;
-	UPROPERTY(Replicated)
-	AWeapon* SecondaryWeapon;
-	UPROPERTY(Replicated)
-	AWeapon* MeleeWeapon;
-	UPROPERTY(Replicated)
-	AWeapon* ThrowingWeapon;
-	UPROPERTY(Replicated)
-	EWeaponType CurrentWeaponType = EWeaponType::MAX;
-	UPROPERTY(Replicated)
-	EWeaponType LastWeaponType = EWeaponType::MAX;
+	ECombatState CombatState = ECombatState::MAX;
 
 	UPROPERTY(EditAnywhere)
-	float BaseWalkSpeed;
+	float BaseWalkSpeed = 600.f;
 	UPROPERTY(EditAnywhere)
-	float AimWalkSpeed;
+	float AimWalkSpeed = 450.f;
+
+	FVector HitTarget;
+	void TraceUnderCrosshair(FHitResult& TraceHitResult); // 检测准星对应游戏世界的物体
 
 	float CrosshairVelocityFactor;
 	float CrosshairInAirFactor;
 	float CrosshairAimFactor;
 	float CrosshairShootingFactor;
-	FVector HitTarget;
+	void SetHUDCrosshair(float DeltaSeconds); // TODO 使用CrosshairSpread实现动态准心
 
 	float DefaultFOV;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	float ZoomedFOV = 30.f;
 	float CurrentFOV;
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	float ZoomInterpSpeed = 20.f;
 	void InterpFOV(float DeltaSeconds);
 
-	bool bFireButtonPressed;
-	FTimerHandle FireTimer;
-	bool bCanFire = true;
-	void LoadNewBulletFinished();
-	bool CanFire();
-
 	UPROPERTY(Replicated)
-	ECombatState CombatState = ECombatState::MAX;
+	AWeapon* PrimaryEquipment;
+	UPROPERTY(Replicated)
+	AWeapon* SecondaryEquipment;
+	UPROPERTY(Replicated)
+	AMelee* MeleeEquipment;
+	UPROPERTY(Replicated)
+	AEquipment* ThrowingEquipment;
+	UPROPERTY(Replicated)
+	EEquipmentType CurrentEquipmentType = EEquipmentType::MAX;
+	UPROPERTY(Replicated)
+	EEquipmentType LastEquipmentType = EEquipmentType::MAX;
 
+	AEquipment* GetLastEquipment();
+	AEquipment* GetEquipmentByType(EEquipmentType EquipmentType);
+	bool HasEquippedThisTypeEquipment(EEquipmentType EquipmentType);
+
+	// 装备
+	void EquipEquipment(AEquipment* Equipment);
+	UFUNCTION(Server, Reliable)
+	void ServerEquipEquipment(AEquipment* Equipment);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastEquipEquipment(AEquipment* Equipment);
+	void LocalEquipEquipment(AEquipment* Equipment);
+	void AttachEquipmentToBodySocket(AEquipment* Equipment);
+
+	// 切换
+	void SwapEquipment(EEquipmentType EquipmentType);
+	UFUNCTION(Server, Reliable)
+	void ServerSwapEquipment(EEquipmentType EquipmentType);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSwapEquipment(EEquipmentType EquipmentType);
+	void LocalSwapEquipment(EEquipmentType EquipmentType);
+	void PlaySwapMontage(AEquipment* EquipmentType);
+
+	// 使用
+	void UseEquipment(AEquipment* EquipmentType);
+	void AttachEquipmentToRightHand(AEquipment* EquipmentType);
+	void PlayUseEquipmentSound();
+
+	// 瞄准
+	UPROPERTY()
+	bool bIsAiming = false;
+	void SetAiming(bool bNewAimingState);
 	UFUNCTION(Server, Reliable)
 	void ServerSetAiming(bool bNewAimingState);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetAiming(bool bNewAimingState);
+	void LocalSetAiming(bool bNewAimingState);
 
-	UFUNCTION(Server, Reliable)
-	void ServerEquipWeapon(AWeapon* WeaponToEquip);
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastEquipWeapon(AWeapon* WeaponToEquip);
-	void LocalEquipWeapon(AWeapon* WeaponToEquip);
-	UFUNCTION(Server, Reliable)
-	void ServerSwapWeapon(EWeaponType NewWeaponType);
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastSwapWeapon(EWeaponType NewWeaponType);
-	void LocalSwapWeapon(EWeaponType NewWeaponType);
-	void UseWeapon(AWeapon* WeaponToUse);
-	void AttachActorToRightHand(AActor* ActorToAttach);
-	void AttachActorToBodySocket(AWeapon* ActorToAttach);
-	UFUNCTION(Server, Reliable)
-	void ServerDropWeapon();
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastDropWeapon();
-	void LocalDropWeapon();
-
+	// 射击
+	bool bCanFire = true;
+	bool bFireButtonPressed;
+	FTimerHandle FireTimer;
+	UPROPERTY()
+	USoundCue* ClickSound; // 无子弹时扣动扳机的声音
+	void FireHandle(bool bPressed);
+	void Fire();
+	bool CanFire();
+	void LoadNewBulletFinished();
 	UFUNCTION(Server, Reliable)
 	void ServerFire(const FVector_NetQuantize& TraceHitTarget);
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastFire(const FVector_NetQuantize& TraceHitTarget);
 	void LocalFire(const FVector_NetQuantize& TraceHitTarget);
+	void PlayFireMontage();
 
+	// 装弹
+	void Reload();
 	UFUNCTION(Server, Reliable)
 	void ServerReload();
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastReload();
-
-	void PlayUseWeaponSound();
-	void PlayFireMontage();
+	void LocalReload();
 	void PlayReloadMontage();
-	void PlaySwapMontage(AWeapon* Weapon);
+	void JumpToShotgunEnd();
+
+	// 丢弃
+	void DropEquipment();
+	UFUNCTION(Server, Reliable)
+	void ServerDropEquipment();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastDropEquipment();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastDropEquipment2();
+	void LocalDropEquipment();
+
+	// 销毁
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastDestroyEquipment();
+
+	// 近战攻击
+	void MeleeAttack(int32 Type);
+	UFUNCTION(Server, Reliable)
+	void ServerMeleeAttack(int32 Type);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastMeleeAttack(int32 Type);
+	void LocalMeleeAttack(int32 Type);
 
 public:
-	FORCEINLINE AWeapon* GetPrimaryWeapon() const { return PrimaryWeapon; }
+	FORCEINLINE AWeapon* GetPrimaryEquipment() const { return PrimaryEquipment; }
+	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 
 };

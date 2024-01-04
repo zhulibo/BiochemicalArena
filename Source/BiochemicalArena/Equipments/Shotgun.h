@@ -11,16 +11,16 @@ class BIOCHEMICALARENA_API AShotgun : public AWeapon
 
 public:
 	AShotgun();
+
 	virtual void Fire(const FVector& HitTarget) override;
 
-private:
+protected:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AProjectile> ProjectileClass;
 
-	UPROPERTY(EditAnywhere, Category = "Weapon")
-	uint32 PelletNum = 8;
-
-	UPROPERTY(EditAnywhere, Category = "Weapon")
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	int32 PelletNum = 8;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	float SpreadDegrees = 10.f;
 
 };

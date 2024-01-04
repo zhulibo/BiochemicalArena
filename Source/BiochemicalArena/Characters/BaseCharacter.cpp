@@ -2,7 +2,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/PlayerStates/Team.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
@@ -10,8 +13,7 @@ ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// 设置CharacterMovementComponent可蹲下
-	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true; // 设置CharacterMovementComponent可蹲下
 }
 
 void ABaseCharacter::BeginPlay()
@@ -29,17 +31,9 @@ void ABaseCharacter::BeginPlay()
 	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 }
 
-void ABaseCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	CalculateAO_Pitch();
-}
-
 void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 	// Add Input Mapping Context
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
@@ -69,6 +63,50 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
 		EnhancedInputComponent->BindAction(RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
 		EnhancedInputComponent->BindAction(RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChange);
+	}
+}
+
+void ABaseCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	PollInitMeshCollision();
+
+	CalculateAO_Pitch();
+}
+
+void ABaseCharacter::PollInitMeshCollision()
+{
+	if (!HasInitMeshCollision)
+	{
+		if (BasePlayerState == nullptr)
+		{
+			BasePlayerState = GetPlayerState<ABasePlayerState>();
+		}
+		if (BasePlayerState && BasePlayerState->GetTeam() != ETeam::NoTeam)
+		{
+			switch (BasePlayerState->GetTeam())
+			{
+			case ETeam::Team1:
+				GetMesh()->SetCollisionObjectType(ECC_Team1SkeletalMesh);
+				break;
+			case ETeam::Team2:
+				GetMesh()->SetCollisionObjectType(ECC_Team2SkeletalMesh);
+				break;
+			}
+			HasInitMeshCollision = true;
+		}
+	}
+}
+
+void ABaseCharacter::CalculateAO_Pitch()
+{
+	AO_Pitch = GetBaseAimRotation().Pitch;
+	if (AO_Pitch > 90.f && !IsLocallyControlled()) // Remote character need map pitch from [360, 270) to [0, -90)
+	{
+		FVector2D InRange(360.f, 270.f);
+		FVector2D OutRange(0.f, -90.f);
+		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
 	}
 }
 
@@ -119,7 +157,7 @@ void ABaseCharacter::Move(const FInputActionValue& Value)
 
 void ABaseCharacter::Look(const FInputActionValue& Value)
 {
-	if (bIsRadialMenuOpen) return;
+	if (bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
 	AddControllerYawInput(AxisVector.X);
 	AddControllerPitchInput(AxisVector.Y);
@@ -127,7 +165,7 @@ void ABaseCharacter::Look(const FInputActionValue& Value)
 
 void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
 {
-	if (bIsRadialMenuOpen) return;
+	if (bIsRadialMenuOpened) return;
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -163,19 +201,28 @@ void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Valu
 void ABaseCharacter::ScoreboardButtonPressed(const FInputActionValue& Value)
 {
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	if (BaseController) BaseController->ShowScoreboard(true);
+	if (BaseController)
+	{
+		BaseController->ShowScoreboard(true);
+	}
 }
 
 void ABaseCharacter::ScoreboardButtonReleased(const FInputActionValue& Value)
 {
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	if (BaseController) BaseController->ShowScoreboard(false);
+	if (BaseController)
+	{
+		BaseController->ShowScoreboard(false);
+	}
 }
 
 void ABaseCharacter::PauseMenuButtonPressed(const FInputActionValue& Value)
 {
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	if (BaseController) BaseController->ShowPauseMenu();
+	if (BaseController)
+	{
+		BaseController->ShowPauseMenu();
+	}
 }
 
 void ABaseCharacter::RadialMenuButtonPressed(const FInputActionValue& Value)
@@ -184,7 +231,7 @@ void ABaseCharacter::RadialMenuButtonPressed(const FInputActionValue& Value)
 	if (BaseController)
 	{
 		BaseController->ShowRadialMenu();
-		bIsRadialMenuOpen = true;
+		bIsRadialMenuOpened = true;
 	}
 }
 
@@ -194,13 +241,13 @@ void ABaseCharacter::RadialMenuButtonReleased(const FInputActionValue& Value)
 	if (BaseController)
 	{
 		BaseController->CloseRadialMenu();
-		bIsRadialMenuOpen = false;
+		bIsRadialMenuOpened = false;
 	}
 }
 
 void ABaseCharacter::RadialMenuChange(const FInputActionValue& Value)
 {
-	if (!bIsRadialMenuOpen) return;
+	if (!bIsRadialMenuOpened) return;
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
@@ -210,78 +257,63 @@ void ABaseCharacter::RadialMenuChange(const FInputActionValue& Value)
 
 void ABaseCharacter::RadialMenuSelect(const FInputActionValue& Value)
 {
-	if (!bIsRadialMenuOpen) return;
+	if (!bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
-		// UE_LOG(LogTemp, Warning, TEXT("X: %f, Y: %f"), AxisVector.X, AxisVector.Y);
 		BaseController->SelectRadialMenu(AxisVector.X, AxisVector.Y);
 	}
 }
 
-void ABaseCharacter::CalculateAO_Pitch()
-{
-	AO_Pitch = GetBaseAimRotation().Pitch;
-	if (AO_Pitch > 90.f && !IsLocallyControlled())
-	{
-		// map pitch from [360, 270) to [0, -90)
-		FVector2D InRange(360.f, 270.f);
-		FVector2D OutRange(0.f, -90.f);
-		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
-	}
-}
-
-void ABaseCharacter::Landed(const FHitResult& Hit)
-{
-	Super::Landed(Hit);
-}
-
-float ABaseCharacter::CalcFallDamageCoefficient()
+float ABaseCharacter::CalcFallDamageFactor()
 {
 	FVector Velocity = GetCharacterMovement()->Velocity; // 用当前帧的速度即可，Landed判定的时机是即将落地时，此时速度达到最大
 	float Gravity = GetCharacterMovement()->GetGravityZ();
 	float DiffHighMeter = Velocity.Z / Gravity;
 
-	// 测试发现角色降落时不遵循自由落体，下面大致模拟跌落伤害
-	float DamageCoefficient; // 跌落扣血系数（占MaxHealth）
+	// 角色降落时不遵循自由落体，大致模拟跌落伤害
+	float DamageFactor; // 跌落扣血比例（占MaxHealth）
 	if (DiffHighMeter < 1.f) // 大约对应游戏里5m
 	{
-		DamageCoefficient = 0.f;
+		DamageFactor = 0.f;
 	}
 	else if (DiffHighMeter >= 1.f && DiffHighMeter < 1.2f)
 	{
-		DamageCoefficient = 0.05f;
+		DamageFactor = 0.05f;
 	}
 	else if (DiffHighMeter >= 1.2f && DiffHighMeter < 1.5f)
 	{
-		DamageCoefficient = 0.1f;
+		DamageFactor = 0.1f;
 	}
 	else
 	{
-		DamageCoefficient = 0.15f;
+		DamageFactor = 0.15f;
 	}
 
-	return DamageCoefficient;
+	return DamageFactor;
 }
 
-void ABaseCharacter::PlayOuchWeaponSound(float DamageCoefficient)
+void ABaseCharacter::PlayOuchSound(float DamageFactor)
 {
-	if (DamageCoefficient == 0.05f)
+	if (DamageFactor == 0.05f)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OuchSound1, GetActorLocation());
 	}
-	else if (DamageCoefficient == 0.1f)
+	else if (DamageFactor == 0.1f)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OuchSound2, GetActorLocation());
 	}
-	else if (DamageCoefficient == 0.15f)
+	else if (DamageFactor == 0.15f)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OuchSound3, GetActorLocation());
 	}
 }
 
-void ABaseCharacter::MulticastPlayOuchWeaponSound_Implementation(float DamageCoefficient)
+void ABaseCharacter::MulticastPlayOuchSound_Implementation(float DamageFactor)
 {
-	if (!IsLocallyControlled()) PlayOuchWeaponSound(DamageCoefficient);
+	if (!IsLocallyControlled())
+	{
+		PlayOuchSound(DamageFactor);
+	}
 }

@@ -30,7 +30,7 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	URadialMenu* RadialMenuPaint;
 
-	int ActiveRadialMenu = 1;
+	int32 ActiveRadialMenuIndex = 1;
 	URadialMenu* GetActiveRadialMenu();
 
 };

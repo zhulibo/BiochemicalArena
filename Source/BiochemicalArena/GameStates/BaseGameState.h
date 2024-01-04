@@ -11,6 +11,10 @@ class BIOCHEMICALARENA_API ABaseGameState : public AGameState
 
 public:
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastAddKillLog(class ABasePlayerState* AttackerState, const FString& WeaponName, ABasePlayerState* KilledState);
+	void MulticastAddKillLog(class ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState);
+
+protected:
+	UPROPERTY()
+	class ABaseController* BaseController;
 
 };

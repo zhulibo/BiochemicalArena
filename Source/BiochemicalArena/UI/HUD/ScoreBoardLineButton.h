@@ -13,9 +13,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Player;
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* Damage;
-	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* Kill;
+	UCommonTextBlock* Score;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Survive;
 	UPROPERTY(meta = (BindWidget))

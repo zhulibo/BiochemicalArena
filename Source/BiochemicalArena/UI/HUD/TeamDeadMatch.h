@@ -21,7 +21,7 @@ public:
 	UCommonTextBlock* Health;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* WeaponAmmo;
+	UCommonTextBlock* Ammo;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* CarriedAmmo;
 
