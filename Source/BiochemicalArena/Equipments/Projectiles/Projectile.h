@@ -12,19 +12,10 @@ class BIOCHEMICALARENA_API AProjectile : public AActor
 public:
 	AProjectile();
 
-	void SetDamage(float TemDamage);
-
 protected:
-	// virtual void PostActorCreated() override;
+	virtual void PostActorCreated() override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY()
-	float Damage;
-
-	UFUNCTION()
-	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-private:
 	UPROPERTY(EditAnywhere)
 	class UBoxComponent* CollisionBox;
 	UPROPERTY(VisibleAnywhere)
@@ -32,17 +23,28 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
+	UPROPERTY()
+	float Damage;
+
+	// 尾部效果
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* Tracer;
 	UPROPERTY()
 	UParticleSystemComponent* TracerComponent;
+	void SpawnTracer();
+
+	// 在空中留下的轨迹
 	UPROPERTY(EditAnywhere)
-	UParticleSystem* ImpactParticles;
+	class UNiagaraSystem* Trail; // TODO 实现效果
+	UPROPERTY()
+	class UNiagaraComponent* TrailComponent;
+	void SpawnTrail();
+
+	// 击中效果
+	UPROPERTY(EditAnywhere)
+	UParticleSystem* ImpactParticle;
 	UPROPERTY(EditAnywhere)
 	USoundCue* ImpactSound;
-
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_OnHit();
 
 public:
 	FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }

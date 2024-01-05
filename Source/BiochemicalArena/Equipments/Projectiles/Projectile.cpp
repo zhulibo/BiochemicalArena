@@ -1,9 +1,8 @@
 #include "Projectile.h"
 #include "Components/BoxComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
-#include "Sound/SoundCue.h"
+#include "NiagaraFunctionLibrary.h"
 
 AProjectile::AProjectile()
 {
@@ -21,37 +20,24 @@ AProjectile::AProjectile()
 	ProjectileMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ProjectileMesh"));
 	ProjectileMesh->SetupAttachment(RootComponent);
 	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
-	ProjectileMovementComponent->bRotationFollowsVelocity = true;
-	ProjectileMovementComponent->SetIsReplicated(true);
-	ProjectileMovementComponent->InitialSpeed = 100000.f;
-	ProjectileMovementComponent->MaxSpeed = 100000.f;
 }
 
-void AProjectile::SetDamage(float TemDamage)
+void AProjectile::PostActorCreated()
 {
-	Damage = TemDamage;
-}
+	Super::PostActorCreated();
 
-// Don't do this for now, Avoid cast
-// void AProjectile::PostActorCreated()
-// {
-// 	Super::PostActorCreated();
-//
-// 	AWeapon* Weapon = Cast<AWeapon>(GetOwner());
-// 	if (Weapon)
-// 	{
-// 		ProjectileMovementComponent->InitialSpeed = Weapon->GetProjectileSpeed();
-// 		ProjectileMovementComponent->MaxSpeed = Weapon->GetProjectileSpeed();
-// 		Damage = Weapon->GetDamage();
-// 	}
-// }
+	// 尽早执行，避免因网络同步造成客户端OnHit时Component为空
+	SpawnTracer();
+	SpawnTrail();
+}
 
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
+void AProjectile::SpawnTracer()
+{
 	if (Tracer)
 	{
 		TracerComponent = UGameplayStatics::SpawnEmitterAttached(
@@ -63,33 +49,20 @@ void AProjectile::BeginPlay()
 			EAttachLocation::KeepWorldPosition
 		);
 	}
-
-	if (HasAuthority())
-	{
-		CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
-	}
-
-	SetLifeSpan(2.f);
 }
 
-void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AProjectile::SpawnTrail()
 {
-	if(HasAuthority())
+	if (Trail)
 	{
-		Multicast_OnHit();
-	}
-
-	Destroy();
-}
-
-void AProjectile::Multicast_OnHit_Implementation()
-{
-	if (ImpactParticles)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticles, GetActorTransform());
-	}
-	if (ImpactSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+		TrailComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			Trail,
+			GetRootComponent(),
+			FName(),
+			GetActorLocation(),
+			GetActorRotation(),
+			EAttachLocation::KeepWorldPosition,
+			false
+		);
 	}
 }

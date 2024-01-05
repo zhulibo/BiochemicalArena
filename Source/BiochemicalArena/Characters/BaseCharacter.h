@@ -20,7 +20,7 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 
 	bool HasInitMeshCollision = false;
-	void PollInitMeshCollision(); // TODO 回调方案
+	void PollInitMeshCollision();
 	void CalculateAO_Pitch();
 
 	void Move(const struct FInputActionValue& Value);

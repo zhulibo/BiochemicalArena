@@ -16,7 +16,7 @@ public:
 
 protected:
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AProjectile> ProjectileClass;
+	TSubclassOf<class AProjectileBullet> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	int32 PelletNum = 8;

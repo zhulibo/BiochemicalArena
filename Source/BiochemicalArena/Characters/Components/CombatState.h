@@ -8,6 +8,7 @@ enum class ECombatState : uint8
 	Swapping UMETA(DisplayName = "Swapping"),
 	LightAttacking UMETA(DisplayName = "LightAttacking"),
 	HeavyAttacking UMETA(DisplayName = "HeavyAttacking"),
+	Throwing UMETA(DisplayName = "Throwing"),
 
 	MAX UMETA(Hidden)
 };

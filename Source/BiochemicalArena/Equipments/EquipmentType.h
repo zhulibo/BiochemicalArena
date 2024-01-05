@@ -35,6 +35,8 @@ enum class EEquipmentName : uint8 // 装备名字
 
 	Kukri UMETA(DisplayName = "Kukri"),
 
+	Grenade UMETA(DisplayName = "Grenade"),
+
 	MAX UMETA(Hidden),
 };
 

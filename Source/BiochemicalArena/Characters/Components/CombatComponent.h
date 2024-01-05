@@ -18,6 +18,7 @@ public:
 	class AEquipment* GetCurrentEquipment(); // If has a equipment in use return it, or return nullptr
 	class AWeapon* GetCurrentShotEquipment(); // If primary or secondary equipment is in use return it, or return nullptr
 	class AMelee* GetCurrentMeleeEquipment(); // If MeleeEquipment is in use return it, or return nullptr
+	class AThrowing* GetCurrentThrowingEquipment();
 
 	void FinishSwapAttach(EEquipmentType EquipmentType);
 	void FinishSwap();
@@ -26,6 +27,8 @@ public:
 	void FinishReload();
 
 	void EnableMeshCollision(bool bIsEnabled);
+
+	void ThrowOut();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -67,7 +70,7 @@ protected:
 	UPROPERTY(Replicated)
 	AMelee* MeleeEquipment;
 	UPROPERTY(Replicated)
-	AEquipment* ThrowingEquipment;
+	AThrowing* ThrowingEquipment;
 	UPROPERTY(Replicated)
 	EEquipmentType CurrentEquipmentType = EEquipmentType::MAX;
 	UPROPERTY(Replicated)
@@ -85,6 +88,8 @@ protected:
 	void MulticastEquipEquipment(AEquipment* Equipment);
 	void LocalEquipEquipment(AEquipment* Equipment);
 	void AttachEquipmentToBodySocket(AEquipment* Equipment);
+	UPROPERTY()
+	USoundCue* EquipSound;
 
 	// 切换
 	void SwapEquipment(EEquipmentType EquipmentType);
@@ -98,7 +103,6 @@ protected:
 	// 使用
 	void UseEquipment(AEquipment* EquipmentType);
 	void AttachEquipmentToRightHand(AEquipment* EquipmentType);
-	void PlayUseEquipmentSound();
 
 	// 瞄准
 	UPROPERTY()
@@ -158,6 +162,14 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastMeleeAttack(int32 Type);
 	void LocalMeleeAttack(int32 Type);
+
+	// 投掷
+	void Throw();
+	UFUNCTION(Server, Reliable)
+	void ServerThrow();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastThrow();
+	void LocalThrow();
 
 public:
 	FORCEINLINE AWeapon* GetPrimaryEquipment() const { return PrimaryEquipment; }

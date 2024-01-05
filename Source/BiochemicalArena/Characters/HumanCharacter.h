@@ -41,7 +41,7 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultMeleeEquipment)
 	class AMelee* DefaultMeleeEquipment;
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultThrowingEquipment)
-	AEquipment* DefaultThrowingEquipment;
+	class AThrowing* DefaultThrowingEquipment;
 	UFUNCTION()
 	void OnRep_DefaultPrimaryEquipment();
 	UFUNCTION()

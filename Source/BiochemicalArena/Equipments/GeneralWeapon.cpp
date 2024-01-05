@@ -4,7 +4,7 @@
 #include "BiochemicalArena/PlayerStates/Team.h"
 #include "Components/BoxComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
-#include "Projectiles/Projectile.h"
+#include "Projectiles/ProjectileBullet.h"
 
 AGeneralWeapon::AGeneralWeapon()
 {
@@ -31,7 +31,7 @@ void AGeneralWeapon::Fire(const FVector& HitTarget)
 		Params.Owner = this;
 		Params.Instigator = HumanCharacter;
 
-		AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
+		AProjectileBullet* Projectile = GetWorld()->SpawnActor<AProjectileBullet>(
 			ProjectileClass,
 			SocketTransform.GetLocation(),
 			TargetRotation,

@@ -7,6 +7,7 @@
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
+#include "..\..\Equipments\Throwing.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "Sound/SoundCue.h"
@@ -45,6 +46,7 @@ void UCombatComponent::BeginPlay()
 		}
 	}
 
+	EquipSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 }
 
@@ -182,6 +184,17 @@ AMelee* UCombatComponent::GetCurrentMeleeEquipment()
 	}
 }
 
+AThrowing* UCombatComponent::GetCurrentThrowingEquipment()
+{
+	switch (CurrentEquipmentType)
+	{
+	case EEquipmentType::Throwing:
+		return ThrowingEquipment;
+	default:
+		return nullptr;
+	}
+}
+
 AEquipment* UCombatComponent::GetLastEquipment()
 {
 	return GetEquipmentByType(LastEquipmentType);
@@ -257,7 +270,7 @@ void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 		if (AMelee* TemEquipment = Cast<AMelee>(Equipment)) MeleeEquipment = TemEquipment;
 		break;
 	case EEquipmentType::Throwing:
-		ThrowingEquipment = Equipment;
+		if (AThrowing* TemEquipment = Cast<AThrowing>(Equipment)) ThrowingEquipment = TemEquipment;
 		break;
 	}
 	AttachEquipmentToBodySocket(Equipment);
@@ -286,6 +299,8 @@ void UCombatComponent::AttachEquipmentToBodySocket(AEquipment* Equipment)
 	if (BodyScoket)
 	{
 		BodyScoket->AttachActor(Equipment, Character->GetMesh());
+
+		if (EquipSound) UGameplayStatics::PlaySoundAtLocation(this, EquipSound, Character->GetActorLocation());
 	}
 }
 
@@ -332,6 +347,7 @@ void UCombatComponent::PlaySwapMontage(AEquipment* Equipment)
 	}
 }
 
+// TODO 逻辑修改 创建变量记录切枪状态是否中断 不依赖MontageSectionName 且不需要判断CombatState == ECombatState::Ready
 void UCombatComponent::FinishSwapAttach(EEquipmentType EquipmentType)
 {
 	if (Character == nullptr) return;
@@ -382,10 +398,14 @@ void UCombatComponent::UseEquipment(AEquipment* Equipment)
 		}
 		else
 		{
-			// TODO SetHUDAmmo
+			if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
+			if (Controller)
+			{
+				Controller->SetHUDAmmo(0);
+				Controller->SetHUDCarriedAmmo(0);
+			}
 		}
 	}
-	PlayUseEquipmentSound();
 }
 
 void UCombatComponent::AttachEquipmentToRightHand(AEquipment* Equipment)
@@ -395,14 +415,6 @@ void UCombatComponent::AttachEquipmentToRightHand(AEquipment* Equipment)
 	if (HandSocket)
 	{
 		HandSocket->AttachActor(Equipment, Character->GetMesh());
-	}
-}
-
-void UCombatComponent::PlayUseEquipmentSound()
-{
-	if (Character && GetCurrentEquipment() && GetCurrentEquipment()->UseEquipmentSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, GetCurrentEquipment()->UseEquipmentSound, Character->GetActorLocation());
 	}
 }
 
@@ -657,7 +669,7 @@ void UCombatComponent::MulticastDestroyEquipment_Implementation()
 {
 	if (SecondaryEquipment) SecondaryEquipment->Destroy();
 	if (MeleeEquipment) MeleeEquipment->Destroy();
-	if (ThrowingEquipment) ThrowingEquipment->Destroy();
+	if (ThrowingEquipment) ThrowingEquipment->ManualDestroy();
 }
 
 void UCombatComponent::MeleeAttack(int32 Type)
@@ -681,23 +693,27 @@ void UCombatComponent::MulticastMeleeAttack_Implementation(int32 Type)
 
 void UCombatComponent::LocalMeleeAttack(int32 Type)
 {
-	if (CombatState != ECombatState::Ready) return;
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance == nullptr || GetCurrentMeleeEquipment() == nullptr) return;
-
-	UAnimMontage* AttackMontage = GetCurrentMeleeEquipment()->AttackMontage;
-	if (AttackMontage == nullptr) return;
-
-	AnimInstance->Montage_Play(AttackMontage);
-	if (Type == 0)
+	if (CombatState == ECombatState::Ready)
 	{
-		AnimInstance->Montage_JumpToSection(FName("LightAttack"));
-		CombatState = ECombatState::LightAttacking;
-	}
-	else
-	{
-		AnimInstance->Montage_JumpToSection(FName("HeavyAttack"));
-		CombatState = ECombatState::HeavyAttacking;
+		if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+		if (AnimInstance == nullptr && GetCurrentMeleeEquipment())
+		{
+			UAnimMontage* AttackMontage = GetCurrentMeleeEquipment()->AttackMontage;
+			if (AttackMontage)
+			{
+				AnimInstance->Montage_Play(AttackMontage);
+				if (Type == 0)
+				{
+					AnimInstance->Montage_JumpToSection(FName("LightAttack"));
+					CombatState = ECombatState::LightAttacking;
+				}
+				else
+				{
+					AnimInstance->Montage_JumpToSection(FName("HeavyAttack"));
+					CombatState = ECombatState::HeavyAttacking;
+				}
+			}
+		}
 	}
 }
 
@@ -709,6 +725,65 @@ void UCombatComponent::EnableMeshCollision(bool bIsEnabled)
 	}
 	if (!bIsEnabled)
 	{
+		CombatState = ECombatState::Ready;
+	}
+}
+
+void UCombatComponent::Throw()
+{
+	LocalThrow();
+	ServerThrow();
+}
+
+void UCombatComponent::ServerThrow_Implementation()
+{
+	MulticastThrow();
+}
+
+void UCombatComponent::MulticastThrow_Implementation()
+{
+	if (Character && !Character->IsLocallyControlled())
+	{
+		LocalThrow();
+	}
+}
+
+void UCombatComponent::LocalThrow()
+{
+	if (CombatState == ECombatState::Ready)
+	{
+		if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+		if (AnimInstance && GetCurrentThrowingEquipment())
+		{
+			UAnimMontage* ThrowMontage = GetCurrentThrowingEquipment()->ThrowMontage;
+			if (ThrowMontage)
+			{
+				AnimInstance->Montage_Play(ThrowMontage);
+				CombatState = ECombatState::Throwing;
+			}
+		}
+	}
+}
+
+void UCombatComponent::ThrowOut()
+{
+	if (ThrowingEquipment && ThrowingEquipment->GetEquipmentMesh() && Character)
+	{
+		ThrowingEquipment->GetEquipmentMesh()->SetSimulatePhysics(true);
+		ThrowingEquipment->GetEquipmentMesh()->SetEnableGravity(true);
+		ThrowingEquipment->GetEquipmentMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+		ThrowingEquipment->GetEquipmentMesh()->DetachFromComponent(DetachRules);
+
+		UCameraComponent* CameraComponent = Character->FindComponentByClass<UCameraComponent>();
+		if (CameraComponent)
+		{
+			ThrowingEquipment->GetEquipmentMesh()->AddImpulse(CameraComponent->GetForwardVector() * 1000.f * ThrowingEquipment->GetEquipmentMesh()->GetMass());
+		}
+
+		ThrowingEquipment->ThrowOut();
+
 		CombatState = ECombatState::Ready;
 	}
 }

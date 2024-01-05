@@ -1,6 +1,7 @@
 #include "HumanCharacter.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "..\Equipments\Throwing.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/CombatComponent.h"
@@ -166,12 +167,12 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
 		Combat->LocalEquipEquipment(DefaultMeleeEquipment);
 	}
 
-	// UClass* ThrowingEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Equipments/Melee.Melee_C'"));
-	// if (ThrowingEquipmentClass)
-	// {
-	// 	DefaultThrowingEquipment = GetWorld()->SpawnActor<AEquipment>(ThrowingEquipmentClass);
-	// 	Combat->LocalEquipEquipment(DefaultThrowingEquipment);
-	// }
+	UClass* ThrowingEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Equipments/Grenade.Grenade_C'"));
+	if (ThrowingEquipmentClass)
+	{
+		DefaultThrowingEquipment = GetWorld()->SpawnActor<AThrowing>(ThrowingEquipmentClass);
+		Combat->LocalEquipEquipment(DefaultThrowingEquipment);
+	}
 }
 
 void AHumanCharacter::OnRep_DefaultPrimaryEquipment()
@@ -256,9 +257,13 @@ void AHumanCharacter::FireButtonPressed(const FInputActionValue& Value)
 	{
 		Combat->FireHandle(true);
 	}
-	else if (Combat->CurrentEquipmentType == EEquipmentType::Melee)
+	else if (Combat->GetCurrentMeleeEquipment())
 	{
 		Combat->MeleeAttack(0);
+	}
+	else if (Combat->GetCurrentThrowingEquipment())
+	{
+		Combat->Throw();
 	}
 }
 

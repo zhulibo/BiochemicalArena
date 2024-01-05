@@ -4,7 +4,7 @@
 #include "Components/BoxComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "Projectiles/Projectile.h"
+#include "Projectiles/ProjectileBullet.h"
 
 AShotgun::AShotgun()
 {
@@ -34,7 +34,7 @@ void AShotgun::Fire(const FVector& HitTarget)
 			for (int32 i = 0; i < PelletNum; ++i)
 			{
 				FVector ToTargetRandom = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, SpreadDegrees);
-				AProjectile* Projectile = GetWorld()->SpawnActor<AProjectile>(
+				AProjectileBullet* Projectile = GetWorld()->SpawnActor<AProjectileBullet>(
 					ProjectileClass,
 					SocketTransform.GetLocation(),
 					ToTargetRandom.Rotation(),

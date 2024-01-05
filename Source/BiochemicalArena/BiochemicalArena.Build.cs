@@ -14,7 +14,8 @@ public class BiochemicalArena : ModuleRules
 				"InputCore",
 				"EnhancedInput",
 				"OnlineServicesInterface",
-				"CoreOnline"
+				"CoreOnline",
+				"Niagara",
 			}
 		);
 

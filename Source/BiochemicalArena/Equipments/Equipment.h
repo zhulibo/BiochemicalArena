@@ -16,8 +16,6 @@ public:
 
 	virtual void SetEquipmentState(EEquipmentState State);
 
-	UPROPERTY(EditAnywhere)
-	USoundCue* UseEquipmentSound;
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	UAnimMontage* SwapMontage;
 

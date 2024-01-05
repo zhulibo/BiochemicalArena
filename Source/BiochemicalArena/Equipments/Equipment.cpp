@@ -2,6 +2,7 @@
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Animation/AnimationAsset.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
+#include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "Camera/CameraComponent.h"
@@ -80,6 +81,8 @@ void AEquipment::OnEquipped()
 	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SetOwnerTeam();
+
+	if (HumanCharacter) HumanController = Cast<AHumanController>(HumanCharacter->GetController()); // 缓存HumanController
 }
 
 void AEquipment::SetOwnerTeam()
@@ -90,32 +93,6 @@ void AEquipment::SetOwnerTeam()
 		ABasePlayerState* PlayerState = Cast<ABasePlayerState>(HumanCharacter->GetPlayerState());
 		if (PlayerState) OwnerTeam = PlayerState->GetTeam();
 	}
-}
-
-void AEquipment::DropEquipment()
-{
-	SetEquipmentState(EEquipmentState::Dropped);
-	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-	EquipmentMesh->DetachFromComponent(DetachRules);
-	// 丢弃武器时，给予一个向前的冲量
-	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
-	if (HumanCharacter)
-	{
-		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
-		if (CameraComponent)
-		{
-			float ImpulsePerKg =  300.f;
-			if (HumanCharacter->IsKilled())
-			{
-				ImpulsePerKg = ImpulsePerKg / 2;
-			}
-			EquipmentMesh->AddImpulse(CameraComponent->GetForwardVector() * ImpulsePerKg * EquipmentMesh->GetMass());
-		}
-	}
-	SetOwner(nullptr);
-	HumanCharacter = nullptr;
-	HumanController = nullptr;
-	OwnerTeam = ETeam::NoTeam;
 }
 
 void AEquipment::OnDropped()
@@ -140,6 +117,33 @@ void AEquipment::OnDropped()
 void AEquipment::SetAreaSphereCollision()
 {
 	AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AEquipment::DropEquipment()
+{
+	SetEquipmentState(EEquipmentState::Dropped);
+	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+	EquipmentMesh->DetachFromComponent(DetachRules);
+	// 丢弃武器时，给予一个向前的冲量
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
+	if (HumanCharacter)
+	{
+		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
+		if (CameraComponent)
+		{
+			float ImpulsePerKg =  300.f;
+			if (HumanCharacter->IsKilled())
+			{
+				ImpulsePerKg = ImpulsePerKg / 2;
+			}
+			EquipmentMesh->AddImpulse(CameraComponent->GetForwardVector() * ImpulsePerKg * EquipmentMesh->GetMass());
+			// UE_LOG(LogTemp, Warning, TEXT("EquipmentMesh->GetMass(): %f"), EquipmentMesh->GetMass());
+		}
+	}
+	SetOwner(nullptr);
+	HumanCharacter = nullptr;
+	HumanController = nullptr;
+	OwnerTeam = ETeam::NoTeam;
 }
 
 void AEquipment::DestroyEquipment()
