@@ -1,13 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Online/OnlineServices.h"
 #include "Online/Auth.h"
 #include "Online/UserInfo.h"
 #include "Online/Lobbies.h"
 #include "Online/Sessions.h"
+#include "Online/UserFile.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "Online/OnlineServices.h"
-#include "EOS.generated.h"
+#include "EOSSubsystem.generated.h"
 
 using namespace UE::Online;
 
@@ -37,14 +38,19 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnCreateSessionComplete, bool bWasSuccessfu
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveSessionComplete, bool bWasSuccessful);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnEnumerateFilesComplete, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnReadFileComplete, bool bWasSuccessful, const FUserFileContentsRef& FileContents);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnWriteFileComplete, bool bWasSuccessful);
+
 UCLASS()
-class BIOCHEMICALARENA_API UEOS : public UGameInstanceSubsystem
+class BIOCHEMICALARENA_API UEOSSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
 public:
-	UEOS();
+	UEOSSubsystem();
 
+	// Login
 	void Login(FPlatformUserId ID, int32 Type = 0);
 	FOnLoginComplete OnLoginComplete;
 	TSharedPtr<FUserInfo> UserInfo;
@@ -53,6 +59,7 @@ public:
 	FOnLoginStatusChanged OnLoginStatusChanged;
 	void BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
 
+	// Lobby
 	TSharedPtr<const FLobby> CurrentLobby;
 
 	void CreateLobby();
@@ -89,6 +96,7 @@ public:
 	void LeaveLobby();
 	FOnLeaveLobbyComplete OnLeaveLobbyComplete;
 
+	// Session
 	void CreateSession();
 	FOnCreateSessionComplete OnCreateSessionComplete;
 	TSharedPtr<const ISession> GetPresenceSession();
@@ -96,6 +104,15 @@ public:
 	FOnJoinSessionComplete OnJoinSessionComplete;
 	void LeaveSession();
 	FOnLeaveSessionComplete OnLeaveSessionComplete;
+
+	// UserFile
+	void EnumerateFiles();
+	FOnEnumerateFilesComplete OnEnumerateFilesComplete;
+	TArray<FString> GetEnumeratedFiles();
+	FOnReadFileComplete OnReadFileComplete;
+	void ReadFile(FString Filename);
+	FOnWriteFileComplete OnWriteFileComplete;
+	void WriteFile(FString Filename, FUserFileContents FileContents);
 
 protected:
 	FPlatformUserId PlatformUserId;
@@ -105,5 +122,6 @@ protected:
 	IUserInfoPtr UserInfoPtr;
 	ILobbiesPtr LobbyPtr;
 	ISessionsPtr SessionPtr;
+	IUserFilePtr UserFilePtr;
 
 };

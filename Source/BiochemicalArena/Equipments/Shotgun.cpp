@@ -1,6 +1,9 @@
 #include "Shotgun.h"
+
+#include "EquipmentType.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "Components/BoxComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/KismetMathLibrary.h"

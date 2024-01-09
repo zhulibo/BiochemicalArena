@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "BiochemicalArena/UI/Server/EOS.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "MenuController.generated.h"
 
 UCLASS()
@@ -29,7 +29,7 @@ protected:
 	void AddMenuContainer();
 
 	UPROPERTY()
-	UEOS* EOS;
+	UEOSSubsystem* EOSSubsystem;
 	void OnLoginComplete(bool bWasSuccessful);
 	void OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
 

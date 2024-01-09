@@ -1,9 +1,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Team.h"
 #include "GameFramework/PlayerState.h"
 #include "BasePlayerState.generated.h"
+
+enum class ETeam : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API ABasePlayerState : public APlayerState
@@ -11,7 +12,9 @@ class BIOCHEMICALARENA_API ABasePlayerState : public APlayerState
 	GENERATED_BODY()
 
 public:
-	void SetTeam(ETeam Team);
+	ABasePlayerState();
+
+	void SetTeam(ETeam TemTeam);
 
 	void AddScore(float ScoreAmount);
 	void AddDefeat(int32 DefeatAmount);
@@ -21,7 +24,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere, Category = "Player")
-	ETeam Team = ETeam::NoTeam;
+	ETeam Team;
 	UFUNCTION()
 	void OnRep_Team();
 

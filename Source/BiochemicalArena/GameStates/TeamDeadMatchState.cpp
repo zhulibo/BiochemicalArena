@@ -2,6 +2,7 @@
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Net/UnrealNetwork.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 
 void ATeamDeadMatchState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {

@@ -1,6 +1,5 @@
 #include "MenuController.h"
 #include "BiochemicalArena/UI/MenuContainer.h"
-#include "BiochemicalArena/UI/Server/EOS.h"
 #include "Blueprint/UserWidget.h"
 
 void AMenuController::BeginPlay()
@@ -9,11 +8,11 @@ void AMenuController::BeginPlay()
 
 	AddMenuContainer();
 
-	EOS = GetGameInstance()->GetSubsystem<UEOS>();
-	if (EOS)
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem)
 	{
-		EOS->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
-		EOS->OnLoginStatusChanged.AddUObject(this, &ThisClass::OnLoginStatusChanged);
+		EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
+		EOSSubsystem->OnLoginStatusChanged.AddUObject(this, &ThisClass::OnLoginStatusChanged);
 	}
 
 	// Login();
@@ -42,56 +41,43 @@ void AMenuController::AddMenuContainer()
 
 void AMenuController::Login()
 {
-	if (EOS == nullptr) return;
+	if (EOSSubsystem == nullptr) return;
 	ULocalPlayer* LocalPlayer = GetLocalPlayer();
 	if (LocalPlayer)
 	{
-		FPlatformUserId PlatformUserId = LocalPlayer->GetPlatformUserId();
-		if (PlatformUserId)
-		{
-			EOS->Login(PlatformUserId);
-		}
+		EOSSubsystem->Login(LocalPlayer->GetPlatformUserId());
 	}
 }
 
 void AMenuController::Login1()
 {
-	if (EOS == nullptr) return;
+	if (EOSSubsystem == nullptr) return;
 	ULocalPlayer* LocalPlayer = GetLocalPlayer();
 	if (LocalPlayer)
 	{
-		FPlatformUserId PlatformUserId = LocalPlayer->GetPlatformUserId();
-		if (PlatformUserId)
-		{
-			EOS->Login(PlatformUserId, 1);
-		}
+		EOSSubsystem->Login(LocalPlayer->GetPlatformUserId(), 1);
 	}
 }
 
 void AMenuController::Login2()
 {
-	if (EOS == nullptr) return;
+	if (EOSSubsystem == nullptr) return;
 	ULocalPlayer* LocalPlayer = GetLocalPlayer();
 	if (LocalPlayer)
 	{
-		FPlatformUserId PlatformUserId = LocalPlayer->GetPlatformUserId();
-		if (PlatformUserId)
-		{
-			EOS->Login(PlatformUserId, 2);
-		}
+		EOSSubsystem->Login(LocalPlayer->GetPlatformUserId(), 2);
 	}
 }
 
 void AMenuController::OnLoginComplete(bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnLoginComplete bWasSuccessful: %d"), bWasSuccessful);
 	if (bWasSuccessful)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Login Success!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Login Success!"));
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Login Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Login Failed!"));
 	}
 }
 
@@ -101,7 +87,7 @@ void AMenuController::OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLo
 	UE_LOG(LogTemp, Warning, TEXT("OnLoginStatusChanged AuthLoginStatusChanged: %d"), AuthLoginStatusChanged.LoginStatus);
 	if (AuthLoginStatusChanged.LoginStatus != ELoginStatus::LoggedIn)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("LoginStatus Changed, ReLoging..."));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("LoginStatus Changed, ReLoging..."));
 		Login();
 	}
 }

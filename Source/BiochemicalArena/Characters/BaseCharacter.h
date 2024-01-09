@@ -4,6 +4,8 @@
 #include "GameFramework/Character.h"
 #include "BaseCharacter.generated.h"
 
+struct FBag;
+
 UCLASS()
 class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter
 {
@@ -12,12 +14,19 @@ class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter
 public:
 	ABaseCharacter();
 
+	UPROPERTY()
+	TArray<FBag> Bags;
+
 	void PlayFootstepSound();
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
+
+	UPROPERTY()
+	class UStorageSubsystem* StorageSubsystem;
+	void GetPlayerStorage();
 
 	bool HasInitMeshCollision = false;
 	void PollInitMeshCollision();

@@ -1,7 +1,9 @@
 #include "GeneralWeapon.h"
+
+#include "EquipmentType.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/PlayerStates/Team.h"
+#include "..\PlayerStates\TeamType.h"
 #include "Components/BoxComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Projectiles/ProjectileBullet.h"

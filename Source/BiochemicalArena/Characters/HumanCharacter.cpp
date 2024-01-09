@@ -2,6 +2,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "..\Equipments\Throwing.h"
+#include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/CombatComponent.h"
@@ -9,11 +10,12 @@
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
+#include "..\System\PlayerStorageType.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Components/CombatState.h"
+#include "Components/CombatStateType.h"
 #include "Components/OverheadWidget.h"
 
 AHumanCharacter::AHumanCharacter()
@@ -145,34 +147,63 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
 	Combat->CombatState = ECombatState::Ready;
 	Combat->CurrentEquipmentType = EEquipmentType::Secondary; // 模拟正在使用副武器，以便切换到主武器后，LastEquipmentType被置为副武器
 
-	UClass* PrimaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Equipments/AK47.AK47_C'"));
+	// 获取装备存放路径
+	FString PrimaryEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Primary);
+	FString SecondaryEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Secondary);
+	FString MeleeEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Melee);
+	FString ThrowingEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Throwing);
+
+	// 加载装备类
+	UClass* PrimaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *PrimaryEquipmentClassPath);
+	UClass* SecondaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *SecondaryEquipmentClassPath);
+	UClass* MeleeEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *MeleeEquipmentClassPath);
+	UClass* ThrowingEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ThrowingEquipmentClassPath);
+
 	if (PrimaryEquipmentClass)
 	{
 		DefaultPrimaryEquipment = GetWorld()->SpawnActor<AWeapon>(PrimaryEquipmentClass);
 		Combat->LocalEquipEquipment(DefaultPrimaryEquipment);
 		Combat->LocalSwapEquipment(EEquipmentType::Primary);
 	}
-
-	UClass* SecondaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Equipments/Glock17.Glock17_C'"));
 	if (SecondaryEquipmentClass)
 	{
 		DefaultSecondaryEquipment = GetWorld()->SpawnActor<AWeapon>(SecondaryEquipmentClass);
 		Combat->LocalEquipEquipment(DefaultSecondaryEquipment);
 	}
-
-	UClass* MeleeEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Equipments/Kukri.Kukri_C'"));
 	if (MeleeEquipmentClass)
 	{
 		DefaultMeleeEquipment = GetWorld()->SpawnActor<AMelee>(MeleeEquipmentClass);
 		Combat->LocalEquipEquipment(DefaultMeleeEquipment);
 	}
-
-	UClass* ThrowingEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Equipments/Grenade.Grenade_C'"));
 	if (ThrowingEquipmentClass)
 	{
 		DefaultThrowingEquipment = GetWorld()->SpawnActor<AThrowing>(ThrowingEquipmentClass);
 		Combat->LocalEquipEquipment(DefaultThrowingEquipment);
 	}
+}
+
+FString AHumanCharacter::GetEquipmentClassPath(int32 BagIndex, EEquipmentType EquipmentType)
+{
+	if (Bags.Num() == 0) GetPlayerStorage();
+	if (Bags.Num() == 0) return FString();
+
+	FString EquipmentName;
+	switch (EquipmentType)
+	{
+	case EEquipmentType::Primary:
+		EquipmentName = Bags[BagIndex].Primary;
+		break;
+	case EEquipmentType::Secondary:
+		EquipmentName = Bags[BagIndex].Secondary;
+		break;
+	case EEquipmentType::Melee:
+		EquipmentName = Bags[BagIndex].Melee;
+		break;
+	case EEquipmentType::Throwing:
+		EquipmentName = Bags[BagIndex].Throwing;
+		break;
+	}
+	return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/%s.%s_C'"), *EquipmentName, *EquipmentName);
 }
 
 void AHumanCharacter::OnRep_DefaultPrimaryEquipment()

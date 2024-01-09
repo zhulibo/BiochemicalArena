@@ -5,7 +5,10 @@
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
-#include "BiochemicalArena/PlayerStates/Team.h"
+#include "..\PlayerStates\TeamType.h"
+#include "..\System\PlayerStorageType.h"
+#include "BiochemicalArena/System/PlayerStorage.h"
+#include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
@@ -29,6 +32,8 @@ void ABaseCharacter::BeginPlay()
 	OuchSound1 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 	OuchSound2 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+
+	GetPlayerStorage();
 }
 
 void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -73,6 +78,20 @@ void ABaseCharacter::Tick(float DeltaSeconds)
 	PollInitMeshCollision();
 
 	CalculateAO_Pitch();
+}
+
+// 获取本地存档
+void ABaseCharacter::GetPlayerStorage()
+{
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem)
+	{
+		UPlayerStorage* PlayerStorage = StorageSubsystem->GetPlayerStorage();
+		if (PlayerStorage)
+		{
+			Bags = PlayerStorage->Bags;
+		}
+	}
 }
 
 void ABaseCharacter::PollInitMeshCollision()

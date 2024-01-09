@@ -3,8 +3,10 @@
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
 #include "BiochemicalArena/Interfaces/CrosshairInterface.h"
-#include "Components/CombatState.h"
 #include "HumanCharacter.generated.h"
+
+enum class EEquipmentType : uint8;
+enum class ECombatState : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter, public ICrosshairInterface
@@ -34,6 +36,7 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetDefaultEquipment();
+	FString GetEquipmentClassPath(int32 BagIndex, EEquipmentType EquipmentType);
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimaryEquipment)
 	class AWeapon* DefaultPrimaryEquipment;
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultSecondaryEquipment)

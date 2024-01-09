@@ -28,31 +28,31 @@ void ULobby::NativeConstruct()
 	BackButton->ButtonText->SetText(FText::FromString("Back"));
 	if (!BackButton->OnClicked().IsBoundToObject(this)) BackButton->OnClicked().AddUObject(this, &ThisClass::OnBackButtonClicked);
 
-	EOS = GetGameInstance()->GetSubsystem<UEOS>();
-	if (EOS)
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem)
 	{
 		// 绑定委托
-		if (!EOS->OnLobbyMemberJoined.IsBoundToObject(this)) EOS->OnLobbyMemberJoined.AddUObject(this, &ThisClass::OnLobbyMemberJoined);
-		if (!EOS->OnLobbyMemberLeft.IsBoundToObject(this)) EOS->OnLobbyMemberLeft.AddUObject(this, &ThisClass::OnLobbyMemberLeft);
-		if (!EOS->OnLobbyLeaderChanged.IsBoundToObject(this)) EOS->OnLobbyLeaderChanged.AddUObject(this, &ThisClass::OnLobbyLeaderChanged);
+		if (!EOSSubsystem->OnLobbyMemberJoined.IsBoundToObject(this)) EOSSubsystem->OnLobbyMemberJoined.AddUObject(this, &ThisClass::OnLobbyMemberJoined);
+		if (!EOSSubsystem->OnLobbyMemberLeft.IsBoundToObject(this)) EOSSubsystem->OnLobbyMemberLeft.AddUObject(this, &ThisClass::OnLobbyMemberLeft);
+		if (!EOSSubsystem->OnLobbyLeaderChanged.IsBoundToObject(this)) EOSSubsystem->OnLobbyLeaderChanged.AddUObject(this, &ThisClass::OnLobbyLeaderChanged);
 
-		if (!EOS->OnModifyLobbyAttributesComplete.IsBoundToObject(this)) EOS->OnModifyLobbyAttributesComplete.AddUObject(this, &ThisClass::OnModifyLobbyAttributesComplete);
-		if (!EOS->OnLobbyAttributesChanged.IsBoundToObject(this)) EOS->OnLobbyAttributesChanged.AddUObject(this, &ThisClass::OnLobbyAttributesChanged);
+		if (!EOSSubsystem->OnModifyLobbyAttributesComplete.IsBoundToObject(this)) EOSSubsystem->OnModifyLobbyAttributesComplete.AddUObject(this, &ThisClass::OnModifyLobbyAttributesComplete);
+		if (!EOSSubsystem->OnLobbyAttributesChanged.IsBoundToObject(this)) EOSSubsystem->OnLobbyAttributesChanged.AddUObject(this, &ThisClass::OnLobbyAttributesChanged);
 
-		if (!EOS->OnModifyLobbyMemberAttributesComplete.IsBoundToObject(this)) EOS->OnModifyLobbyMemberAttributesComplete.AddUObject(this, &ThisClass::OnModifyLobbyMemberAttributesComplete);
-		if (!EOS->OnLobbyMemberAttributesChanged.IsBoundToObject(this)) EOS->OnLobbyMemberAttributesChanged.AddUObject(this, &ThisClass::OnLobbyMemberAttributesChanged);
+		if (!EOSSubsystem->OnModifyLobbyMemberAttributesComplete.IsBoundToObject(this)) EOSSubsystem->OnModifyLobbyMemberAttributesComplete.AddUObject(this, &ThisClass::OnModifyLobbyMemberAttributesComplete);
+		if (!EOSSubsystem->OnLobbyMemberAttributesChanged.IsBoundToObject(this)) EOSSubsystem->OnLobbyMemberAttributesChanged.AddUObject(this, &ThisClass::OnLobbyMemberAttributesChanged);
 
-		if (!EOS->OnLobbyLeft.IsBoundToObject(this)) EOS->OnLobbyLeft.AddUObject(this, &ThisClass::OnLobbyLeft);
-		if (!EOS->OnLeaveLobbyComplete.IsBoundToObject(this)) EOS->OnLeaveLobbyComplete.AddUObject(this, &ThisClass::OnLeaveLobbyComplete);
+		if (!EOSSubsystem->OnLobbyLeft.IsBoundToObject(this)) EOSSubsystem->OnLobbyLeft.AddUObject(this, &ThisClass::OnLobbyLeft);
+		if (!EOSSubsystem->OnLeaveLobbyComplete.IsBoundToObject(this)) EOSSubsystem->OnLeaveLobbyComplete.AddUObject(this, &ThisClass::OnLeaveLobbyComplete);
 	}
 }
 
 // 初始化玩家列表
 void ULobby::InitPlayerList()
 {
-	if (EOS)
+	if (EOSSubsystem)
 	{
-		for (auto& Member : EOS->CurrentLobby->Members)
+		for (auto& Member : EOSSubsystem->CurrentLobby->Members)
 		{
 			if (Team1Container && PlayerLineButtonClass)
 			{
@@ -154,7 +154,7 @@ void ULobby::OnModifyLobbyAttributesComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ModifyLobbyAttributes Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("ModifyLobbyAttributes Failed!"));
 	}
 }
 
@@ -184,7 +184,7 @@ void ULobby::OnModifyLobbyMemberAttributesComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("ModifyLobbyMemberAttributes Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("ModifyLobbyMemberAttributes Failed!"));
 	}
 }
 
@@ -202,15 +202,15 @@ void ULobby::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
 	{
 		MenuController->ServerStack->RemoveWidget(*MenuController->ServerStack->GetActiveWidget());
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Unfortunately you got kicked!"));
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Unfortunately you got kicked!"));
 }
 
 // 离开大厅
 void ULobby::OnBackButtonClicked()
 {
-	if (EOS)
+	if (EOSSubsystem)
 	{
-		EOS->LeaveLobby();
+		EOSSubsystem->LeaveLobby();
 	}
 }
 
@@ -227,6 +227,6 @@ void ULobby::OnLeaveLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("LeaveLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("LeaveLobby Failed!"));
 	}
 }

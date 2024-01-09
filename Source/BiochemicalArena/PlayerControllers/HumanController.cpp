@@ -2,6 +2,7 @@
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "BiochemicalArena/UI/HUD/HUDContainer.h"
 #include "BiochemicalArena/UI/HUD/TeamDeadMatch.h"
 #include "Kismet/GameplayStatics.h"

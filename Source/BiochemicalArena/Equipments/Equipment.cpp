@@ -1,13 +1,14 @@
 #include "Equipment.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Animation/AnimationAsset.h"
-#include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "EquipmentType.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 
 AEquipment::AEquipment()
 {
@@ -26,6 +27,8 @@ AEquipment::AEquipment()
 	AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	AreaSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnAreaSphereOverlap);
+
+	OwnerTeam = ETeam::NoTeam;
 }
 
 void AEquipment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

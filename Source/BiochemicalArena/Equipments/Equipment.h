@@ -1,10 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EquipmentType.h"
-#include "BiochemicalArena/PlayerStates/Team.h"
 #include "GameFramework/Actor.h"
 #include "Equipment.generated.h"
+
+enum class ETeam : uint8;
+enum class EEquipmentName : uint8;
+enum class EEquipmentCate : uint8;
+enum class EEquipmentType : uint8;
+enum class EEquipmentState : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API AEquipment : public AActor
@@ -51,7 +55,7 @@ protected:
 
 	virtual void OnEquipped();
 	UPROPERTY(replicated)
-	ETeam OwnerTeam = ETeam::NoTeam;
+	ETeam OwnerTeam;
 	void SetOwnerTeam();
 
 	virtual void OnDropped();

@@ -1,7 +1,11 @@
 #include "BasePlayerState.h"
-#include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/Characters/BaseCharacter.h"
 #include "Net/UnrealNetwork.h"
+#include "TeamType.h"
+
+ABasePlayerState::ABasePlayerState()
+{
+	Team = ETeam::NoTeam;
+}
 
 void ABasePlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -16,9 +20,9 @@ void ABasePlayerState::BeginPlay()
 	Super::BeginPlay();
 }
 
-void ABasePlayerState::SetTeam(ETeam TeamToSet)
+void ABasePlayerState::SetTeam(ETeam TemTeam)
 {
-	Team = TeamToSet;
+	Team = TemTeam;
 }
 
 void ABasePlayerState::OnRep_Team()

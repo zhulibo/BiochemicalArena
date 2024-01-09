@@ -2,8 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "BaseGameState.h"
-#include "BiochemicalArena/PlayerStates/Team.h"
 #include "TeamDeadMatchState.generated.h"
+
+enum class ETeam : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API ATeamDeadMatchState : public ABaseGameState

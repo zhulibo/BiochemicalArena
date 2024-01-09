@@ -5,8 +5,13 @@
 #include "CommonTextBlock.h"
 #include "StorageButton.h"
 #include "BiochemicalArena/Characters/CharacterType.h"
+#include "..\..\System\PlayerStorageType.h"
+#include "BiochemicalArena/Equipments/EquipmentType.h"
+#include "BiochemicalArena/System/PlayerStorage.h"
+#include "BiochemicalArena/System/StorageSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/WrapBox.h"
+#include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
 void UStorage::NativeConstruct()
 {
@@ -19,6 +24,109 @@ void UStorage::NativeConstruct()
 	}
 
 	AddStorageTypeButton();
+
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+
+	if (EOSSubsystem)
+	{
+		EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
+		EOSSubsystem->OnReadFileComplete.AddUObject(this, &ThisClass::OnReadFileComplete);
+		EOSSubsystem->OnEnumerateFilesComplete.AddUObject(this, &ThisClass::OnEnumerateFilesComplete);
+	}
+}
+
+void UStorage::OnLoginComplete(bool bWasSuccessful)
+{
+	if (!bWasSuccessful) return;
+
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem)
+	{
+		EOSSubsystem->EnumerateFiles(); // 枚举云端用户文件
+	}
+}
+
+void UStorage::OnEnumerateFilesComplete(bool bWasSuccessful)
+{
+	if (!bWasSuccessful) return;
+
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+
+	if (EOSSubsystem && StorageSubsystem)
+	{
+		if (EOSSubsystem->GetEnumeratedFiles().Contains(StorageSubsystem->GetSlotName())) // 云包含该存档文件
+		{
+			EOSSubsystem->ReadFile(StorageSubsystem->GetSlotName());
+		}
+		else
+		{
+			UseLocalPlayerStorage(); // 云不包含该存档文件，使用本地存档
+		}
+	}
+}
+
+void UStorage::OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents)
+{
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem == nullptr) return;
+
+	if (bWasSuccessful) // 使用云存档
+	{
+		UPlayerStorage* ServerPlayerStorage = NewObject<UPlayerStorage>(this);
+		FMemoryReader MemoryReader((FileContents.Get()), true);
+		FObjectAndNameAsStringProxyArchive Ar(MemoryReader, false);
+		Ar.ArIsSaveGame = false;
+		Ar.ArNoDelta = true;
+		ServerPlayerStorage->Serialize(Ar);
+
+		InitPlayerConfig(ServerPlayerStorage);
+
+		StorageSubsystem->SyncServerPlayerStorageToLocal(ServerPlayerStorage); // 同步云存档到本地
+	}
+	else
+	{
+		UseLocalPlayerStorage();
+	}
+}
+
+// 使用本地存档
+void UStorage::UseLocalPlayerStorage()
+{
+	UPlayerStorage* PlayerStorage = StorageSubsystem->GetPlayerStorage();
+	if (PlayerStorage)
+	{
+		InitPlayerConfig(PlayerStorage);
+	}
+}
+
+// 初始化玩家配置
+void UStorage::InitPlayerConfig(UPlayerStorage* PlayerStorage)
+{
+	if(PlayerStorage)
+	{
+		// TODO 检查存档装备是否已过期，或名字已修改
+		for (int i = 0; i < PlayerStorage->Bags.Num(); ++i)
+		{
+		}
+		// 设置存档装备
+		for (int32 i = 0; i < BagSwitcher->GetChildrenCount(); ++i)
+		{
+			UBagContent* BagContent = Cast<UBagContent>(BagSwitcher->GetChildAt(i));
+			if (BagContent)
+			{
+				BagContent->PrimaryEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Primary));
+				BagContent->SecondaryEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Secondary));
+				BagContent->MeleeEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Melee));
+				BagContent->ThrowingEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Throwing));
+			}
+		}
+		// TODO 检查存档角色是否已过期，或名字已修改
+
+		// 设置存档角色
+		Character->SetText(FText::FromString(PlayerStorage->Character));
+	}
 }
 
 // 添加顶部装备类型按钮
@@ -214,6 +322,7 @@ void UStorage::SetBagContent(EEquipmentType& EquipmentType, FString& EquipmentNa
 			}
 		}
 	}
+
 	SaveBag();
 }
 
@@ -233,12 +342,29 @@ void UStorage::SaveBag()
 			Bags.Add(Bag);
 		}
 	}
-	// TODO 保存
+
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem)
+	{
+		StorageSubsystem->SaveBag(Bags);
+	}
 }
 
 void UStorage::OnCharacterButtonClicked(UStorageButton* EquipmentButton)
 {
 	FString CharacterName = EquipmentButton->ButtonText->GetText().ToString();
 	Character->SetText(FText::FromString(CharacterName));
+
 	// TODO 保存
+
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem)
+	{
+		UPlayerStorage* PlayerStorage = StorageSubsystem->GetPlayerStorage();
+		if (PlayerStorage)
+		{
+			TArray<FBag> TemBag = PlayerStorage->Bags;
+			// UE_LOG(LogTemp, Warning, TEXT("TemBag[0].Primary: %s"), *TemBag[0].Primary);
+		}
+	}
 }

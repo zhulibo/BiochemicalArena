@@ -3,6 +3,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "BiochemicalArena/Equipments/Equipment.h"
+#include "BiochemicalArena/Equipments/EquipmentType.h"
+#include "Components/CombatStateType.h"
 
 void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 {

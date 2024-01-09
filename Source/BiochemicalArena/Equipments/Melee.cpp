@@ -1,9 +1,11 @@
 #include "Melee.h"
+#include "EquipmentType.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
-#include "BiochemicalArena/Characters/Components/CombatState.h"
+#include "..\Characters\Components\CombatStateType.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "Kismet/GameplayStatics.h"
 
 AMelee::AMelee()

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "EOS.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Lobby.generated.h"
 
 UCLASS()
@@ -19,7 +19,7 @@ protected:
 	UPROPERTY()
 	class AMenuController* MenuController;
 	UPROPERTY()
-	UEOS* EOS;
+	UEOSSubsystem* EOSSubsystem;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonButton* SendMsgButton;

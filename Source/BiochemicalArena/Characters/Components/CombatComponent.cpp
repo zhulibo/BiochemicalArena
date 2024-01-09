@@ -1,4 +1,6 @@
 #include "CombatComponent.h"
+
+#include "CombatStateType.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Net/UnrealNetwork.h"
@@ -8,6 +10,7 @@
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
 #include "..\..\Equipments\Throwing.h"
+#include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "Sound/SoundCue.h"

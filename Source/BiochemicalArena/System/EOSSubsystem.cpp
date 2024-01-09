@@ -1,7 +1,7 @@
-#include "EOS.h"
+#include "EOSSubsystem.h"
 #include "Online/OnlineAsyncOpHandle.h"
 
-UEOS::UEOS()
+UEOSSubsystem::UEOSSubsystem()
 {
 	OnlineServicesPtr = GetServices();
 	if (OnlineServicesPtr)
@@ -10,6 +10,7 @@ UEOS::UEOS()
 		UserInfoPtr = OnlineServicesPtr->GetUserInfoInterface();
 		LobbyPtr = OnlineServicesPtr->GetLobbiesInterface();
 		SessionPtr = OnlineServicesPtr->GetSessionsInterface();
+		UserFilePtr = OnlineServicesPtr->GetUserFileInterface();
 
 		if (AuthPtr)
 		{
@@ -32,11 +33,14 @@ UEOS::UEOS()
 		if (SessionPtr)
 		{
 		}
+		if (UserFilePtr)
+		{
+		}
 	}
 }
 
 // 登录
-void UEOS::Login(FPlatformUserId ID, int32 Type)
+void UEOSSubsystem::Login(FPlatformUserId ID, int32 Type)
 {
 	if (AuthPtr == nullptr) return;
 	PlatformUserId = ID;
@@ -45,6 +49,7 @@ void UEOS::Login(FPlatformUserId ID, int32 Type)
 	if (AccountInfo && AccountInfo->AccountId.IsValid() && AuthPtr->IsLoggedIn(AccountInfo->AccountId))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Already logged in"));
+		OnLoginComplete.Broadcast(true);
 		return;
 	}
 
@@ -92,7 +97,7 @@ void UEOS::Login(FPlatformUserId ID, int32 Type)
 }
 
 // 获取玩家DisplayName
-void UEOS::GetUserInfo()
+void UEOSSubsystem::GetUserInfo()
 {
 	if (UserInfoPtr == nullptr) return;
 
@@ -110,12 +115,12 @@ void UEOS::GetUserInfo()
 		UserInfo = MakeShared<FUserInfo>();
 		FOnlineError Error = Result.GetErrorValue();
 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GetUserInfo Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("GetUserInfo Failed!"));
 	}
 }
 
 // 获取玩家账号信息
-TSharedPtr<FAccountInfo> UEOS::GetAccountInfo(FPlatformUserId ID)
+TSharedPtr<FAccountInfo> UEOSSubsystem::GetAccountInfo(FPlatformUserId ID)
 {
 	TSharedPtr<FAccountInfo> AccountInfo;
 	if (AuthPtr == nullptr) return AccountInfo;
@@ -129,13 +134,13 @@ TSharedPtr<FAccountInfo> UEOS::GetAccountInfo(FPlatformUserId ID)
 	return AccountInfo;
 }
 
-void UEOS::BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged)
+void UEOSSubsystem::BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged)
 {
 	OnLoginStatusChanged.Broadcast(AuthLoginStatusChanged);
 }
 
 // 创建大厅
-void UEOS::CreateLobby()
+void UEOSSubsystem::CreateLobby()
 {
 	if (LobbyPtr == nullptr) return;
 
@@ -168,7 +173,7 @@ void UEOS::CreateLobby()
 }
 
 // 查找大厅
-void UEOS::FindLobby()
+void UEOSSubsystem::FindLobby()
 {
 	if (LobbyPtr == nullptr) return;
 
@@ -198,7 +203,7 @@ void UEOS::FindLobby()
 }
 
 // 加入大厅
-void UEOS::JoinLobby(TSharedRef<const FLobby> Lobby)
+void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 {
 	if (LobbyPtr == nullptr) return;
 
@@ -226,28 +231,28 @@ void UEOS::JoinLobby(TSharedRef<const FLobby> Lobby)
 	});
 }
 
-void UEOS::BroadcastOnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
+void UEOSSubsystem::BroadcastOnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
 {
 	OnLobbyInvitationAdded.Broadcast(LobbyInvitationAdded);
 }
 
-void UEOS::BroadcastOnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested)
+void UEOSSubsystem::BroadcastOnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested)
 {
 	OnUILobbyJoinRequested.Broadcast(UILobbyJoinRequested);
 }
 
-void UEOS::BroadcastOnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
+void UEOSSubsystem::BroadcastOnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
 {
 	OnLobbyMemberJoined.Broadcast(LobbyMemberJoined);
 }
 
-void UEOS::BroadcastOnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLef)
+void UEOSSubsystem::BroadcastOnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLef)
 {
 	OnLobbyMemberLeft.Broadcast(LobbyMemberLef);
 }
 
 // 房主提升另一名成员为房主
-void UEOS::PromoteLobbyMember()
+void UEOSSubsystem::PromoteLobbyMember()
 {
 	if (LobbyPtr == nullptr) return;
 
@@ -275,18 +280,18 @@ void UEOS::PromoteLobbyMember()
 		{
 			FOnlineError Error = Result.GetErrorValue();
 			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("PromoteLobbyMember Failed!"));
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("PromoteLobbyMember Failed!"));
 		}
 	});
 }
 
-void UEOS::BroadcastOnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
+void UEOSSubsystem::BroadcastOnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
 {
 	OnLobbyLeaderChanged.Broadcast(LobbyLeaderChanged);
 }
 
 // 修改大厅属性
-void UEOS::ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes)
+void UEOSSubsystem::ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes)
 {
 	if (LobbyPtr == nullptr) return;
 
@@ -312,13 +317,13 @@ void UEOS::ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> Update
 	});
 }
 
-void UEOS::BroadcastOnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged)
+void UEOSSubsystem::BroadcastOnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged)
 {
 	OnLobbyAttributesChanged.Broadcast(LobbyAttributesChanged);
 }
 
 // 修改大厅成员属性
-void UEOS::ModifyLobbyMemberAttributes()
+void UEOSSubsystem::ModifyLobbyMemberAttributes()
 {
 	if (LobbyPtr == nullptr) return;
 
@@ -344,18 +349,18 @@ void UEOS::ModifyLobbyMemberAttributes()
 	});
 }
 
-void UEOS::BroadcastOnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
+void UEOSSubsystem::BroadcastOnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
 {
 	OnLobbyMemberAttributesChanged.Broadcast(LobbyMemberAttributesChanged);
 }
 
-void UEOS::BroadcastOnLobbyLeft(const FLobbyLeft& LobbyLeft)
+void UEOSSubsystem::BroadcastOnLobbyLeft(const FLobbyLeft& LobbyLeft)
 {
 	OnLobbyLeft.Broadcast(LobbyLeft);
 }
 
 // 离开大厅
-void UEOS::LeaveLobby()
+void UEOSSubsystem::LeaveLobby()
 {
 	if (LobbyPtr == nullptr) return;
 
@@ -388,7 +393,7 @@ void UEOS::LeaveLobby()
 }
 
 // 创建会话
-void UEOS::CreateSession()
+void UEOSSubsystem::CreateSession()
 {
 	if (SessionPtr == nullptr) return;
 
@@ -418,7 +423,7 @@ void UEOS::CreateSession()
 }
 
 // 获取会话
-TSharedPtr<const ISession> UEOS::GetPresenceSession()
+TSharedPtr<const ISession> UEOSSubsystem::GetPresenceSession()
 {
 	TSharedPtr<const ISession> Session;
 	if (SessionPtr == nullptr) return Session;
@@ -435,13 +440,13 @@ TSharedPtr<const ISession> UEOS::GetPresenceSession()
 	{
 		FOnlineError Error = Result.GetErrorValue();
 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("GetPresenceSession Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("GetPresenceSession Failed!"));
 	}
 	return Session;
 }
 
 // 加入会话
-void UEOS::JoinSession(FOnlineSessionId SessionId)
+void UEOSSubsystem::JoinSession(FOnlineSessionId SessionId)
 {
 	if (SessionPtr == nullptr) return;
 
@@ -468,7 +473,7 @@ void UEOS::JoinSession(FOnlineSessionId SessionId)
 }
 
 // 离开会话
-void UEOS::LeaveSession()
+void UEOSSubsystem::LeaveSession()
 {
 	if (SessionPtr == nullptr) return;
 
@@ -489,6 +494,103 @@ void UEOS::LeaveSession()
 			FOnlineError Error = Result.GetErrorValue();
 			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
 			OnLeaveSessionComplete.Broadcast(false);
+		}
+	});
+}
+
+// 枚举用户文件
+void UEOSSubsystem::EnumerateFiles()
+{
+	if (UserFilePtr == nullptr) return;
+
+	FUserFileEnumerateFiles::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+
+	UserFilePtr->EnumerateFiles(MoveTemp(Params))
+	.OnComplete([this](const TOnlineResult<FUserFileEnumerateFiles>& Result)
+	{
+		if (Result.IsOk())
+		{
+			OnEnumerateFilesComplete.Broadcast(true);
+		}
+		else
+		{
+			FOnlineError Error = Result.GetErrorValue();
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			OnEnumerateFilesComplete.Broadcast(false);
+		}
+	});
+}
+
+// 缓存枚举的用户文件
+TArray<FString> UEOSSubsystem::GetEnumeratedFiles()
+{
+	TArray<FString> Filenames;
+	if (UserFilePtr == nullptr) return Filenames;
+
+	FUserFileGetEnumeratedFiles::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+
+	TOnlineResult<FUserFileGetEnumeratedFiles> Result = UserFilePtr->GetEnumeratedFiles(MoveTemp(Params));
+	if (Result.IsOk())
+	{
+		Filenames = Result.GetOkValue().Filenames;
+	}
+	else
+	{
+		FOnlineError Error = Result.GetErrorValue();
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+	}
+	return Filenames;
+}
+
+// 读取用户文件
+void UEOSSubsystem::ReadFile(FString Filename)
+{
+	if (UserFilePtr == nullptr) return;
+
+	FUserFileReadFile::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.Filename = Filename;
+
+	UserFilePtr->ReadFile(MoveTemp(Params))
+	.OnComplete([this](const TOnlineResult<FUserFileReadFile>& Result)
+	{
+		if (Result.IsOk())
+		{
+			OnReadFileComplete.Broadcast(true, Result.GetOkValue().FileContents);
+		}
+		else
+		{
+			FOnlineError Error = Result.GetErrorValue();
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			OnReadFileComplete.Broadcast(false, FUserFileContentsRef());
+		}
+	});
+}
+
+// 创建或覆盖用户文件
+void UEOSSubsystem::WriteFile(FString Filename, FUserFileContents FileContents)
+{
+	if (UserFilePtr == nullptr) return;
+
+	FUserFileWriteFile::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.Filename = Filename;
+	Params.FileContents = MoveTemp(FileContents);
+
+	UserFilePtr->WriteFile(MoveTemp(Params))
+	.OnComplete([this](const TOnlineResult<FUserFileWriteFile>& Result)
+	{
+		if (Result.IsOk())
+		{
+			OnWriteFileComplete.Broadcast(true);
+		}
+		else
+		{
+			FOnlineError Error = Result.GetErrorValue();
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			OnWriteFileComplete.Broadcast(false);
 		}
 	});
 }

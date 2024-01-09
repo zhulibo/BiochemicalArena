@@ -30,15 +30,15 @@ void UServer::NativeConstruct()
 	ServerCreateButton->ButtonText->SetText(FText::FromString("Create Server"));
 	ServerCreateButton->OnClicked().AddUObject(this, &ThisClass::OnServerCreateButtonClicked);
 
-	EOS = GetGameInstance()->GetSubsystem<UEOS>();
-	if (EOS)
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem)
 	{
-		EOS->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
-		EOS->OnFindLobbyComplete.AddUObject(this, &ThisClass::OnFindLobbyComplete);
-		EOS->OnJoinLobbyComplete.AddUObject(this, &ThisClass::OnJoinLobbyComplete);
+		EOSSubsystem->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
+		EOSSubsystem->OnFindLobbyComplete.AddUObject(this, &ThisClass::OnFindLobbyComplete);
+		EOSSubsystem->OnJoinLobbyComplete.AddUObject(this, &ThisClass::OnJoinLobbyComplete);
 
-		EOS->OnLobbyInvitationAdded.AddUObject(this, &ThisClass::OnLobbyInvitationAdded);
-		EOS->OnUILobbyJoinRequested.AddUObject(this, &ThisClass::OnUILobbyJoinRequested);
+		EOSSubsystem->OnLobbyInvitationAdded.AddUObject(this, &ThisClass::OnLobbyInvitationAdded);
+		EOSSubsystem->OnUILobbyJoinRequested.AddUObject(this, &ThisClass::OnUILobbyJoinRequested);
 	}
 }
 
@@ -63,9 +63,9 @@ void UServer::OnLogin2ButtonClicked()
 // 创建大厅
 void UServer::OnServerCreateButtonClicked()
 {
-	if (EOS)
+	if (EOSSubsystem)
 	{
-		EOS->CreateLobby();
+		EOSSubsystem->CreateLobby();
 	}
 }
 
@@ -82,7 +82,7 @@ void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("CreateLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("CreateLobby Failed!"));
 	}
 }
 
@@ -103,9 +103,9 @@ void UServer::OnServerResetButtonClicked()
 // 查找大厅
 void UServer::OnServerReFreshButtonClicked()
 {
-	if (EOS)
+	if (EOSSubsystem)
 	{
-		EOS->FindLobby();
+		EOSSubsystem->FindLobby();
 	}
 }
 
@@ -138,21 +138,21 @@ void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<c
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, TEXT("Found 0 lobby!"));
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Found 0 lobby!"));
 		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("FindLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("FindLobby Failed!"));
 	}
 }
 
 // 加入大厅
 void UServer::OnServerLineButtonClicked(UServerLineButton* ServerLineButton)
 {
-	if (EOS && ServerLineButton->Lobby.IsValid())
+	if (EOSSubsystem && ServerLineButton->Lobby.IsValid())
 	{
-		EOS->JoinLobby(ServerLineButton->Lobby.ToSharedRef());
+		EOSSubsystem->JoinLobby(ServerLineButton->Lobby.ToSharedRef());
 	}
 }
 
@@ -170,17 +170,16 @@ void UServer::OnJoinLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("JoinLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("JoinLobby Failed!"));
 	}
 }
 
 // 收到邀请
 void UServer::OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("OnLobbyInvitationAdded"));
-	if (EOS)
+	if (EOSSubsystem)
 	{
-		EOS->JoinLobby(LobbyInvitationAdded.Lobby);
+		EOSSubsystem->JoinLobby(LobbyInvitationAdded.Lobby);
 	}
 }
 

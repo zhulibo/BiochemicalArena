@@ -2,21 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "BiochemicalArena/Equipments/EquipmentType.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Storage.generated.h"
 
-USTRUCT(BlueprintType)
-struct FBag
-{
-	GENERATED_BODY()
-
-public:
-	FString Primary;
-	FString Secondary;
-	FString Melee;
-	FString Throwing;
-
-};
+enum class EEquipmentType : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API UStorage : public UCommonActivatableWidget
@@ -27,8 +16,19 @@ protected:
 	virtual void NativeConstruct() override;
 
 	UPROPERTY()
+	UEOSSubsystem* EOSSubsystem;
+	void OnLoginComplete(bool bWasSuccessful);
+	void OnEnumerateFilesComplete(bool bWasSuccessful);
+	void UseLocalPlayerStorage();
+	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
+	void InitPlayerConfig(class UPlayerStorage* PlayerStorage);
+
+	UPROPERTY()
+	class UStorageSubsystem* StorageSubsystem;
+
+	UPROPERTY()
 	UDataTable* EquipmentDataTable;
-	TArray<FEquipmentData*> EquipmentDataRows;
+	TArray<struct FEquipmentData*> EquipmentDataRows;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* StorageTypeButtonContainer;

@@ -2,9 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "CombatState.h"
-#include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "CombatComponent.generated.h"
+
+enum class ECombatState : uint8;
+enum class EEquipmentType : uint8;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BIOCHEMICALARENA_API UCombatComponent : public UActorComponent
@@ -43,7 +44,7 @@ protected:
 	UAnimInstance* AnimInstance;
 
 	UPROPERTY(Replicated)
-	ECombatState CombatState = ECombatState::MAX;
+	ECombatState CombatState;
 
 	UPROPERTY(EditAnywhere)
 	float BaseWalkSpeed = 600.f;
@@ -72,9 +73,9 @@ protected:
 	UPROPERTY(Replicated)
 	AThrowing* ThrowingEquipment;
 	UPROPERTY(Replicated)
-	EEquipmentType CurrentEquipmentType = EEquipmentType::MAX;
+	EEquipmentType CurrentEquipmentType;
 	UPROPERTY(Replicated)
-	EEquipmentType LastEquipmentType = EEquipmentType::MAX;
+	EEquipmentType LastEquipmentType;
 
 	AEquipment* GetLastEquipment();
 	AEquipment* GetEquipmentByType(EEquipmentType EquipmentType);

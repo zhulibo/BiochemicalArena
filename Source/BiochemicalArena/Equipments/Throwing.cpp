@@ -1,5 +1,7 @@
 #include "Throwing.h"
 
+#include "EquipmentType.h"
+
 AThrowing::AThrowing()
 {
 	EquipmentCate = EEquipmentCate::Throwing;

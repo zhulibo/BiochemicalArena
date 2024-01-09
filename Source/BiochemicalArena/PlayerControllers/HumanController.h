@@ -2,8 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "BaseController.h"
-#include "BiochemicalArena/PlayerStates/Team.h"
 #include "HumanController.generated.h"
+
+enum class ETeam : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API AHumanController : public ABaseController
