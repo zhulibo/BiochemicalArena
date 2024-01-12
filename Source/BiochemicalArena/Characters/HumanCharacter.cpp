@@ -11,6 +11,7 @@
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "..\System\PlayerStorageType.h"
+#include "BiochemicalArena/System/PlayerStorage.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -184,25 +185,24 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
 
 FString AHumanCharacter::GetEquipmentClassPath(int32 BagIndex, EEquipmentType EquipmentType)
 {
-	if (Bags.Num() == 0) GetPlayerStorage();
-	if (Bags.Num() == 0) return FString();
-
+	if (PlayerStorage == nullptr || PlayerStorage->Bags.Num() == 0) return FString();
 	FString EquipmentName;
 	switch (EquipmentType)
 	{
 	case EEquipmentType::Primary:
-		EquipmentName = Bags[BagIndex].Primary;
+		EquipmentName = PlayerStorage->Bags[BagIndex].Primary;
 		break;
 	case EEquipmentType::Secondary:
-		EquipmentName = Bags[BagIndex].Secondary;
+		EquipmentName = PlayerStorage->Bags[BagIndex].Secondary;
 		break;
 	case EEquipmentType::Melee:
-		EquipmentName = Bags[BagIndex].Melee;
+		EquipmentName = PlayerStorage->Bags[BagIndex].Melee;
 		break;
 	case EEquipmentType::Throwing:
-		EquipmentName = Bags[BagIndex].Throwing;
+		EquipmentName = PlayerStorage->Bags[BagIndex].Throwing;
 		break;
 	}
+	if (EquipmentName.IsEmpty()) return FString();
 	return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/%s.%s_C'"), *EquipmentName, *EquipmentName);
 }
 

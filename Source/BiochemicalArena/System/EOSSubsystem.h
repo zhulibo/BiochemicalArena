@@ -7,14 +7,17 @@
 #include "Online/Lobbies.h"
 #include "Online/Sessions.h"
 #include "Online/UserFile.h"
+#include "Online/Commerce.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "EOSSubsystem.generated.h"
 
 using namespace UE::Online;
 
+// Login
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLoginComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLoginStatusChanged, const FAuthLoginStatusChanged& AuthLoginStatusChanged);
 
+// Lobby
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCreateLobbyComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnFindLobbyComplete, bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinLobbyComplete, bool bWasSuccessful);
@@ -34,6 +37,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyMemberAttributesChanged, const FLobb
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyLeft, const FLobbyLeft& LobbyLeft);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveLobbyComplete, bool bWasSuccessful);
 
+// Session
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCreateSessionComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveSessionComplete, bool bWasSuccessful);
@@ -41,6 +45,13 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveSessionComplete, bool bWasSuccessful
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnEnumerateFilesComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnReadFileComplete, bool bWasSuccessful, const FUserFileContentsRef& FileContents);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnWriteFileComplete, bool bWasSuccessful);
+
+// Commerce
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnQueryOffersComplete, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCheckoutComplete, bool bWasSuccessful, TOptional<FString> TransactionId);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnPurchaseCompleted, const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnQueryEntitlementsComplete, bool bWasSuccessful);
 
 UCLASS()
 class BIOCHEMICALARENA_API UEOSSubsystem : public UGameInstanceSubsystem
@@ -114,6 +125,19 @@ public:
 	FOnWriteFileComplete OnWriteFileComplete;
 	void WriteFile(FString Filename, FUserFileContents FileContents);
 
+	// Commerce
+	void QueryOffers();
+	FOnQueryOffersComplete OnQueryOffersComplete;
+	TArray<FOffer> GetOffers();
+	void Checkout(TArray<FPurchaseOffer> Offers);
+	FOnCheckoutComplete OnCheckoutComplete;
+	void BroadcastOnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
+	FOnPurchaseCompleted OnPurchaseCompleted;
+
+	void QueryEntitlements();
+	FOnQueryEntitlementsComplete OnQueryEntitlementsComplete;
+	TArray<FEntitlement> GetEntitlements();
+
 protected:
 	FPlatformUserId PlatformUserId;
 
@@ -123,5 +147,6 @@ protected:
 	ILobbiesPtr LobbyPtr;
 	ISessionsPtr SessionPtr;
 	IUserFilePtr UserFilePtr;
+	ICommercePtr CommercePtr;
 
 };

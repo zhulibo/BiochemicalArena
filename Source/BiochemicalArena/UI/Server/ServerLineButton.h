@@ -2,8 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
-#include "Lobby.h"
+#include "Online/Lobbies.h"
 #include "ServerLineButton.generated.h"
+
+using namespace UE::Online;
 
 UCLASS()
 class BIOCHEMICALARENA_API UServerLineButton : public UCommonButtonBase

@@ -29,6 +29,7 @@ UENUM(BlueprintType)
 enum class EEquipmentName : uint8 // 装备名字
 {
 	AK47 UMETA(DisplayName = "AK47"),
+	AK47_Desert UMETA(DisplayName = "AK47_Desert"),
 	M870 UMETA(DisplayName = "M870"),
 
 	Glock17 UMETA(DisplayName = "Glock17"),
@@ -61,5 +62,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EEquipmentName EquipmentName = EEquipmentName::AK47;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString ProductId = "-1";
 
 };

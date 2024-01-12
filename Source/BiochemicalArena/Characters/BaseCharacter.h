@@ -14,9 +14,6 @@ class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter
 public:
 	ABaseCharacter();
 
-	UPROPERTY()
-	TArray<FBag> Bags;
-
 	void PlayFootstepSound();
 
 protected:
@@ -27,6 +24,8 @@ protected:
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
 	void GetPlayerStorage();
+	UPROPERTY()
+	class UPlayerStorage* PlayerStorage;
 
 	bool HasInitMeshCollision = false;
 	void PollInitMeshCollision();

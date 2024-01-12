@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Shop.generated.h"
 
 UCLASS()
@@ -17,13 +18,21 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UGoodsButton> EquipmentButtonClass;
-	void AddEquipmentButton();
+	void AddEquipmentButton(FOffer Offer);
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UGoodsButton> CharacterButtonClass;
-	void AddCharacterButton();
+	void AddCharacterButton(FOffer Offer);
 
-	void OnEquipmentButtonClicked(UGoodsButton* GoodsButton);
-	void OnCharacterButtonClicked(UGoodsButton* GoodsButton);
+	void OnGoodsButtonClicked(UGoodsButton* GoodsButton);
+
+	UPROPERTY()
+	UEOSSubsystem* EOSSubsystem;
+	void OnLoginComplete(bool bWasSuccessful);
+	void OnQueryOffersComplete(bool bWasSuccessful);
+
+	void OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
+	TArray<FEntitlement> Entitlements;
+	void OnQueryEntitlementsComplete(bool bWasSuccessful);
 
 };

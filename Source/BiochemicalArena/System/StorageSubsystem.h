@@ -16,20 +16,18 @@ public:
 	UStorageSubsystem();
 
 	void CreatePlayerStorage();
-
 	class UPlayerStorage* GetPlayerStorage();
-	UPlayerStorage* GetPlayerStorageCache();
 
 	void SyncServerPlayerStorageToLocal(UPlayerStorage* ServerPlayerStorage);
 
 	void SaveBag(TArray<FBag> Bags);
+	void SaveCharacter(FString Character);
 
 protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	UPROPERTY()
-	UPlayerStorage* PlayerStorageCache;
-	void SaveLocalPlayerStorage(UPlayerStorage* PlayerStorage);
+	UPlayerStorage* PlayerStorageCache; // 存档缓存
 
 	UPROPERTY()
 	FString SlotName = TEXT("Slot1");

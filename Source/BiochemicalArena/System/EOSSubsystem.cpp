@@ -11,6 +11,7 @@ UEOSSubsystem::UEOSSubsystem()
 		LobbyPtr = OnlineServicesPtr->GetLobbiesInterface();
 		SessionPtr = OnlineServicesPtr->GetSessionsInterface();
 		UserFilePtr = OnlineServicesPtr->GetUserFileInterface();
+		CommercePtr = OnlineServicesPtr->GetCommerceInterface();
 
 		if (AuthPtr)
 		{
@@ -30,11 +31,9 @@ UEOSSubsystem::UEOSSubsystem()
 
 			(void) LobbyPtr->OnLobbyLeft().Add(this, &ThisClass::BroadcastOnLobbyLeft);
 		}
-		if (SessionPtr)
+		if (CommercePtr)
 		{
-		}
-		if (UserFilePtr)
-		{
+			(void) CommercePtr->OnPurchaseCompleted().Add(this, &ThisClass::BroadcastOnPurchaseCompleted);
 		}
 	}
 }
@@ -498,7 +497,7 @@ void UEOSSubsystem::LeaveSession()
 	});
 }
 
-// 枚举用户文件
+// 缓存用户文件
 void UEOSSubsystem::EnumerateFiles()
 {
 	if (UserFilePtr == nullptr) return;
@@ -522,7 +521,7 @@ void UEOSSubsystem::EnumerateFiles()
 	});
 }
 
-// 缓存枚举的用户文件
+// 获取用户文件名
 TArray<FString> UEOSSubsystem::GetEnumeratedFiles()
 {
 	TArray<FString> Filenames;
@@ -593,4 +592,127 @@ void UEOSSubsystem::WriteFile(FString Filename, FUserFileContents FileContents)
 			OnWriteFileComplete.Broadcast(false);
 		}
 	});
+}
+
+// 缓存商品列表
+void UEOSSubsystem::QueryOffers()
+{
+	if (CommercePtr == nullptr) return;
+
+	FCommerceQueryOffers::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+
+	CommercePtr->QueryOffers(MoveTemp(Params))
+	.OnComplete([this](const TOnlineResult<FCommerceQueryOffers>& Result)
+	{
+		if (Result.IsOk())
+		{
+			OnQueryOffersComplete.Broadcast(true);
+		}
+		else
+		{
+			FOnlineError Error = Result.GetErrorValue();
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			OnQueryOffersComplete.Broadcast(false);
+		}
+	});
+}
+
+// 获取商品列表
+TArray<FOffer> UEOSSubsystem::GetOffers()
+{
+	TArray<FOffer> Offers;
+	if (CommercePtr == nullptr) return Offers;
+
+	FCommerceGetOffers::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+
+	TOnlineResult<FCommerceGetOffers> Result = CommercePtr->GetOffers(MoveTemp(Params));
+	if (Result.IsOk())
+	{
+		Offers = Result.GetOkValue().Offers;
+	}
+	else
+	{
+		FOnlineError Error = Result.GetErrorValue();
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+	}
+	return Offers;
+}
+
+// 购买商品
+void UEOSSubsystem::Checkout(TArray<FPurchaseOffer> Offers)
+{
+	if (CommercePtr == nullptr) return;
+
+	FCommerceCheckout::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.Offers = Offers;
+
+	CommercePtr->Checkout(MoveTemp(Params))
+	.OnComplete([this](const TOnlineResult<FCommerceCheckout>& Result)
+	{
+		if (Result.IsOk())
+		{
+			OnCheckoutComplete.Broadcast(true, Result.GetOkValue().TransactionId);
+		}
+		else
+		{
+			FOnlineError Error = Result.GetErrorValue();
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			OnCheckoutComplete.Broadcast(false, FString(TEXT("")));
+		}
+	});
+}
+
+void UEOSSubsystem::BroadcastOnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete)
+{
+	OnPurchaseCompleted.Broadcast(CommerceOnPurchaseComplete);
+}
+
+// 缓存已购商品
+void UEOSSubsystem::QueryEntitlements()
+{
+	if (CommercePtr == nullptr) return;
+
+	FCommerceQueryEntitlements::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.bIncludeRedeemed = true;
+
+	CommercePtr->QueryEntitlements(MoveTemp(Params))
+	.OnComplete([this](const TOnlineResult<FCommerceQueryEntitlements>& Result)
+	{
+		if (Result.IsOk())
+		{
+			OnQueryEntitlementsComplete.Broadcast(true);
+		}
+		else
+		{
+			FOnlineError Error = Result.GetErrorValue();
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			OnQueryEntitlementsComplete.Broadcast(false);
+		}
+	});
+}
+
+// 获取已购商品
+TArray<FEntitlement> UEOSSubsystem::GetEntitlements()
+{
+	TArray<FEntitlement> Entitlements;
+	if (CommercePtr == nullptr) return Entitlements;
+
+	FCommerceGetEntitlements::Params Params;
+	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+
+	TOnlineResult<FCommerceGetEntitlements> Result = CommercePtr->GetEntitlements(MoveTemp(Params));
+	if (Result.IsOk())
+	{
+		Entitlements = Result.GetOkValue().Entitlements;
+	}
+	else
+	{
+		FOnlineError Error = Result.GetErrorValue();
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+	}
+	return Entitlements;
 }

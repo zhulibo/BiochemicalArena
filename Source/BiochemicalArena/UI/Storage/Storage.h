@@ -19,13 +19,21 @@ protected:
 	UEOSSubsystem* EOSSubsystem;
 	void OnLoginComplete(bool bWasSuccessful);
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
-	void UseLocalPlayerStorage();
+
+	TArray<FEntitlement> Entitlements;
+	void OnQueryEntitlementsComplete(bool bWasSuccessful);
+
 	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
 	void InitPlayerConfig(class UPlayerStorage* PlayerStorage);
+	bool HasEquipment(FString EquipmentName);
+	bool HasHumanCharacter(FString HumanCharacterName);
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
 
+	UPROPERTY()
+	UDataTable* HumanCharacterDataTable;
+	TArray<struct FHumanCharacterData*> HumanCharacterDataRows;
 	UPROPERTY()
 	UDataTable* EquipmentDataTable;
 	TArray<struct FEquipmentData*> EquipmentDataRows;
@@ -38,6 +46,7 @@ protected:
 
 	void OnStorageTypeButtonClicked(UCommonButton* CommonButton);
 	TArray<FText> FilterEquipment(FString EquipmentType);
+	TArray<FText> FilterHumanCharacter();
 
 	UPROPERTY(meta = (BindWidget))
 	class UWrapBox* StorageButtonContainer;
@@ -46,13 +55,13 @@ protected:
 	void AddEquipmentButton(TArray<FText> EquipmentNames);
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UStorageButton> CharacterButtonClass;
-	void AddCharacterButton();
+	void AddCharacterButton(TArray<FText> EquipmentNames);
 
 	void OnEquipmentButtonClicked(class UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetSwitcher* BagSwitcher;
-	void SetBagContent(EEquipmentType& EquipmentType, FString& EquipmentName);
-	void SaveBag();
+	void SaveBag(EEquipmentType& EquipmentType, FString& EquipmentName);
+	void SaveBagToStorage();
 
 	void OnCharacterButtonClicked(UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))

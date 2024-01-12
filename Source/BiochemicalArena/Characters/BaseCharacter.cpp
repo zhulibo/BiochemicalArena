@@ -6,8 +6,6 @@
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "..\PlayerStates\TeamType.h"
-#include "..\System\PlayerStorageType.h"
-#include "BiochemicalArena/System/PlayerStorage.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
@@ -86,11 +84,7 @@ void ABaseCharacter::GetPlayerStorage()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		UPlayerStorage* PlayerStorage = StorageSubsystem->GetPlayerStorage();
-		if (PlayerStorage)
-		{
-			Bags = PlayerStorage->Bags;
-		}
+		PlayerStorage = StorageSubsystem->GetPlayerStorage();
 	}
 }
 

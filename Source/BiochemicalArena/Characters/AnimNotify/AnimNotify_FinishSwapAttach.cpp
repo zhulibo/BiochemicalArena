@@ -5,7 +5,7 @@
 
 UAnimNotify_FinishSwapAttach::UAnimNotify_FinishSwapAttach()
 {
-	EquipmentDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Equipments/Data/DT_EquipmentData.DT_EquipmentData'"));
+	EquipmentDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Equipments/Data/DT_Equipment.DT_Equipment'"));
 	if (EquipmentDataTable)
 	{
 		EquipmentDataTable->GetAllRows<FEquipmentData>("", EquipmentDataRows);
