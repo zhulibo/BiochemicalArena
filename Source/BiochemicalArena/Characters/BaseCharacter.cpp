@@ -9,6 +9,7 @@
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
+#include "CommonInputSubsystem.h"
 
 ABaseCharacter::ABaseCharacter()
 {
@@ -31,12 +32,19 @@ void ABaseCharacter::BeginPlay()
 	OuchSound2 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 
-	GetPlayerStorage();
+	// 监听输入设备变化
+	UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController());
+	if (CommonInputSubsystem)
+	{
+		CommonInputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::OnInputMethodChanged);
+	}
 }
 
+// 增强输入
 void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
 	// Add Input Mapping Context
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
@@ -47,12 +55,14 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			Subsystem->AddMappingContext(BaseMappingContext, 0);
 		}
 	}
+
 	// Set up action bindings
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ThisClass::Look);
+		EnhancedInputComponent->BindAction(LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
+		EnhancedInputComponent->BindAction(LookStickAction, ETriggerEvent::Triggered, this, &ThisClass::LookStick);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
@@ -78,16 +88,7 @@ void ABaseCharacter::Tick(float DeltaSeconds)
 	CalculateAO_Pitch();
 }
 
-// 获取本地存档
-void ABaseCharacter::GetPlayerStorage()
-{
-	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
-	{
-		PlayerStorage = StorageSubsystem->GetPlayerStorage();
-	}
-}
-
+// 设置碰撞
 void ABaseCharacter::PollInitMeshCollision()
 {
 	if (!HasInitMeshCollision)
@@ -112,10 +113,13 @@ void ABaseCharacter::PollInitMeshCollision()
 	}
 }
 
+// 计算俯仰
 void ABaseCharacter::CalculateAO_Pitch()
 {
 	AO_Pitch = GetBaseAimRotation().Pitch;
-	if (AO_Pitch > 90.f && !IsLocallyControlled()) // Remote character need map pitch from [360, 270) to [0, -90)
+
+	// Remote character need map pitch from [360, 270) to [0, -90)
+	if (AO_Pitch > 90.f && !IsLocallyControlled())
 	{
 		FVector2D InRange(360.f, 270.f);
 		FVector2D OutRange(0.f, -90.f);
@@ -123,8 +127,28 @@ void ABaseCharacter::CalculateAO_Pitch()
 	}
 }
 
+// LocalController就绪
+void ABaseCharacter::OnLocalControllerReady()
+{
+	// 获取设置数据
+	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem)
+	{
+		StorageSubsystem->SetCharacterControlVariable();
+	}
+}
+
+// 输入设备变化
+void ABaseCharacter::OnInputMethodChanged(ECommonInputType TemCommonInputType)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnInputMethodChanged: %d"), TemCommonInputType);
+	CommonInputType = TemCommonInputType;
+}
+
+// 根据地形播放不同脚步声
 void ABaseCharacter::PlayFootstepSound()
 {
+	// 射线检测脚下地形
 	FHitResult HitResult;
 	FVector Start = GetActorLocation();
 	FVector End = Start - FVector(0.f, 0.f, 100.f);
@@ -137,25 +161,22 @@ void ABaseCharacter::PlayFootstepSound()
 
 	if (HitResult.bBlockingHit)
 	{
-		EPhysicalSurface HitSurface = UGameplayStatics::GetSurfaceType(HitResult);
-		FVector_NetQuantize HitLocation = HitResult.Location;
-
-		switch (HitSurface)
+		switch (UGameplayStatics::GetSurfaceType(HitResult))
 		{
 		case EPhysicalSurface::SurfaceType1:
-			if (MetalSound) UGameplayStatics::PlaySoundAtLocation(this, MetalSound, HitLocation);
+			if (MetalSound) UGameplayStatics::PlaySoundAtLocation(this, MetalSound, HitResult.Location);
 			break;
 		case EPhysicalSurface::SurfaceType2:
-			if (WaterSound) UGameplayStatics::PlaySoundAtLocation(this, WaterSound, HitLocation);
+			if (WaterSound) UGameplayStatics::PlaySoundAtLocation(this, WaterSound, HitResult.Location);
 			break;
 		case EPhysicalSurface::SurfaceType3:
-			if (GrassSound) UGameplayStatics::PlaySoundAtLocation(this, GrassSound, HitLocation);
+			if (GrassSound) UGameplayStatics::PlaySoundAtLocation(this, GrassSound, HitResult.Location);
 			break;
 		case EPhysicalSurface::SurfaceType4:
-			if (MudSound) UGameplayStatics::PlaySoundAtLocation(this, MudSound, HitLocation);
+			if (MudSound) UGameplayStatics::PlaySoundAtLocation(this, MudSound, HitResult.Location);
 			break;
 		default:
-			if (CommonSound) UGameplayStatics::PlaySoundAtLocation(this, CommonSound, HitLocation);
+			if (CommonSound) UGameplayStatics::PlaySoundAtLocation(this, CommonSound, HitResult.Location);
 			break;
 		}
 	}
@@ -168,12 +189,21 @@ void ABaseCharacter::Move(const FInputActionValue& Value)
 	AddMovementInput(GetActorRightVector(), AxisVector.X);
 }
 
-void ABaseCharacter::Look(const FInputActionValue& Value)
+// 分开处理Look输入，支持同时使用键鼠和手柄控制一个角色
+void ABaseCharacter::LookMouse(const FInputActionValue& Value)
 {
 	if (bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
-	AddControllerYawInput(AxisVector.X);
-	AddControllerPitchInput(AxisVector.Y);
+	AddControllerYawInput(AxisVector.X * MouseSensitivityRate);
+	AddControllerPitchInput(AxisVector.Y * MouseSensitivityRate);
+}
+
+void ABaseCharacter::LookStick(const FInputActionValue& Value)
+{
+	if (bIsRadialMenuOpened) return;
+	FVector2D AxisVector = Value.Get<FVector2D>();
+	AddControllerYawInput(AxisVector.X * ControllerSensitivityRate);
+	AddControllerPitchInput(AxisVector.Y * ControllerSensitivityRate);
 }
 
 void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
@@ -189,6 +219,7 @@ void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
 	}
 }
 
+// 键鼠为长按蹲
 void ABaseCharacter::CrouchButtonPressed(const FInputActionValue& Value)
 {
 	Crouch();
@@ -199,6 +230,7 @@ void ABaseCharacter::CrouchButtonReleased(const FInputActionValue& Value)
 	UnCrouch();
 }
 
+// 手柄为切换蹲
 void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Value)
 {
 	if (bIsCrouched)
@@ -279,54 +311,56 @@ void ABaseCharacter::RadialMenuSelect(const FInputActionValue& Value)
 	}
 }
 
-float ABaseCharacter::CalcFallDamageFactor()
+// 计算跌落伤害比例
+float ABaseCharacter::CalcFallDamageRate()
 {
 	FVector Velocity = GetCharacterMovement()->Velocity; // 用当前帧的速度即可，Landed判定的时机是即将落地时，此时速度达到最大
 	float Gravity = GetCharacterMovement()->GetGravityZ();
 	float DiffHighMeter = Velocity.Z / Gravity;
 
 	// 角色降落时不遵循自由落体，大致模拟跌落伤害
-	float DamageFactor; // 跌落扣血比例（占MaxHealth）
+	float DamageRate; // 跌落扣血比例（占MaxHealth）
 	if (DiffHighMeter < 1.f) // 大约对应游戏里5m
 	{
-		DamageFactor = 0.f;
+		DamageRate = 0.f;
 	}
 	else if (DiffHighMeter >= 1.f && DiffHighMeter < 1.2f)
 	{
-		DamageFactor = 0.05f;
+		DamageRate = 0.05f;
 	}
 	else if (DiffHighMeter >= 1.2f && DiffHighMeter < 1.5f)
 	{
-		DamageFactor = 0.1f;
+		DamageRate = 0.1f;
 	}
 	else
 	{
-		DamageFactor = 0.15f;
+		DamageRate = 0.15f;
 	}
 
-	return DamageFactor;
+	return DamageRate;
 }
 
-void ABaseCharacter::PlayOuchSound(float DamageFactor)
+// 播放跌落受伤声音
+void ABaseCharacter::PlayOuchSound(float DamageRate)
 {
-	if (DamageFactor == 0.05f)
+	if (DamageRate == 0.05f)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OuchSound1, GetActorLocation());
 	}
-	else if (DamageFactor == 0.1f)
+	else if (DamageRate == 0.1f)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OuchSound2, GetActorLocation());
 	}
-	else if (DamageFactor == 0.15f)
+	else if (DamageRate == 0.15f)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, OuchSound3, GetActorLocation());
 	}
 }
 
-void ABaseCharacter::MulticastPlayOuchSound_Implementation(float DamageFactor)
+void ABaseCharacter::MulticastPlayOuchSound_Implementation(float DamageRate)
 {
 	if (!IsLocallyControlled())
 	{
-		PlayOuchSound(DamageFactor);
+		PlayOuchSound(DamageRate);
 	}
 }

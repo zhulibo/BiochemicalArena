@@ -1,12 +1,9 @@
 #include "StorageSubsystem.h"
+#include "AudioDevice.h"
 #include "PlayerStorage.h"
-#include "PlayerStorageType.h"
+#include "BiochemicalArena/Characters/BaseCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
-
-UStorageSubsystem::UStorageSubsystem()
-{
-}
 
 void UStorageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -34,77 +31,24 @@ void UStorageSubsystem::CreatePlayerStorage()
 	UPlayerStorage* PlayerStorage = Cast<UPlayerStorage>(UGameplayStatics::CreateSaveGameObject(UPlayerStorage::StaticClass()));
 	if (PlayerStorage)
 	{
-		// 设置默认背包
-		FBag Bag;
-		Bag.Primary = "AK47";
-		Bag.Secondary = "Glock17";
-		Bag.Melee = "Kukri";
-		Bag.Throwing = "Grenade";
-		for (int i = 0; i < 4; ++i)
-		{
-			PlayerStorage->Bags.Add(Bag);
-		}
-
-		// 设置默认角色
-		PlayerStorage->Character = "SAS";
-
 		// 保存存档至缓存
 		PlayerStorageCache = PlayerStorage;
 
 		// 保存存档至本地
-		UGameplayStatics::AsyncSaveGameToSlot(PlayerStorageCache, SlotName, UserIndex);
+		UGameplayStatics::SaveGameToSlot(PlayerStorageCache, SlotName, UserIndex);
 	}
 }
 
-// 读取玩家存档
-UPlayerStorage* UStorageSubsystem::GetPlayerStorage()
-{
-	if (PlayerStorageCache == nullptr)
-	{
-		PlayerStorageCache = Cast<UPlayerStorage>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
-	}
-	return PlayerStorageCache;
-}
-
-// 同步云存档中的装备和角色到本地
-void UStorageSubsystem::SyncServerPlayerStorageToLocal(UPlayerStorage* ServerPlayerStorage)
-{
-	if (PlayerStorageCache && ServerPlayerStorage)
-	{
-		PlayerStorageCache->Bags = ServerPlayerStorage->Bags;
-		PlayerStorageCache->Character = ServerPlayerStorage->Character;
-
-		UGameplayStatics::AsyncSaveGameToSlot(PlayerStorageCache, SlotName, UserIndex);
-	}
-}
-
-// 保存背包
-void UStorageSubsystem::SaveBag(TArray<FBag> Bags)
+// 保存
+void UStorageSubsystem::Save()
 {
 	if (PlayerStorageCache)
 	{
-		PlayerStorageCache->Bags = Bags;
-
 		// Save to local immediately
 		UGameplayStatics::AsyncSaveGameToSlot(PlayerStorageCache, SlotName, UserIndex);
 
 		// Throttle save to Cloud
-		GetWorld()->GetTimerManager().SetTimer(WriteFileTimerHandle, this, &ThisClass::WriteFile, 5.f);
-	}
-}
-
-// 保存角色
-void UStorageSubsystem::SaveCharacter(FString Character)
-{
-	if (PlayerStorageCache)
-	{
-		PlayerStorageCache->Character = Character;
-
-		// Save to local immediately
-		UGameplayStatics::AsyncSaveGameToSlot(PlayerStorageCache, SlotName, UserIndex);
-
-		// Throttle save to Cloud
-		GetWorld()->GetTimerManager().SetTimer(WriteFileTimerHandle, this, &ThisClass::WriteFile, 5.f);
+		// GetWorld()->GetTimerManager().SetTimer(WriteFileTimerHandle, this, &ThisClass::WriteFile, 5.f);
 	}
 }
 
@@ -132,4 +76,70 @@ void UStorageSubsystem::WriteFile()
 void UStorageSubsystem::OnWriteFileComplete(bool bWasSuccessful)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnWriteFileComplete: %d"), bWasSuccessful);
+}
+
+// 设置角色控制变量
+void UStorageSubsystem::SetCharacterControlVariable()
+{
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	if (BaseCharacter)
+	{
+		BaseCharacter->MouseSensitivityRate = MapSensitivity(PlayerStorageCache->MouseSensitivity);
+		BaseCharacter->bMouseAimAssistSteering = PlayerStorageCache->MouseAimAssistSteering == "on";
+		BaseCharacter->bMouseAimAssistSlowdown = PlayerStorageCache->MouseAimAssistSlowdown == "on";
+		BaseCharacter->ControllerSensitivityRate = MapSensitivity(PlayerStorageCache->ControllerSensitivity);
+		BaseCharacter->bControllerAimAssistSteering = PlayerStorageCache->ControllerAimAssistSteering == "on";
+		BaseCharacter->bControllerAimAssistSlowdown = PlayerStorageCache->ControllerAimAssistSlowdown == "on";
+	}
+}
+
+float UStorageSubsystem::MapSensitivity(float Value)
+{
+	if (Value < 50.f)
+	{
+		FVector2D InRange(1.f, 50.f);
+		FVector2D OutRange(0.2f, 1.f);
+		return FMath::GetMappedRangeValueClamped(InRange, OutRange, Value);
+	}
+	else if (Value > 50.f)
+	{
+		FVector2D InRange(50.f, 100.f);
+		FVector2D OutRange(1.f, 5.f);
+		return FMath::GetMappedRangeValueClamped(InRange, OutRange, Value);
+	}
+	else
+	{
+		return 1.f;
+	}
+}
+
+// 初始化默认设置
+void UStorageSubsystem::InitDefaultSetting()
+{
+	// 设置默认亮度
+	GEngine->DisplayGamma = PlayerStorageCache->Brightness;
+
+	// 加载声音资源
+	SoundMix = LoadObject<USoundMix>(nullptr,TEXT("/Script/Engine.SoundMix'/Game/Assets/Sounds/SoundMix.SoundMix'"));
+	MasterClass = LoadObject<USoundClass>(nullptr, TEXT("/Script/Engine.SoundClass'/Game/Assets/Sounds/Master.Master'"));
+
+	AudioDevice = GEngine->GetActiveAudioDevice();
+	if (AudioDevice && SoundMix)
+	{
+		AudioDevice->PushSoundMixModifier(SoundMix);
+	}
+
+	SetAudio(PlayerStorageCache->Volume);
+}
+
+// 设置音量
+void UStorageSubsystem::SetAudio(float Value)
+{
+	if (AudioDevice && SoundMix && MasterClass)
+	{
+		FVector2D InRange(1.f, 100.f);
+		FVector2D OutRange(0.01f, 1.f);
+		Value =  FMath::GetMappedRangeValueClamped(InRange, OutRange, Value);
+		AudioDevice->SetSoundMixClassOverride(SoundMix, MasterClass, Value, 1.f, 0.2f, true);
+	}
 }

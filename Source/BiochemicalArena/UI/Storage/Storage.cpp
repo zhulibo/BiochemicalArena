@@ -93,11 +93,7 @@ void UStorage::OnEnumerateFilesComplete(bool bWasSuccessful)
 		}
 		else // 云不包含该存档文件
 		{
-			UPlayerStorage* PlayerStorage = StorageSubsystem->GetPlayerStorage(); // 使用本地存档
-			if (PlayerStorage)
-			{
-				InitPlayerConfig(PlayerStorage);
-			}
+			InitPlayerConfig(StorageSubsystem->PlayerStorageCache); // 使用本地存档
 		}
 	}
 }
@@ -118,16 +114,10 @@ void UStorage::OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRe
 		PlayerStorage->Serialize(Ar);
 
 		InitPlayerConfig(PlayerStorage);
-
-		StorageSubsystem->SyncServerPlayerStorageToLocal(PlayerStorage); // 同步云存档文件到本地
 	}
-	else
+	else // 使用本地存档
 	{
-		UPlayerStorage* PlayerStorage = StorageSubsystem->GetPlayerStorage(); // 使用本地存档
-		if (PlayerStorage)
-		{
-			InitPlayerConfig(PlayerStorage);
-		}
+		InitPlayerConfig(StorageSubsystem->PlayerStorageCache);
 	}
 }
 
@@ -467,7 +457,8 @@ void UStorage::SaveBagToStorage()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->SaveBag(Bags);
+		StorageSubsystem->PlayerStorageCache->Bags = Bags;
+		StorageSubsystem->Save();
 	}
 }
 
@@ -482,6 +473,7 @@ void UStorage::OnCharacterButtonClicked(UStorageButton* EquipmentButton)
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->SaveCharacter(CharacterName.ToString());
+		StorageSubsystem->PlayerStorageCache->Character = CharacterName.ToString();
+		StorageSubsystem->Save();
 	}
 }

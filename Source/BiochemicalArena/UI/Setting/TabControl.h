@@ -9,17 +9,19 @@ class BIOCHEMICALARENA_API UTabControl : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void NativeConstruct() override;
 
-protected:
+	UPROPERTY()
+	class UStorageSubsystem* StorageSubsystem;
+
 	void SetDefaultValue();
 
 	// 键鼠
 	UPROPERTY(meta = (BindWidget))
 	class UAnalogSlider* MouseSensitivityController;
 	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* MouseSensitivityValue;
+	class UCommonTextBlock* MouseSensitivity;
 	UFUNCTION()
 	void OnMouseSensitivityChanged(float Value);
 
@@ -37,7 +39,7 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UAnalogSlider* ControllerSensitivityController;
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* ControllerSensitivityValue;
+	UCommonTextBlock* ControllerSensitivity;
 	UFUNCTION()
 	void OnControllerSensitivityChanged(float Value);
 

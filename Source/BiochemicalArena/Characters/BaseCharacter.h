@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "BaseCharacter.generated.h"
 
+enum class ECommonInputType : uint8;
 struct FBag;
 
 UCLASS()
@@ -16,6 +17,19 @@ public:
 
 	void PlayFootstepSound();
 
+	UPROPERTY()
+	float MouseSensitivityRate;
+	UPROPERTY()
+	bool bMouseAimAssistSteering;
+	UPROPERTY()
+	bool bMouseAimAssistSlowdown;
+	UPROPERTY()
+	float ControllerSensitivityRate;
+	UPROPERTY()
+	bool bControllerAimAssistSteering;
+	UPROPERTY()
+	bool bControllerAimAssistSlowdown;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -23,16 +37,22 @@ protected:
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
-	void GetPlayerStorage();
-	UPROPERTY()
-	class UPlayerStorage* PlayerStorage;
 
 	bool HasInitMeshCollision = false;
 	void PollInitMeshCollision();
+
 	void CalculateAO_Pitch();
 
+	void OnLocalControllerReady();
+
+	UPROPERTY()
+	ECommonInputType CommonInputType;
+	UFUNCTION()
+	void OnInputMethodChanged(ECommonInputType TemCommonInputType);
+
 	void Move(const struct FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
+	void LookMouse(const FInputActionValue& Value);
+	void LookStick(const FInputActionValue& Value);
 	void JumpButtonPressed(const FInputActionValue& Value);
 	void CrouchButtonPressed(const FInputActionValue& Value);
 	void CrouchButtonReleased(const FInputActionValue& Value);
@@ -47,10 +67,10 @@ protected:
 	void RadialMenuChange(const FInputActionValue& Value);
 	void RadialMenuSelect(const FInputActionValue& Value);
 
-	virtual float CalcFallDamageFactor();
-	void PlayOuchSound(float DamageFactor);
+	virtual float CalcFallDamageRate();
+	void PlayOuchSound(float DamageRate);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayOuchSound(float DamageFactor);
+	void MulticastPlayOuchSound(float DamageRate);
 
 private:
 	UPROPERTY()
@@ -83,7 +103,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	class UInputAction* MoveAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
-	UInputAction* LookAction;
+	UInputAction* LookMouseAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
+	UInputAction* LookStickAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))

@@ -4,13 +4,14 @@
 #include "BiochemicalArena/PlayerStates/HumanState.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
 #include "BiochemicalArena/Equipments/Equipment.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 
 void ATeamDeadMatchMode::BeginPlay()
 {
 	Super::BeginPlay();
 
 	TeamDeadMatchState = GetGameState<ATeamDeadMatchState>();
-	HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Charaters/BP_HumanCharacter.BP_HumanCharacter_C'"));
+	HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Characters/BP_HumanCharacter.BP_HumanCharacter_C'"));
 }
 
 void ATeamDeadMatchMode::Tick(float DeltaSeconds)

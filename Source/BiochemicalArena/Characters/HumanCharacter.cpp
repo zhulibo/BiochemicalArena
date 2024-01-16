@@ -12,6 +12,7 @@
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "..\System\PlayerStorageType.h"
 #include "BiochemicalArena/System/PlayerStorage.h"
+#include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -93,6 +94,7 @@ void AHumanCharacter::BeginPlay()
 void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
 	// Add Input Mapping Context
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
@@ -103,6 +105,7 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 			Subsystem->AddMappingContext(EquipmentMappingContext, 0);
 		}
 	}
+
 	// Set up action bindings
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
@@ -130,13 +133,16 @@ void AHumanCharacter::Tick(float DeltaSeconds)
 
 void AHumanCharacter::PollInit()
 {
-	if (HumanController == nullptr)
+	if (IsLocallyControlled() && HumanController == nullptr)
 	{
 		HumanController = Cast<AHumanController>(Controller);
-		if (HumanController && IsLocallyControlled())
+		if (HumanController)
 		{
+			OnLocalControllerReady();
+
 			HumanController->SetHasInitDefaultHUD(false);
 
+			// 本地Controller就绪后，在服务端生成武器，然后复制到所有客户端
 			ServerSetDefaultEquipment();
 		}
 	}
@@ -148,7 +154,7 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
 	Combat->CombatState = ECombatState::Ready;
 	Combat->CurrentEquipmentType = EEquipmentType::Secondary; // 模拟正在使用副武器，以便切换到主武器后，LastEquipmentType被置为副武器
 
-	// 获取装备存放路径
+	// 获取装备类的存放路径
 	FString PrimaryEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Primary);
 	FString SecondaryEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Secondary);
 	FString MeleeEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Melee);
@@ -183,23 +189,25 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
 	}
 }
 
+// 获取装备类的存放路径
 FString AHumanCharacter::GetEquipmentClassPath(int32 BagIndex, EEquipmentType EquipmentType)
 {
-	if (PlayerStorage == nullptr || PlayerStorage->Bags.Num() == 0) return FString();
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem == nullptr || StorageSubsystem->PlayerStorageCache->Bags.Num() == 0) return FString();
 	FString EquipmentName;
 	switch (EquipmentType)
 	{
 	case EEquipmentType::Primary:
-		EquipmentName = PlayerStorage->Bags[BagIndex].Primary;
+		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Primary;
 		break;
 	case EEquipmentType::Secondary:
-		EquipmentName = PlayerStorage->Bags[BagIndex].Secondary;
+		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Secondary;
 		break;
 	case EEquipmentType::Melee:
-		EquipmentName = PlayerStorage->Bags[BagIndex].Melee;
+		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Melee;
 		break;
 	case EEquipmentType::Throwing:
-		EquipmentName = PlayerStorage->Bags[BagIndex].Throwing;
+		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Throwing;
 		break;
 	}
 	if (EquipmentName.IsEmpty()) return FString();
@@ -239,23 +247,25 @@ void AHumanCharacter::OnRep_DefaultThrowingEquipment()
 	}
 }
 
+// 落地事件（测试发现只在本地和服务端执行）
 void AHumanCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
-	float DamageFactor = CalcFallDamageFactor();
-	if (DamageFactor == 0.f) return;
+	float DamageRate = CalcFallDamageRate();
+	if (DamageRate == 0.f) return;
 
-	Health = FMath::Clamp(Health - DamageFactor * MaxHealth, 0.f, MaxHealth);
+	// 扣血（扣血只发生在本地和服务端，然后服务端会通过属性复制把Health更新到模拟角色上）
+	Health = FMath::Clamp(Health - DamageRate * MaxHealth, 0.f, MaxHealth);
 
 	if (IsLocallyControlled())
 	{
-		UpdateHUDHealth();
-		PlayOuchSound(DamageFactor);
+		UpdateHUDHealth(); // 更新本地HUD血量
+		PlayOuchSound(DamageRate);
 	}
 	if (HasAuthority())
 	{
-		MulticastPlayOuchSound(DamageFactor);
+		MulticastPlayOuchSound(DamageRate); // 需要Multicast通知模拟角色
 		if (Health == 0.f) Kill();
 	}
 }

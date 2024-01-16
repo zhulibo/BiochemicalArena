@@ -12,42 +12,19 @@ class BIOCHEMICALARENA_API UTabVideo : public UCommonActivatableWidget
 protected:
 	virtual void NativeConstruct() override;
 
-	void SetDefaultValue();
+	UPROPERTY()
+	class UStorageSubsystem* StorageSubsystem;
 
-	UPROPERTY(meta = (BindWidget))
-	class UComboBoxString* WindowModeController;
-	UFUNCTION()
-	void OnWindowModeChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+	UPROPERTY()
+	UGameUserSettings* GameUserSettings;
+
+	void SetDefaultValue();
 
 	UPROPERTY(meta = (BindWidget))
 	class UAnalogSlider* BrightnessController;
 	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* BrightnessValue;
+	class UCommonTextBlock* Brightness;
 	UFUNCTION()
 	void OnBrightnessChanged(float Value);
-
-	UPROPERTY(meta = (BindWidget))
-	UAnalogSlider* FieldOfViewController;
-	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* FieldOfViewValue;
-	UFUNCTION()
-	void OnFieldOfViewChanged(float Value);
-
-	UPROPERTY(meta = (BindWidget))
-	UComboBoxString* ResolutionController;
-	UFUNCTION()
-	void OnResolutionChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
-
-	UPROPERTY(meta = (BindWidget))
-	UComboBoxString* VerticalSyncController;
-	UFUNCTION()
-	void OnVerticalSyncChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
-
-	UPROPERTY(meta = (BindWidget))
-	UAnalogSlider* FrameRateLimitController;
-	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* FrameRateLimitValue;
-	UFUNCTION()
-	void OnFrameRateLimitChanged(float Value);
 
 };

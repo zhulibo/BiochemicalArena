@@ -5,29 +5,25 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "StorageSubsystem.generated.h"
 
-struct FBag;
-
 UCLASS()
 class BIOCHEMICALARENA_API UStorageSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
 public:
-	UStorageSubsystem();
-
 	void CreatePlayerStorage();
-	class UPlayerStorage* GetPlayerStorage();
+	UPROPERTY()
+	class UPlayerStorage* PlayerStorageCache; // 存档缓存
+	void Save();
 
-	void SyncServerPlayerStorageToLocal(UPlayerStorage* ServerPlayerStorage);
+	void InitDefaultSetting();
 
-	void SaveBag(TArray<FBag> Bags);
-	void SaveCharacter(FString Character);
+	void SetCharacterControlVariable();
+
+	void SetAudio(float Value);
 
 protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
-	UPROPERTY()
-	UPlayerStorage* PlayerStorageCache; // 存档缓存
 
 	UPROPERTY()
 	FString SlotName = TEXT("Slot1");
@@ -39,6 +35,14 @@ protected:
 	FTimerHandle WriteFileTimerHandle;
 	void WriteFile();
 	void OnWriteFileComplete(bool bWasSuccessful);
+
+	float MapSensitivity(float Value);
+
+	UPROPERTY()
+	USoundMix* SoundMix;
+	FAudioDeviceHandle AudioDevice;
+	UPROPERTY()
+	USoundClass* MasterClass;
 
 public:
 	FORCEINLINE FString GetSlotName() const { return SlotName; }

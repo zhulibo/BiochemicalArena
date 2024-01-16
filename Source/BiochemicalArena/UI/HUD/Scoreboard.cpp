@@ -4,6 +4,7 @@
 #include "ScoreBoardLineButton.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 
 void UScoreboard::NativeConstruct()
 {

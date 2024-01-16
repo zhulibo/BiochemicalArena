@@ -13,6 +13,7 @@ public class BiochemicalArena : ModuleRules
 				"Engine",
 				"InputCore",
 				"EnhancedInput",
+				"CommonInput",
 				"OnlineServicesInterface",
 				"CoreOnline",
 				"Niagara",

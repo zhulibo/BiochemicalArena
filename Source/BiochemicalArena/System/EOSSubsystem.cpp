@@ -62,14 +62,14 @@ void UEOSSubsystem::Login(FPlatformUserId ID, int32 Type)
 		Params.CredentialsId = FString("");
 		Params.CredentialsToken.Emplace<FString>("");
 	}
-	// 本地开发者账号1登录
+	// 本地开发者登录-账号1
 	else if(Type == 1)
 	{
 		Params.CredentialsType = LoginCredentialsType::Developer;
 		Params.CredentialsId = FString("127.0.0.1:6000");
 		Params.CredentialsToken.Emplace<FString>("dust");
 	}
-	// 本地开发者账号2登录
+	// 本地开发者登录-账号2
 	else if(Type == 2)
 	{
 		Params.CredentialsType = LoginCredentialsType::Developer;

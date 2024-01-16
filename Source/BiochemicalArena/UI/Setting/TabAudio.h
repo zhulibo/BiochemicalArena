@@ -9,16 +9,21 @@ class BIOCHEMICALARENA_API UTabAudio : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
+protected:
 	virtual void NativeConstruct() override;
 
-protected:
+	UPROPERTY()
+	class UStorageSubsystem* StorageSubsystem;
+
+	UPROPERTY()
+	UGameUserSettings* GameUserSettings;
+
 	void SetDefaultValue();
 
 	UPROPERTY(meta = (BindWidget))
 	class UAnalogSlider* VolumeController;
 	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* VolumeValue;
+	class UCommonTextBlock* Volume;
 	UFUNCTION()
 	void OnVolumeChanged(float Value);
 
