@@ -1,6 +1,6 @@
 #include "StorageSubsystem.h"
 #include "AudioDevice.h"
-#include "PlayerStorage.h"
+#include "StorageSaveGame.h"
 #include "BiochemicalArena/Characters/BaseCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
@@ -17,35 +17,42 @@ void UStorageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	if (!UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex)) // 如果本地存档不存在，则创建本地存档
 	{
-		CreatePlayerStorage();
+		CreateStorageSaveGame();
 	}
 	else // 如果本地存档存在，则放到缓存里
 	{
-		PlayerStorageCache = Cast<UPlayerStorage>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex));
+		if (UStorageSaveGame* StorageSaveGame = Cast<UStorageSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex)))
+		{
+			StorageSaveGameCache = StorageSaveGame;
+		}
+		else
+		{
+			CreateStorageSaveGame();
+		}
 	}
 }
 
 // 创建玩家存档
-void UStorageSubsystem::CreatePlayerStorage()
+void UStorageSubsystem::CreateStorageSaveGame()
 {
-	UPlayerStorage* PlayerStorage = Cast<UPlayerStorage>(UGameplayStatics::CreateSaveGameObject(UPlayerStorage::StaticClass()));
-	if (PlayerStorage)
+	UStorageSaveGame* StorageSaveGame = Cast<UStorageSaveGame>(UGameplayStatics::CreateSaveGameObject(UStorageSaveGame::StaticClass()));
+	if (StorageSaveGame)
 	{
 		// 保存存档至缓存
-		PlayerStorageCache = PlayerStorage;
+		StorageSaveGameCache = StorageSaveGame;
 
 		// 保存存档至本地
-		UGameplayStatics::SaveGameToSlot(PlayerStorageCache, SlotName, UserIndex);
+		UGameplayStatics::SaveGameToSlot(StorageSaveGameCache, SlotName, UserIndex);
 	}
 }
 
 // 保存
 void UStorageSubsystem::Save()
 {
-	if (PlayerStorageCache)
+	if (StorageSaveGameCache)
 	{
 		// Save to local immediately
-		UGameplayStatics::AsyncSaveGameToSlot(PlayerStorageCache, SlotName, UserIndex);
+		UGameplayStatics::AsyncSaveGameToSlot(StorageSaveGameCache, SlotName, UserIndex);
 
 		// Throttle save to Cloud
 		// GetWorld()->GetTimerManager().SetTimer(WriteFileTimerHandle, this, &ThisClass::WriteFile, 5.f);
@@ -58,14 +65,14 @@ void UStorageSubsystem::WriteFile()
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		if (PlayerStorageCache)
+		if (StorageSaveGameCache)
 		{
 			TArray<uint8> FileContents;
 			FMemoryWriter MemoryWriter(FileContents, true);
 			FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, false);
 			Ar.ArIsSaveGame = false; // 无论属性设否设置了UPROPERTY(SaveGame)，都将进行序列化
 			Ar.ArNoDelta = true;
-			PlayerStorageCache->Serialize(Ar);
+			StorageSaveGameCache->Serialize(Ar);
 
 			EOSSubsystem->WriteFile(SlotName, FileContents); // 将本地存档保存到云端
 		}
@@ -84,12 +91,12 @@ void UStorageSubsystem::SetCharacterControlVariable()
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 	if (BaseCharacter)
 	{
-		BaseCharacter->MouseSensitivityRate = MapSensitivity(PlayerStorageCache->MouseSensitivity);
-		BaseCharacter->bMouseAimAssistSteering = PlayerStorageCache->MouseAimAssistSteering == "on";
-		BaseCharacter->bMouseAimAssistSlowdown = PlayerStorageCache->MouseAimAssistSlowdown == "on";
-		BaseCharacter->ControllerSensitivityRate = MapSensitivity(PlayerStorageCache->ControllerSensitivity);
-		BaseCharacter->bControllerAimAssistSteering = PlayerStorageCache->ControllerAimAssistSteering == "on";
-		BaseCharacter->bControllerAimAssistSlowdown = PlayerStorageCache->ControllerAimAssistSlowdown == "on";
+		BaseCharacter->MouseSensitivityRate = MapSensitivity(StorageSaveGameCache->MouseSensitivity);
+		BaseCharacter->bMouseAimAssistSteering = StorageSaveGameCache->MouseAimAssistSteering == "on";
+		BaseCharacter->bMouseAimAssistSlowdown = StorageSaveGameCache->MouseAimAssistSlowdown == "on";
+		BaseCharacter->ControllerSensitivityRate = MapSensitivity(StorageSaveGameCache->ControllerSensitivity);
+		BaseCharacter->bControllerAimAssistSteering = StorageSaveGameCache->ControllerAimAssistSteering == "on";
+		BaseCharacter->bControllerAimAssistSlowdown = StorageSaveGameCache->ControllerAimAssistSlowdown == "on";
 	}
 }
 
@@ -117,7 +124,7 @@ float UStorageSubsystem::MapSensitivity(float Value)
 void UStorageSubsystem::InitDefaultSetting()
 {
 	// 设置默认亮度
-	GEngine->DisplayGamma = PlayerStorageCache->Brightness;
+	GEngine->DisplayGamma = StorageSaveGameCache->Brightness;
 
 	// 加载声音资源
 	SoundMix = LoadObject<USoundMix>(nullptr,TEXT("/Script/Engine.SoundMix'/Game/Assets/Sounds/SoundMix.SoundMix'"));
@@ -129,7 +136,7 @@ void UStorageSubsystem::InitDefaultSetting()
 		AudioDevice->PushSoundMixModifier(SoundMix);
 	}
 
-	SetAudio(PlayerStorageCache->Volume);
+	SetAudio(StorageSaveGameCache->Volume);
 }
 
 // 设置音量

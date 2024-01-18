@@ -1,6 +1,8 @@
 #include "BasePlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "TeamType.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/System/PlayerSubsystem.h"
 
 ABasePlayerState::ABasePlayerState()
 {
@@ -12,12 +14,23 @@ void ABasePlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, Team);
+	DOREPLIFETIME(ThisClass, SpawnCharacterName);
 	DOREPLIFETIME(ThisClass, Defeat);
 }
 
 void ABasePlayerState::BeginPlay()
 {
 	Super::BeginPlay();
+
+	BaseController = Cast<ABaseController>(GetOwner());
+	if (BaseController && BaseController->IsLocalController())
+	{
+		UPlayerSubsystem* PlayerSubsystem = BaseController->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
+		if (PlayerSubsystem)
+		{
+			ServerSetSpawnCharacterName(PlayerSubsystem->GetSpawnCharacterName());
+		}
+	}
 }
 
 void ABasePlayerState::SetTeam(ETeam TemTeam)
@@ -27,6 +40,11 @@ void ABasePlayerState::SetTeam(ETeam TemTeam)
 
 void ABasePlayerState::OnRep_Team()
 {
+}
+
+void ABasePlayerState::ServerSetSpawnCharacterName_Implementation(const FString& TemSpawnCharacterName)
+{
+	SpawnCharacterName = TemSpawnCharacterName;
 }
 
 void ABasePlayerState::AddScore(float ScoreAmount)

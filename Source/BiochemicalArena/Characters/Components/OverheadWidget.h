@@ -20,6 +20,8 @@ protected:
 	AHumanCharacter* HumanCharacter;
 	UPROPERTY()
 	AHumanCharacter* LocalHumanCharacter;
+	UPROPERTY()
+	class AHumanState* LocalHumanState;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;

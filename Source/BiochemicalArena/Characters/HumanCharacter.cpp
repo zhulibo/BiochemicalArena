@@ -10,8 +10,8 @@
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
-#include "..\System\PlayerStorageType.h"
-#include "BiochemicalArena/System/PlayerStorage.h"
+#include "..\System\StorageSaveGameType.h"
+#include "..\System\StorageSaveGame.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Net/UnrealNetwork.h"
 #include "Components/WidgetComponent.h"
@@ -74,10 +74,10 @@ void AHumanCharacter::BeginPlay()
 
 	if (OverheadWidget)
 	{
-		UUserWidget* Tem = OverheadWidget->GetUserWidgetObject();
-		if (Tem)
+		UUserWidget* TemUserWidget = OverheadWidget->GetUserWidgetObject();
+		if (TemUserWidget)
 		{
-			UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(Tem);
+			UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(TemUserWidget);
 			if (OverheadWidgetClass && OverheadWidgetClass->HumanCharacter == nullptr)
 			{
 				OverheadWidgetClass->HumanCharacter = this;
@@ -193,21 +193,21 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
 FString AHumanCharacter::GetEquipmentClassPath(int32 BagIndex, EEquipmentType EquipmentType)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem == nullptr || StorageSubsystem->PlayerStorageCache->Bags.Num() == 0) return FString();
+	if (StorageSubsystem == nullptr || StorageSubsystem->StorageSaveGameCache->Bags.Num() == 0) return FString();
 	FString EquipmentName;
 	switch (EquipmentType)
 	{
 	case EEquipmentType::Primary:
-		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Primary;
+		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Primary;
 		break;
 	case EEquipmentType::Secondary:
-		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Secondary;
+		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Secondary;
 		break;
 	case EEquipmentType::Melee:
-		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Melee;
+		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Melee;
 		break;
 	case EEquipmentType::Throwing:
-		EquipmentName = StorageSubsystem->PlayerStorageCache->Bags[BagIndex].Throwing;
+		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Throwing;
 		break;
 	}
 	if (EquipmentName.IsEmpty()) return FString();
@@ -424,6 +424,7 @@ void AHumanCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UD
 	AController* InstigatorController, AActor* DamageCauser)
 {
 	if (bIsKilled) return;
+
 	Health = FMath::Clamp(Health - Damage, 0.f, MaxHealth);
 	if (IsLocallyControlled()) UpdateHUDHealth();
 

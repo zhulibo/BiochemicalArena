@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "PlayerStorageType.generated.h"
+#include "StorageSaveGameType.generated.h"
 
 USTRUCT(BlueprintType)
 struct FBag

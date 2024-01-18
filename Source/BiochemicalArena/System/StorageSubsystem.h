@@ -11,9 +11,9 @@ class BIOCHEMICALARENA_API UStorageSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	void CreatePlayerStorage();
+	void CreateStorageSaveGame();
 	UPROPERTY()
-	class UPlayerStorage* PlayerStorageCache; // 存档缓存
+	class UStorageSaveGame* StorageSaveGameCache; // 存档缓存
 	void Save();
 
 	void InitDefaultSetting();

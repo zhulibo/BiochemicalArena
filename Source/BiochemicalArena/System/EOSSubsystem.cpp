@@ -114,7 +114,7 @@ void UEOSSubsystem::GetUserInfo()
 		UserInfo = MakeShared<FUserInfo>();
 		FOnlineError Error = Result.GetErrorValue();
 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("GetUserInfo Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Get user info failed!"));
 	}
 }
 
@@ -279,7 +279,7 @@ void UEOSSubsystem::PromoteLobbyMember()
 		{
 			FOnlineError Error = Result.GetErrorValue();
 			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("PromoteLobbyMember Failed!"));
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Promote lobby member failed!"));
 		}
 	});
 }
@@ -439,7 +439,7 @@ TSharedPtr<const ISession> UEOSSubsystem::GetPresenceSession()
 	{
 		FOnlineError Error = Result.GetErrorValue();
 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("GetPresenceSession Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Get presence session failed!"));
 	}
 	return Session;
 }

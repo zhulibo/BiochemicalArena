@@ -5,9 +5,10 @@
 #include "CommonTextBlock.h"
 #include "StorageButton.h"
 #include "BiochemicalArena/Characters/CharacterType.h"
-#include "..\..\System\PlayerStorageType.h"
+#include "..\..\System\StorageSaveGameType.h"
 #include "BiochemicalArena/Equipments/EquipmentType.h"
-#include "BiochemicalArena/System/PlayerStorage.h"
+#include "..\..\System\StorageSaveGame.h"
+#include "BiochemicalArena/System/PlayerSubsystem.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/WrapBox.h"
@@ -93,7 +94,7 @@ void UStorage::OnEnumerateFilesComplete(bool bWasSuccessful)
 		}
 		else // 云不包含该存档文件
 		{
-			InitPlayerConfig(StorageSubsystem->PlayerStorageCache); // 使用本地存档
+			InitPlayerConfig(StorageSubsystem->StorageSaveGameCache); // 使用本地存档
 		}
 	}
 }
@@ -106,33 +107,33 @@ void UStorage::OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRe
 
 	if (bWasSuccessful) // 使用云存档文件
 	{
-		UPlayerStorage* PlayerStorage = NewObject<UPlayerStorage>(this);
+		UStorageSaveGame* StorageSaveGame = NewObject<UStorageSaveGame>(this);
 		FMemoryReader MemoryReader((FileContents.Get()), true);
 		FObjectAndNameAsStringProxyArchive Ar(MemoryReader, false);
 		Ar.ArIsSaveGame = false;
 		Ar.ArNoDelta = true;
-		PlayerStorage->Serialize(Ar);
+		StorageSaveGame->Serialize(Ar);
 
-		InitPlayerConfig(PlayerStorage);
+		InitPlayerConfig(StorageSaveGame);
 	}
 	else // 使用本地存档
 	{
-		InitPlayerConfig(StorageSubsystem->PlayerStorageCache);
+		InitPlayerConfig(StorageSubsystem->StorageSaveGameCache);
 	}
 }
 
 // 初始化玩家配置
-void UStorage::InitPlayerConfig(UPlayerStorage* PlayerStorage)
+void UStorage::InitPlayerConfig(UStorageSaveGame* StorageSaveGame)
 {
-	if(PlayerStorage)
+	if(StorageSaveGame)
 	{
 		// 判断是否拥有装备，没有置空
-		for (int i = 0; i < PlayerStorage->Bags.Num(); ++i)
+		for (int i = 0; i < StorageSaveGame->Bags.Num(); ++i)
 		{
-			if (!HasEquipment(PlayerStorage->Bags[i].Primary)) PlayerStorage->Bags[i].Primary = "";
-			if (!HasEquipment(PlayerStorage->Bags[i].Secondary)) PlayerStorage->Bags[i].Secondary = "";
-			if (!HasEquipment(PlayerStorage->Bags[i].Melee)) PlayerStorage->Bags[i].Melee = "";
-			if (!HasEquipment(PlayerStorage->Bags[i].Throwing)) PlayerStorage->Bags[i].Throwing = "";
+			if (!HasEquipment(StorageSaveGame->Bags[i].Primary)) StorageSaveGame->Bags[i].Primary = "";
+			if (!HasEquipment(StorageSaveGame->Bags[i].Secondary)) StorageSaveGame->Bags[i].Secondary = "";
+			if (!HasEquipment(StorageSaveGame->Bags[i].Melee)) StorageSaveGame->Bags[i].Melee = "";
+			if (!HasEquipment(StorageSaveGame->Bags[i].Throwing)) StorageSaveGame->Bags[i].Throwing = "";
 		}
 
 		// 设置装备
@@ -141,18 +142,25 @@ void UStorage::InitPlayerConfig(UPlayerStorage* PlayerStorage)
 			UBagContent* BagContent = Cast<UBagContent>(BagSwitcher->GetChildAt(i));
 			if (BagContent)
 			{
-				BagContent->PrimaryEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Primary));
-				BagContent->SecondaryEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Secondary));
-				BagContent->MeleeEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Melee));
-				BagContent->ThrowingEquipment->ButtonText->SetText(FText::FromString(PlayerStorage->Bags[i].Throwing));
+				BagContent->PrimaryEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Primary));
+				BagContent->SecondaryEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Secondary));
+				BagContent->MeleeEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Melee));
+				BagContent->ThrowingEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Throwing));
 			}
 		}
 
-		// 判断是否拥有角色，没有置空
-		if (!HasHumanCharacter(PlayerStorage->Character)) PlayerStorage->Character = "";
+		// 判断是否拥有角色，没有则恢复默认
+		if (!HasHumanCharacter(StorageSaveGame->Character)) StorageSaveGame->Character = "SAS";
 
 		// 设置角色
-		Character->SetText(FText::FromString(PlayerStorage->Character));
+		Character->SetText(FText::FromString(StorageSaveGame->Character));
+
+		// 保存角色到PlayerSubsystem，开局生成角色时使用
+		if (PlayerSubsystem == nullptr) PlayerSubsystem = GetOwningPlayer()->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
+		if (PlayerSubsystem)
+		{
+			PlayerSubsystem->SetSpawnCharacterName(StorageSaveGame->Character);
+		}
 	}
 }
 
@@ -457,7 +465,7 @@ void UStorage::SaveBagToStorage()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->Bags = Bags;
+		StorageSubsystem->StorageSaveGameCache->Bags = Bags;
 		StorageSubsystem->Save();
 	}
 }
@@ -469,11 +477,18 @@ void UStorage::OnCharacterButtonClicked(UStorageButton* EquipmentButton)
 	FText CharacterName = EquipmentButton->ButtonText->GetText();
 	Character->SetText(CharacterName);
 
+	// 保存角色到PlayerSubsystem，开局生成角色时使用
+	if (PlayerSubsystem == nullptr) PlayerSubsystem = GetOwningPlayer()->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
+	if (PlayerSubsystem)
+	{
+		PlayerSubsystem->SetSpawnCharacterName(CharacterName.ToString());
+	}
+
 	// 保存角色到存档
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->Character = CharacterName.ToString();
+		StorageSubsystem->StorageSaveGameCache->Character = CharacterName.ToString();
 		StorageSubsystem->Save();
 	}
 }

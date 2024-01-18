@@ -7,6 +7,7 @@ UENUM(BlueprintType)
 enum class EHumanCharacterName : uint8
 {
 	SAS UMETA(DisplayName = "SAS"),
+	PLA UMETA(DisplayName = "PLA"),
 	SEAL UMETA(DisplayName = "SEAL"),
 
 	MAX UMETA(Hidden)

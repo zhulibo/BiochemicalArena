@@ -105,6 +105,9 @@ void UShop::AddCharacterButton(FOffer Offer)
 // 点击商品
 void UShop::OnGoodsButtonClicked(UGoodsButton* GoodsButton)
 {
+	GetWorld()->ServerTravel("/Game/Maps/Dev?listen");
+	return;
+
 	// 商品已拥有直接退出
 	for (int i = 0; i < Entitlements.Num(); ++i)
 	{

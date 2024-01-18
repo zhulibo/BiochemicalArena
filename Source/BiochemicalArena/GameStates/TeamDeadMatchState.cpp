@@ -78,7 +78,7 @@ void ATeamDeadMatchState::OnRep_Team2Score()
 
 void ATeamDeadMatchState::SetHUDTeamScore(float Score, ETeam Team)
 {
-	AHumanController* HumanController = Cast<AHumanController>(GetWorld()->GetFirstPlayerController());
+	if (HumanController == nullptr) HumanController = Cast<AHumanController>(GetWorld()->GetFirstPlayerController());
 	if (HumanController)
 	{
 		HumanController->SetHUDTeamScore(Score, Team);

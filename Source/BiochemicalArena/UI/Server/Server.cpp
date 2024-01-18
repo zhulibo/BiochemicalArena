@@ -8,6 +8,7 @@
 #include "Components/EditableTextBox.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "Lobby.h"
+#include "BiochemicalArena/System/PlayerSubsystem.h"
 
 void UServer::NativeConstruct()
 {
@@ -47,7 +48,11 @@ void UServer::OnLogin1ButtonClicked()
 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
 	if (MenuController)
 	{
-		MenuController->Login1();
+		UPlayerSubsystem* PlayerSubsystem = MenuController->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
+		if (PlayerSubsystem)
+		{
+			PlayerSubsystem->Login(1);
+		}
 	}
 }
 
@@ -56,7 +61,11 @@ void UServer::OnLogin2ButtonClicked()
 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
 	if (MenuController)
 	{
-		MenuController->Login2();
+		UPlayerSubsystem* PlayerSubsystem = MenuController->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
+		if (PlayerSubsystem)
+		{
+			PlayerSubsystem->Login(2);
+		}
 	}
 }
 
@@ -82,7 +91,7 @@ void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("CreateLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Create lobby failed!"));
 	}
 }
 
@@ -143,7 +152,7 @@ void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<c
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("FindLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Find lobby failed!"));
 	}
 }
 
@@ -170,7 +179,7 @@ void UServer::OnJoinLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("JoinLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Join lobby failed!"));
 	}
 }
 

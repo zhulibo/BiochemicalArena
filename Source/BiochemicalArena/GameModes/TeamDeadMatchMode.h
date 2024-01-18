@@ -10,9 +10,11 @@ class BIOCHEMICALARENA_API ATeamDeadMatchMode : public ABaseMode
 	GENERATED_BODY()
 
 public:
+	virtual void Respawn(ACharacter* KilledCharacter, AController* KilledController);
+
 	virtual void KillPlayer(class AHumanCharacter* KilledCharacter, class AHumanController* KilledController,
 		AHumanController* AttackerController, AActor* DamageCauser);
-	virtual void Respawn(ACharacter* KilledCharacter, AController* KilledController);
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -20,11 +22,10 @@ protected:
 
 	UPROPERTY()
 	class ATeamDeadMatchState* TeamDeadMatchState;
-	UPROPERTY()
-	UClass* HumanCharacterClass;
 
 	virtual void HandleMatchHasStarted() override;
 	virtual void OnPostLogin(AController* NewPlayer) override;
+
 	AHumanCharacter* SpawnHumanCharacter(AController* KilledController);
 	void AssignPlayerTeam(AHumanController* HumanController);
 

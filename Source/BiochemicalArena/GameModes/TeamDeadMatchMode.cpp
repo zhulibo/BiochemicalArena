@@ -11,66 +11,11 @@ void ATeamDeadMatchMode::BeginPlay()
 	Super::BeginPlay();
 
 	TeamDeadMatchState = GetGameState<ATeamDeadMatchState>();
-	HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Script/Engine.Blueprint'/Game/Characters/BP_HumanCharacter.BP_HumanCharacter_C'"));
 }
 
 void ATeamDeadMatchMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-}
-
-void ATeamDeadMatchMode::KillPlayer(AHumanCharacter* KilledCharacter, AHumanController* KilledController,
-	AHumanController* AttackerController, AActor* DamageCauser)
-{
-	AHumanState* AttackerState = AttackerController ? Cast<AHumanState>(AttackerController->PlayerState) : nullptr;
-	AHumanState* KilledState = KilledController ? Cast<AHumanState>(KilledController->PlayerState) : nullptr;
-
-	if (KilledState) KilledState->AddDefeat(1);
-	if (AttackerState) AttackerState->AddScore(1.f);
-
-	if (TeamDeadMatchState && AttackerState)
-	{
-		TeamDeadMatchState->AddTeamScore(AttackerState->GetTeam());
-	}
-
-	if (TeamDeadMatchState && AttackerState && DamageCauser && KilledState)
-	{
-		EEquipmentName TemEquipmentName;
-		if (AEquipment* DamageCauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner())) // Projectile can has owner
-		{
-			TemEquipmentName = DamageCauserEquipment->GetEquipmentName();
-		}
-		else // Melee
-		{
-			TemEquipmentName = Cast<AEquipment>(DamageCauser)->GetEquipmentName();
-		}
-		FString EquipmentName = UEnum::GetValueAsString(TemEquipmentName);
-		EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
-		TeamDeadMatchState->MulticastAddKillLog(AttackerState, EquipmentName, KilledState);
-	}
-
-	if (KilledCharacter)
-	{
-		KilledCharacter->Kill();
-	}
-}
-
-// 重生
-void ATeamDeadMatchMode::Respawn(ACharacter* KilledCharacter, AController* KilledController)
-{
-	if (KilledCharacter)
-	{
-		KilledCharacter->Reset();
-		KilledCharacter->Destroy();
-	}
-	if (KilledController)
-	{
-		AHumanCharacter* HumanCharacter = SpawnHumanCharacter(KilledController);
-		if (HumanCharacter)
-		{
-			KilledController->Possess(HumanCharacter);
-		}
-	}
 }
 
 // 游戏开始
@@ -109,13 +54,50 @@ void ATeamDeadMatchMode::OnPostLogin(AController* NewPlayerController)
 	}
 }
 
+// 重生
+void ATeamDeadMatchMode::Respawn(ACharacter* KilledCharacter, AController* KilledController)
+{
+	if (KilledCharacter)
+	{
+		KilledCharacter->Reset();
+		KilledCharacter->Destroy();
+	}
+	if (KilledController)
+	{
+		AHumanCharacter* HumanCharacter = SpawnHumanCharacter(KilledController);
+		if (HumanCharacter)
+		{
+			KilledController->Possess(HumanCharacter);
+		}
+	}
+}
+
 // 生成角色
 AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerController)
 {
-	if (HumanCharacterClass == nullptr || NewPlayerController == nullptr) return nullptr;
+	if (NewPlayerController == nullptr) return nullptr;
+
+	// 获取角色类
+	AHumanState* HumanState = Cast<AHumanState>(NewPlayerController->PlayerState);
+	FString SpawnCharacterName;
+	if (HumanState && !HumanState->GetSpawnCharacterName().IsEmpty())
+	{
+		SpawnCharacterName = HumanState->GetSpawnCharacterName();
+	}
+	else
+	{
+		SpawnCharacterName = "SAS";
+	}
+	FString ClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Human_%s.Human_%s_C'"), *SpawnCharacterName, *SpawnCharacterName);
+	UClass* HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ClassPath);
+
+	if (HumanCharacterClass == nullptr) return nullptr;
+
+	// 生成角色
 	AActor* StartSpot = ChoosePlayerStart(NewPlayerController);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
 	return GetWorld()->SpawnActor<AHumanCharacter>(
 		HumanCharacterClass,
 		StartSpot->GetActorLocation(),
@@ -143,5 +125,42 @@ void ATeamDeadMatchMode::AssignPlayerTeam(AHumanController* HumanController)
 			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team1);
 			HumanState->SetTeam(ETeam::Team1);
 		}
+	}
+}
+
+// 击杀
+void ATeamDeadMatchMode::KillPlayer(AHumanCharacter* KilledCharacter, AHumanController* KilledController,
+	AHumanController* AttackerController, AActor* DamageCauser)
+{
+	AHumanState* AttackerState = AttackerController ? Cast<AHumanState>(AttackerController->PlayerState) : nullptr;
+	AHumanState* KilledState = KilledController ? Cast<AHumanState>(KilledController->PlayerState) : nullptr;
+
+	if (KilledState) KilledState->AddDefeat(1);
+	if (AttackerState) AttackerState->AddScore(1.f);
+
+	if (TeamDeadMatchState && AttackerState)
+	{
+		TeamDeadMatchState->AddTeamScore(AttackerState->GetTeam());
+	}
+
+	if (TeamDeadMatchState && AttackerState && DamageCauser && KilledState)
+	{
+		EEquipmentName TemEquipmentName;
+		if (AEquipment* DamageCauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner())) // Projectile's owner is Equipment
+		{
+			TemEquipmentName = DamageCauserEquipment->GetEquipmentName();
+		}
+		else // Melee's owner is Character
+		{
+			TemEquipmentName = Cast<AEquipment>(DamageCauser)->GetEquipmentName();
+		}
+		FString EquipmentName = UEnum::GetValueAsString(TemEquipmentName);
+		EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
+		TeamDeadMatchState->MulticastAddKillLog(AttackerState, EquipmentName, KilledState);
+	}
+
+	if (KilledCharacter)
+	{
+		KilledCharacter->Kill();
 	}
 }

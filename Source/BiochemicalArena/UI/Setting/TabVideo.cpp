@@ -1,7 +1,7 @@
 #include "TabVideo.h"
 #include "AnalogSlider.h"
 #include "CommonTextBlock.h"
-#include "BiochemicalArena/System/PlayerStorage.h"
+#include "..\..\System\StorageSaveGame.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Components/ComboBoxString.h"
 
@@ -23,8 +23,8 @@ void UTabVideo::SetDefaultValue()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		BrightnessController->SetValue(StorageSubsystem->PlayerStorageCache->Brightness);
-		Brightness->SetText(FText::AsNumber(StorageSubsystem->PlayerStorageCache->Brightness));
+		BrightnessController->SetValue(StorageSubsystem->StorageSaveGameCache->Brightness);
+		Brightness->SetText(FText::AsNumber(StorageSubsystem->StorageSaveGameCache->Brightness));
 	}
 }
 
@@ -37,7 +37,7 @@ void UTabVideo::OnBrightnessChanged(float Value)
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->Brightness = Value;
+		StorageSubsystem->StorageSaveGameCache->Brightness = Value;
 		StorageSubsystem->Save();
 	}
 }

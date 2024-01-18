@@ -36,6 +36,8 @@ protected:
 	UFUNCTION()
 	void OnRep_Team2Score();
 
+	UPROPERTY()
+	class AHumanController* HumanController;
 	void SetHUDTeamScore(float Score, ETeam Team);
 
 };

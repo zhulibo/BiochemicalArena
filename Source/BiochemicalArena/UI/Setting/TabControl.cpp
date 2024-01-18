@@ -1,7 +1,7 @@
 #include "TabControl.h"
 #include "AnalogSlider.h"
 #include "CommonTextBlock.h"
-#include "BiochemicalArena/System/PlayerStorage.h"
+#include "..\..\System\StorageSaveGame.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Components/ComboBoxString.h"
 
@@ -26,15 +26,15 @@ void UTabControl::SetDefaultValue()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		MouseSensitivityController->SetValue(StorageSubsystem->PlayerStorageCache->MouseSensitivity);
-		MouseSensitivity->SetText(FText::AsNumber(StorageSubsystem->PlayerStorageCache->MouseSensitivity));
-		MouseAimAssistSteeringController->SetSelectedOption(StorageSubsystem->PlayerStorageCache->MouseAimAssistSteering);
-		MouseAimAssistSlowdownController->SetSelectedOption(StorageSubsystem->PlayerStorageCache->MouseAimAssistSlowdown);
+		MouseSensitivityController->SetValue(StorageSubsystem->StorageSaveGameCache->MouseSensitivity);
+		MouseSensitivity->SetText(FText::AsNumber(StorageSubsystem->StorageSaveGameCache->MouseSensitivity));
+		MouseAimAssistSteeringController->SetSelectedOption(StorageSubsystem->StorageSaveGameCache->MouseAimAssistSteering);
+		MouseAimAssistSlowdownController->SetSelectedOption(StorageSubsystem->StorageSaveGameCache->MouseAimAssistSlowdown);
 
-		ControllerSensitivityController->SetValue(StorageSubsystem->PlayerStorageCache->ControllerSensitivity);
-		ControllerSensitivity->SetText(FText::AsNumber(StorageSubsystem->PlayerStorageCache->ControllerSensitivity));
-		ControllerAimAssistSteeringController->SetSelectedOption(StorageSubsystem->PlayerStorageCache->ControllerAimAssistSteering);
-		ControllerAimAssistSlowdownController->SetSelectedOption(StorageSubsystem->PlayerStorageCache->ControllerAimAssistSlowdown);
+		ControllerSensitivityController->SetValue(StorageSubsystem->StorageSaveGameCache->ControllerSensitivity);
+		ControllerSensitivity->SetText(FText::AsNumber(StorageSubsystem->StorageSaveGameCache->ControllerSensitivity));
+		ControllerAimAssistSteeringController->SetSelectedOption(StorageSubsystem->StorageSaveGameCache->ControllerAimAssistSteering);
+		ControllerAimAssistSlowdownController->SetSelectedOption(StorageSubsystem->StorageSaveGameCache->ControllerAimAssistSlowdown);
 	}
 }
 
@@ -44,7 +44,7 @@ void UTabControl::OnMouseSensitivityChanged(float Value)
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->MouseSensitivity = Value;
+		StorageSubsystem->StorageSaveGameCache->MouseSensitivity = Value;
 		StorageSubsystem->SetCharacterControlVariable();
 		StorageSubsystem->Save();
 	}
@@ -56,7 +56,7 @@ void UTabControl::OnMouseAimAssistSteeringChanged(FString SelectedItem, ESelectI
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->MouseAimAssistSteering = SelectedItem;
+		StorageSubsystem->StorageSaveGameCache->MouseAimAssistSteering = SelectedItem;
 		StorageSubsystem->SetCharacterControlVariable();
 		StorageSubsystem->Save();
 	}
@@ -67,7 +67,7 @@ void UTabControl::OnMouseAimAssistSlowdownChanged(FString SelectedItem, ESelectI
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->MouseAimAssistSlowdown = SelectedItem;
+		StorageSubsystem->StorageSaveGameCache->MouseAimAssistSlowdown = SelectedItem;
 		StorageSubsystem->SetCharacterControlVariable();
 		StorageSubsystem->Save();
 	}
@@ -79,7 +79,7 @@ void UTabControl::OnControllerSensitivityChanged(float Value)
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->ControllerSensitivity = Value;
+		StorageSubsystem->StorageSaveGameCache->ControllerSensitivity = Value;
 		StorageSubsystem->SetCharacterControlVariable();
 		StorageSubsystem->Save();
 	}
@@ -91,7 +91,7 @@ void UTabControl::OnControllerAimAssistSteeringChanged(FString SelectedItem, ESe
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->ControllerAimAssistSteering = SelectedItem;
+		StorageSubsystem->StorageSaveGameCache->ControllerAimAssistSteering = SelectedItem;
 		StorageSubsystem->SetCharacterControlVariable();
 		StorageSubsystem->Save();
 	}
@@ -102,7 +102,7 @@ void UTabControl::OnControllerAimAssistSlowdownChanged(FString SelectedItem, ESe
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->PlayerStorageCache->ControllerAimAssistSlowdown = SelectedItem;
+		StorageSubsystem->StorageSaveGameCache->ControllerAimAssistSlowdown = SelectedItem;
 		StorageSubsystem->SetCharacterControlVariable();
 		StorageSubsystem->Save();
 	}

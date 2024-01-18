@@ -1,7 +1,7 @@
-#include "PlayerStorage.h"
-#include "PlayerStorageType.h"
+#include "StorageSaveGame.h"
+#include "StorageSaveGameType.h"
 
-UPlayerStorage::UPlayerStorage()
+UStorageSaveGame::UStorageSaveGame()
 {
 	// 设置默认背包
 	FBag Bag;

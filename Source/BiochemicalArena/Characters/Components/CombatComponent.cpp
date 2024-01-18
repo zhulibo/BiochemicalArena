@@ -385,10 +385,12 @@ void UCombatComponent::FinishSwap()
 
 void UCombatComponent::UseEquipment(AEquipment* Equipment)
 {
-	if (Character == nullptr || Equipment == nullptr) return;
+	if (Equipment == nullptr) return;
 	AttachEquipmentToRightHand(Equipment);
 	CurrentEquipmentType = Equipment->GetEquipmentType();
-	if (GetCurrentEquipment())
+
+	// 更新子弹
+	if (Character && Character->IsLocallyControlled() && GetCurrentEquipment())
 	{
 		if (GetCurrentShotEquipment())
 		{

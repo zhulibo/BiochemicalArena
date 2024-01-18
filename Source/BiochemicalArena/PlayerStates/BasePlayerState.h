@@ -16,6 +16,9 @@ public:
 
 	void SetTeam(ETeam TemTeam);
 
+	UFUNCTION(Server, Reliable)
+	void ServerSetSpawnCharacterName(const FString& TemSpawnCharacterName);
+
 	void AddScore(float ScoreAmount);
 	void AddDefeat(int32 DefeatAmount);
 
@@ -28,6 +31,11 @@ protected:
 	UFUNCTION()
 	void OnRep_Team();
 
+	UPROPERTY()
+	class ABaseController* BaseController;
+	UPROPERTY(Replicated)
+	FString SpawnCharacterName; // 角色名字，开局生成角色时使用
+
 	virtual void OnRep_Score() override;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Defeat)
@@ -37,6 +45,7 @@ protected:
 
 public:
 	FORCEINLINE ETeam GetTeam() const { return Team; }
+	FORCEINLINE FString GetSpawnCharacterName() const { return SpawnCharacterName; }
 	FORCEINLINE float GetDefeat() const { return Defeat; }
 
 };

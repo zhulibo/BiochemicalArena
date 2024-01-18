@@ -154,7 +154,7 @@ void ULobby::OnModifyLobbyAttributesComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("ModifyLobbyAttributes Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Modify lobby attributes failed!"));
 	}
 }
 
@@ -184,7 +184,7 @@ void ULobby::OnModifyLobbyMemberAttributesComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("ModifyLobbyMemberAttributes Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Modify lobby member attributes failed!"));
 	}
 }
 
@@ -227,6 +227,6 @@ void ULobby::OnLeaveLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("LeaveLobby Failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Leave lobby failed!"));
 	}
 }

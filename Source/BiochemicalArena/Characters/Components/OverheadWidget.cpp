@@ -22,7 +22,7 @@ void UOverheadWidget::SetPlayerName()
 {
 	if (HumanCharacter)
 	{
-		AHumanState* LocalHumanState = Cast<AHumanState>(GetOwningPlayerState());
+		if (LocalHumanState == nullptr) LocalHumanState = Cast<AHumanState>(GetOwningPlayerState());
 		AHumanState* HumanState = Cast<AHumanState>(HumanCharacter->GetPlayerState());
 		if (LocalHumanState && HumanState)
 		{

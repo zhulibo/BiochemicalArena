@@ -2,17 +2,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
-#include "PlayerStorage.generated.h"
+#include "StorageSaveGame.generated.h"
 
 struct FBag;
 
 UCLASS()
-class BIOCHEMICALARENA_API UPlayerStorage : public USaveGame
+class BIOCHEMICALARENA_API UStorageSaveGame : public USaveGame
 {
 	GENERATED_BODY()
 
 public:
-	UPlayerStorage();
+	UStorageSaveGame();
 
 	UPROPERTY()
 	TArray<FBag> Bags;

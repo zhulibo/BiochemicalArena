@@ -1,7 +1,6 @@
 #include "BaseController.h"
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/GameModes/BaseMode.h"
-#include "BiochemicalArena/System/StorageSubsystem.h"
 #include "BiochemicalArena/UI/HUD/CommonHUD.h"
 #include "BiochemicalArena/UI/HUD/HUDContainer.h"
 #include "BiochemicalArena/UI/HUD/RadialMenuContainer.h"
@@ -27,13 +26,6 @@ void ABaseController::BeginPlay()
 		RequestServerMatchState();
 
 		AddHUDContainer();
-
-		// 初始化默认设置
-		UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-		if (StorageSubsystem)
-		{
-			StorageSubsystem->InitDefaultSetting();
-		}
 	}
 }
 

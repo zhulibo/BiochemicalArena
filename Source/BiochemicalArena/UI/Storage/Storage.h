@@ -24,7 +24,7 @@ protected:
 	void OnQueryEntitlementsComplete(bool bWasSuccessful);
 
 	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
-	void InitPlayerConfig(class UPlayerStorage* PlayerStorage);
+	void InitPlayerConfig(class UStorageSaveGame* StorageSaveGame);
 	bool HasEquipment(FString EquipmentName);
 	bool HasHumanCharacter(FString HumanCharacterName);
 
@@ -66,5 +66,7 @@ protected:
 	void OnCharacterButtonClicked(UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Character;
+	UPROPERTY()
+	class UPlayerSubsystem* PlayerSubsystem;
 
 };
