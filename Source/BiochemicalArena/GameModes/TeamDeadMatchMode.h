@@ -26,7 +26,7 @@ protected:
 	virtual void HandleMatchHasStarted() override;
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
-	AHumanCharacter* SpawnHumanCharacter(AController* KilledController);
 	void AssignPlayerTeam(AHumanController* HumanController);
+	AHumanCharacter* SpawnHumanCharacter(AController* KilledController);
 
 };

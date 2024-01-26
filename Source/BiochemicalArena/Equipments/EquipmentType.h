@@ -63,7 +63,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EEquipmentName EquipmentName = EEquipmentName::AK47;
 
+	/**
+	 * Must be same as the audience item ID in dev portal
+	 * Used to determine whether you own the product
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FString ProductId = "-1";
+	FString AudienceItemId = "-1";
 
 };

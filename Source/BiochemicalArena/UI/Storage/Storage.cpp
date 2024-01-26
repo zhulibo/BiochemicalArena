@@ -38,7 +38,7 @@ void UStorage::NativeConstruct()
 	if (EOSSubsystem)
 	{
 		EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
-		EOSSubsystem->OnQueryEntitlementsComplete.AddUObject(this, &ThisClass::OnQueryEntitlementsComplete);
+		EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnQueryOwnershipComplete);
 		EOSSubsystem->OnReadFileComplete.AddUObject(this, &ThisClass::OnReadFileComplete);
 		EOSSubsystem->OnEnumerateFilesComplete.AddUObject(this, &ThisClass::OnEnumerateFilesComplete);
 	}
@@ -51,20 +51,20 @@ void UStorage::OnLoginComplete(bool bWasSuccessful)
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		EOSSubsystem->QueryEntitlements(); // 缓存已购商品
+		EOSSubsystem->QueryOwnership(); // 获取已购商品
 	}
 }
 
-// 缓存已购商品完成
-void UStorage::OnQueryEntitlementsComplete(bool bWasSuccessful)
+// 获取已购商品完成
+void UStorage::OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership)
 {
 	if(!bWasSuccessful) return;
+
+	Ownership = TemOwnership;
 
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		Entitlements = EOSSubsystem->GetEntitlements();
-
 		// 默认显示全部库存
 		if (StorageTypeButtonContainer)
 		{
@@ -176,16 +176,10 @@ bool UStorage::HasEquipment(FString EquipmentName)
 		if (EquipmentName != TemEquipmentName) continue;
 
 		// 免费装备
-		if (EquipmentDataRows[i]->ProductId == "-1") return true;
+		if (EquipmentDataRows[i]->AudienceItemId == "-1") return true;
 
 		// 付费装备判断是否已拥有
-		for (int32 j = 0; j < Entitlements.Num(); ++j)
-		{
-			if (Entitlements[j].ProductId == EquipmentDataRows[j]->ProductId) // TODO ExpiryDate
-			{
-				return true;
-			}
-		}
+		if (Ownership.Contains(EquipmentDataRows[i]->AudienceItemId)) return true;
 	}
 
 	return false;
@@ -203,16 +197,10 @@ bool UStorage::HasHumanCharacter(FString HumanCharacterName)
 		if (HumanCharacterName != TemHumanCharacterName) continue;
 
 		// 免费角色
-		if (HumanCharacterDataRows[i]->ProductId == "-1") return true;
+		if (HumanCharacterDataRows[i]->AudienceItemId == "-1") return true;
 
 		// 付费角色判断是否已拥有
-		for (int32 j = 0; j < Entitlements.Num(); ++j)
-		{
-			if (Entitlements[j].ProductId == HumanCharacterDataRows[j]->ProductId) // TODO ExpiryDate
-			{
-				return true;
-			}
-		}
+		if (Ownership.Contains(HumanCharacterDataRows[i]->AudienceItemId)) return true;
 	}
 
 	return false;
@@ -311,19 +299,15 @@ TArray<FText> UStorage::FilterEquipment(FString EquipmentType)
 			FString EquipmentName = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
 			EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
 
-			if (EquipmentDataRows[i]->ProductId == "-1") // 免费装备直接添加
+			if (EquipmentDataRows[i]->AudienceItemId == "-1") // 免费装备直接添加
 			{
 				EquipmentNames.Add(FText::FromString(EquipmentName));
 			}
 			else // 付费装备判断是否已拥有
 			{
-				for (int32 j = 0; j < Entitlements.Num(); ++j)
+				if (Ownership.Contains(EquipmentDataRows[i]->AudienceItemId))
 				{
-					if (Entitlements[j].ProductId == EquipmentDataRows[i]->ProductId) // TODO ExpiryDate
-					{
-						EquipmentNames.Add(FText::FromString(EquipmentName));
-						break;
-					}
+					EquipmentNames.Add(FText::FromString(EquipmentName));
 				}
 			}
 		}
@@ -342,19 +326,15 @@ TArray<FText> UStorage::FilterHumanCharacter()
 		FString HumanCharacterName = UEnum::GetValueAsString(HumanCharacterDataRows[i]->HumanCharacterName);
 		HumanCharacterName = HumanCharacterName.Right(HumanCharacterName.Len() - HumanCharacterName.Find("::") - 2);
 
-		if (HumanCharacterDataRows[i]->ProductId == "-1") // 免费角色直接添加
+		if (HumanCharacterDataRows[i]->AudienceItemId == "-1") // 免费角色直接添加
 		{
 			HumanCharacterNames.Add(FText::FromString(HumanCharacterName));
 		}
 		else // 付费角色判断是否已拥有
 		{
-			for (int32 j = 0; j < Entitlements.Num(); ++j)
+			if (Ownership.Contains(HumanCharacterDataRows[i]->AudienceItemId))
 			{
-				if (Entitlements[j].ProductId == HumanCharacterDataRows[i]->ProductId) // TODO ExpiryDate
-				{
-					HumanCharacterNames.Add(FText::FromString(HumanCharacterName));
-					break;
-				}
+				HumanCharacterNames.Add(FText::FromString(HumanCharacterName));
 			}
 		}
 	}

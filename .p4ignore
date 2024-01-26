@@ -1,8 +1,8 @@
 .git
 .idea
+.vscode
 .vs
 
-**/test/**
 **/Binaries/**
 **/Build/**
 **/DerivedDataCache/**
@@ -10,3 +10,5 @@
 **/Saved/**
 
 *.sln
+
+.vsconfig

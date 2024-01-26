@@ -28,11 +28,13 @@ void ATeamDeadMatchMode::HandleMatchHasStarted()
 		AHumanController* HumanController = Cast<AHumanController>(*It);
 		if (HumanController)
 		{
+			AssignPlayerTeam(HumanController);
+
 			AHumanCharacter* HumanCharacter = SpawnHumanCharacter(HumanController);
 			if (HumanCharacter)
 			{
 				HumanController->Possess(HumanCharacter);
-				AssignPlayerTeam(HumanController);
+				HumanController->ClientSetRotation(HumanCharacter->GetActorRotation());
 			}
 		}
 	}
@@ -45,11 +47,17 @@ void ATeamDeadMatchMode::OnPostLogin(AController* NewPlayerController)
 
 	if (MatchState == MatchState::InProgress)
 	{
-		AHumanCharacter* HumanCharacter = SpawnHumanCharacter(NewPlayerController);
-		if (HumanCharacter)
+		AHumanController* HumanController = Cast<AHumanController>(NewPlayerController);
+		if (HumanController)
 		{
-			NewPlayerController->Possess(HumanCharacter);
-			AssignPlayerTeam(Cast<AHumanController>(NewPlayerController));
+			AssignPlayerTeam(HumanController);
+
+			AHumanCharacter* HumanCharacter = SpawnHumanCharacter(HumanController);
+			if (HumanCharacter)
+			{
+				HumanController->Possess(HumanCharacter);
+				HumanController->ClientSetRotation(HumanCharacter->GetActorRotation());
+			}
 		}
 	}
 }
@@ -72,6 +80,27 @@ void ATeamDeadMatchMode::Respawn(ACharacter* KilledCharacter, AController* Kille
 	}
 }
 
+// 分配队伍
+void ATeamDeadMatchMode::AssignPlayerTeam(AHumanController* HumanController)
+{
+	if (TeamDeadMatchState == nullptr || HumanController == nullptr) return;
+
+	AHumanState* HumanState = HumanController->GetPlayerState<AHumanState>();
+	if (HumanState)
+	{
+		if (TeamDeadMatchState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchState->GetTeam(ETeam::Team2).Num())
+		{
+			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team2);
+			HumanState->SetTeam(ETeam::Team2);
+		}
+		else
+		{
+			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team1);
+			HumanState->SetTeam(ETeam::Team1);
+		}
+	}
+}
+
 // 生成角色
 AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerController)
 {
@@ -90,11 +119,13 @@ AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerC
 	}
 	FString ClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Human_%s.Human_%s_C'"), *SpawnCharacterName, *SpawnCharacterName);
 	UClass* HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ClassPath);
-
 	if (HumanCharacterClass == nullptr) return nullptr;
 
 	// 生成角色
-	AActor* StartSpot = ChoosePlayerStart(NewPlayerController);
+	FName PlayerStartTag = HumanState->GetTeam() == ETeam::Team1 ? "Team1" : "Team2";
+	AActor* StartSpot = FindRandomPlayerStart(PlayerStartTag);
+	if (StartSpot == nullptr) return nullptr;
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
@@ -104,28 +135,6 @@ AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerC
 		StartSpot->GetActorRotation(),
 		SpawnParams
 	);
-}
-
-// 分配队伍
-void ATeamDeadMatchMode::AssignPlayerTeam(AHumanController* HumanController)
-{
-	if (TeamDeadMatchState == nullptr || HumanController == nullptr) return;
-
-	AHumanState* HumanState = HumanController->GetPlayerState<AHumanState>();
-	if (HumanState)
-	{
-
-		if (TeamDeadMatchState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchState->GetTeam(ETeam::Team2).Num())
-		{
-			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team2);
-			HumanState->SetTeam(ETeam::Team2);
-		}
-		else
-		{
-			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team1);
-			HumanState->SetTeam(ETeam::Team1);
-		}
-	}
 }
 
 // 击杀

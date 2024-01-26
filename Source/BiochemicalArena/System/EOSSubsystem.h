@@ -50,8 +50,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnWriteFileComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnQueryOffersComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnCheckoutComplete, bool bWasSuccessful, TOptional<FString> TransactionId);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnPurchaseCompleted, const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
-
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnQueryEntitlementsComplete, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnQueryOwnershipComplete, bool bWasSuccessful, const TArray<FString>);
 
 UCLASS()
 class BIOCHEMICALARENA_API UEOSSubsystem : public UGameInstanceSubsystem
@@ -133,10 +132,8 @@ public:
 	FOnCheckoutComplete OnCheckoutComplete;
 	void BroadcastOnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
 	FOnPurchaseCompleted OnPurchaseCompleted;
-
-	void QueryEntitlements();
-	FOnQueryEntitlementsComplete OnQueryEntitlementsComplete;
-	TArray<FEntitlement> GetEntitlements();
+	void QueryOwnership(); // TODO Waiting for EOS to encapsulate EOS_Ecom_QueryOwnership
+	FOnQueryOwnershipComplete OnQueryOwnershipComplete;
 
 protected:
 	FPlatformUserId PlatformUserId;

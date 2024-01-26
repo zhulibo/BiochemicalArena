@@ -20,8 +20,8 @@ protected:
 	void OnLoginComplete(bool bWasSuccessful);
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
 
-	TArray<FEntitlement> Entitlements;
-	void OnQueryEntitlementsComplete(bool bWasSuccessful);
+	TArray<FString> Ownership;
+	void OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership);
 
 	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
 	void InitPlayerConfig(class UStorageSaveGame* StorageSaveGame);

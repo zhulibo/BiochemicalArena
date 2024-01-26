@@ -670,49 +670,29 @@ void UEOSSubsystem::BroadcastOnPurchaseCompleted(const FCommerceOnPurchaseComple
 	OnPurchaseCompleted.Broadcast(CommerceOnPurchaseComplete);
 }
 
-// 缓存已购商品
-void UEOSSubsystem::QueryEntitlements()
+// 获取已购商品
+void UEOSSubsystem::QueryOwnership()
 {
 	if (CommercePtr == nullptr) return;
 
-	FCommerceQueryEntitlements::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
-	Params.bIncludeRedeemed = true;
+	OnQueryOwnershipComplete.Broadcast(true, TArray<FString>());
 
-	CommercePtr->QueryEntitlements(MoveTemp(Params))
-	.OnComplete([this](const TOnlineResult<FCommerceQueryEntitlements>& Result)
-	{
-		if (Result.IsOk())
-		{
-			OnQueryEntitlementsComplete.Broadcast(true);
-		}
-		else
-		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-			OnQueryEntitlementsComplete.Broadcast(false);
-		}
-	});
-}
-
-// 获取已购商品
-TArray<FEntitlement> UEOSSubsystem::GetEntitlements()
-{
-	TArray<FEntitlement> Entitlements;
-	if (CommercePtr == nullptr) return Entitlements;
-
-	FCommerceGetEntitlements::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
-
-	TOnlineResult<FCommerceGetEntitlements> Result = CommercePtr->GetEntitlements(MoveTemp(Params));
-	if (Result.IsOk())
-	{
-		Entitlements = Result.GetOkValue().Entitlements;
-	}
-	else
-	{
-		FOnlineError Error = Result.GetErrorValue();
-		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-	}
-	return Entitlements;
+	// FCommerceQueryOwnership::Params Params;
+	// Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	// Params.bIncludeRedeemed = true;
+	//
+	// CommercePtr->QueryOwnership(MoveTemp(Params))
+	// .OnComplete([this](const TOnlineResult<FCommerceQueryOwnership>& Result)
+	// {
+	// 	if (Result.IsOk())
+	// 	{
+	// 		OnQueryOwnershipComplete.Broadcast(true, Result.GetOkValue().Ownership);
+	// 	}
+	// 	else
+	// 	{
+	// 		FOnlineError Error = Result.GetErrorValue();
+	// 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+	// 		OnQueryOwnershipComplete.Broadcast(false, TArray<FString>());
+	// 	}
+	// });
 }

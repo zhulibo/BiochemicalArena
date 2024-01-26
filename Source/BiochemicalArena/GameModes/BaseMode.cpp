@@ -1,5 +1,8 @@
 #include "BaseMode.h"
+
+#include "EngineUtils.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "GameFramework/PlayerStart.h"
 
 namespace MatchState
 {
@@ -60,4 +63,31 @@ void ABaseMode::OnMatchStateSet()
 			BaseController->OnMatchStateSet(MatchState);
 		}
 	}
+}
+
+// 按tag寻找一个随机的出生点
+AActor* ABaseMode::FindRandomPlayerStart(const FName& PlayerStartTag)
+{
+	APlayerStart* FoundPlayerStart = nullptr;
+
+	if (PlayerStartTag.IsValid())
+	{
+		TArray<APlayerStart*> StartPoints;
+
+		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+		{
+			APlayerStart* StartPoint = *It;
+			if (StartPoint && StartPoint->PlayerStartTag == PlayerStartTag)
+			{
+				StartPoints.Add(StartPoint);
+			}
+		}
+
+		if (StartPoints.Num() > 0)
+		{
+			FoundPlayerStart = StartPoints[FMath::RandRange(0, StartPoints.Num() - 1)];
+		}
+	}
+
+	return FoundPlayerStart;
 }

@@ -32,6 +32,8 @@ protected:
 
 	float CountdownTime = 0.f;
 
+	AActor* FindRandomPlayerStart(const FName& PlayerStartTag);
+
 public:
 	FORCEINLINE float GetLevelStartTime() const { return LevelStartTime; }
 	FORCEINLINE float GetWarmupTime() const { return WarmupTime; }

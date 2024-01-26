@@ -32,7 +32,7 @@ protected:
 	void OnQueryOffersComplete(bool bWasSuccessful);
 
 	void OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
-	TArray<FEntitlement> Entitlements;
-	void OnQueryEntitlementsComplete(bool bWasSuccessful);
+	TArray<FString> Ownership;
+	void OnOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership);
 
 };

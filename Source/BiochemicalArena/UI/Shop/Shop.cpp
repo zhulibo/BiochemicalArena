@@ -15,7 +15,7 @@ void UShop::NativeConstruct()
 		EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
 		EOSSubsystem->OnQueryOffersComplete.AddUObject(this, &ThisClass::OnQueryOffersComplete);
 		EOSSubsystem->OnPurchaseCompleted.AddUObject(this, &ThisClass::OnPurchaseCompleted);
-		EOSSubsystem->OnQueryEntitlementsComplete.AddUObject(this, &ThisClass::OnQueryEntitlementsComplete);
+		EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnOwnershipComplete);
 	}
 }
 
@@ -105,17 +105,14 @@ void UShop::AddCharacterButton(FOffer Offer)
 // 点击商品
 void UShop::OnGoodsButtonClicked(UGoodsButton* GoodsButton)
 {
-	GetWorld()->ServerTravel("/Game/Maps/Dev?listen");
-	return;
+	// GetWorld()->ServerTravel("/Game/Maps/Dev?listen");
+	// return;
 
 	// 商品已拥有直接退出
-	for (int i = 0; i < Entitlements.Num(); ++i)
+	if (Ownership.Contains(GoodsButton->Offer.OfferId))
 	{
-		if (GoodsButton->Offer.OfferId == Entitlements[i].ProductId) // TODO ExpiryDate
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Already own this goods!"));
-			return;
-		}
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Already own this goods!"));
+		return;
 	}
 
 	// 结账
@@ -134,17 +131,13 @@ void UShop::OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPur
 	if(EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		EOSSubsystem->QueryEntitlements(); // 缓存已购商品
+		EOSSubsystem->QueryOwnership(); // 获取已购商品
 	}
 }
 
-// 缓存已购商品完成
-void UShop::OnQueryEntitlementsComplete(bool bWasSuccessful)
+// 获取已购商品完成
+void UShop::OnOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership)
 {
 	if(!bWasSuccessful) return;
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
-	{
-		Entitlements = EOSSubsystem->GetEntitlements(); // 获取已购商品
-	}
+	Ownership = TemOwnership;
 }
