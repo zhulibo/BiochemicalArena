@@ -18,12 +18,11 @@ class BIOCHEMICALARENA_API AEquipment : public AActor
 public:
 	AEquipment();
 
-	virtual void SetEquipmentState(EEquipmentState State);
-
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	UAnimMontage* SwapMontage;
 
-	void DropEquipment();
+	virtual void EquipEquipment();
+	virtual void DropEquipment();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -53,12 +52,10 @@ protected:
 	UPROPERTY()
 	class AHumanController* HumanController;
 
-	virtual void OnEquipped();
 	UPROPERTY(replicated)
 	ETeam OwnerTeam;
 	void SetOwnerTeam();
 
-	virtual void OnDropped();
 	void SetAreaSphereCollision();
 	FTimerHandle DestroyEquipmentTimerHandle;
 	void DestroyEquipment();

@@ -44,10 +44,9 @@ void ABaseController::HandleClientServerDelta()
 	// 周期性获取ClientServerDelta
 	FTimerHandle TimerHandle;
 	FTimerDelegate TimerDelegate;
-	auto Lambda = [this]() {
+	TimerDelegate.BindWeakLambda(this, [this]() {
 		RequestServerTime(GetWorld()->GetTimeSeconds());
-	};
-	TimerDelegate.BindWeakLambda(this, Lambda);
+	});
 	GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, RefreshFrequency, true, 0.f);
 }
 

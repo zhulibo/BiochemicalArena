@@ -36,9 +36,6 @@ AHumanCharacter::AHumanCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 
-	// TODO 设置头部对自己不可见
-	// GetMesh()->SetOwnerNoSee(true);
-
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 
@@ -142,29 +139,28 @@ void AHumanCharacter::PollInit()
 
 			HumanController->SetHasInitDefaultHUD(false);
 
+			// 获取装备的名字
+			FString PrimaryEquipmentName = GetEquipmentName(0, EEquipmentType::Primary);
+			FString SecondaryEquipmentName = GetEquipmentName(0, EEquipmentType::Secondary);
+			FString MeleeEquipmentName = GetEquipmentName(0, EEquipmentType::Melee);
+			FString ThrowingEquipmentName = GetEquipmentName(0, EEquipmentType::Throwing);
+
 			// 本地Controller就绪后，在服务端生成武器，然后复制到所有客户端
-			ServerSetDefaultEquipment();
+			ServerSetDefaultEquipment(PrimaryEquipmentName, SecondaryEquipmentName, MeleeEquipmentName, ThrowingEquipmentName);
 		}
 	}
 }
 
-void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
+void AHumanCharacter::ServerSetDefaultEquipment_Implementation(const FString& PrimaryEquipmentName,
+	const FString& SecondaryEquipmentName, const FString& MeleeEquipmentName, const FString& ThrowingEquipmentName)
 {
 	if (Combat == nullptr) return;
-	Combat->CombatState = ECombatState::Ready;
-	Combat->CurrentEquipmentType = EEquipmentType::Secondary; // 模拟正在使用副武器，以便切换到主武器后，LastEquipmentType被置为副武器
-
-	// 获取装备类的存放路径
-	FString PrimaryEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Primary);
-	FString SecondaryEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Secondary);
-	FString MeleeEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Melee);
-	FString ThrowingEquipmentClassPath = GetEquipmentClassPath(0, EEquipmentType::Throwing);
 
 	// 加载装备类
-	UClass* PrimaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *PrimaryEquipmentClassPath);
-	UClass* SecondaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *SecondaryEquipmentClassPath);
-	UClass* MeleeEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *MeleeEquipmentClassPath);
-	UClass* ThrowingEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ThrowingEquipmentClassPath);
+	UClass* PrimaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(PrimaryEquipmentName));
+	UClass* SecondaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(SecondaryEquipmentName));
+	UClass* MeleeEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(MeleeEquipmentName));
+	UClass* ThrowingEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(ThrowingEquipmentName));
 
 	if (PrimaryEquipmentClass)
 	{
@@ -189,8 +185,8 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation()
 	}
 }
 
-// 获取装备类的存放路径
-FString AHumanCharacter::GetEquipmentClassPath(int32 BagIndex, EEquipmentType EquipmentType)
+// 获取装备的名字
+FString AHumanCharacter::GetEquipmentName(int32 BagIndex, EEquipmentType EquipmentType)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem == nullptr || StorageSubsystem->StorageSaveGameCache->Bags.Num() == 0) return FString();
@@ -210,6 +206,12 @@ FString AHumanCharacter::GetEquipmentClassPath(int32 BagIndex, EEquipmentType Eq
 		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Throwing;
 		break;
 	}
+	return EquipmentName;
+}
+
+// 获取装备类的存放路径
+FString AHumanCharacter::GetEquipmentClassPath(FString EquipmentName)
+{
 	if (EquipmentName.IsEmpty()) return FString();
 	return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/%s.%s_C'"), *EquipmentName, *EquipmentName);
 }

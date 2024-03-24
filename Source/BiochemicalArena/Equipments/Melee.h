@@ -15,6 +15,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	UAnimMontage* AttackMontage;
 
+	virtual void EquipEquipment() override;
+
 	void EnableMeshCollision(bool bIsEnabled);
 
 protected:
@@ -25,7 +27,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	float HeavyAttackDamage = 200.f;
 
-	virtual void OnEquipped() override;
 	void SetMeshCollision();
 
 	UPROPERTY()

@@ -46,6 +46,7 @@ enum class EEquipmentState : uint8
 {
 	Equipped UMETA(DisplayName = "Equipped"),
 	Dropped UMETA(DisplayName = "Dropped"),
+	Thrown UMETA(DisplayName = "Thrown"),
 };
 
 USTRUCT(BlueprintType)

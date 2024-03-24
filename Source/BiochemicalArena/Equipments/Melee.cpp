@@ -24,9 +24,9 @@ void AMelee::BeginPlay()
 	SetMeshCollision();
 }
 
-void AMelee::OnEquipped()
+void AMelee::EquipEquipment()
 {
-	Super::OnEquipped();
+	Super::EquipEquipment();
 
 	SetMeshCollision();
 }

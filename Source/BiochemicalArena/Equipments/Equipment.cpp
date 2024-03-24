@@ -55,26 +55,14 @@ void AEquipment::OnAreaSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	}
 }
 
-void AEquipment::SetEquipmentState(EEquipmentState State)
+void AEquipment::EquipEquipment()
 {
-	EquipmentState = State;
+	EquipmentState = EEquipmentState::Equipped;
 
-	switch (EquipmentState)
-	{
-	case EEquipmentState::Equipped:
-		OnEquipped();
-		break;
-	case EEquipmentState::Dropped:
-		OnDropped();
-		break;
-	}
-}
-
-void AEquipment::OnEquipped()
-{
+	// 取消销毁定时器
 	if (DestroyEquipmentTimerHandle.IsValid())
 	{
-		GetWorld()->GetTimerManager().ClearTimer(DestroyEquipmentTimerHandle); // 取消销毁定时器
+		GetWorld()->GetTimerManager().ClearTimer(DestroyEquipmentTimerHandle);
 	}
 
 	EquipmentMesh->SetSimulatePhysics(false);
@@ -98,8 +86,10 @@ void AEquipment::SetOwnerTeam()
 	}
 }
 
-void AEquipment::OnDropped()
+void AEquipment::DropEquipment()
 {
+	EquipmentState = EEquipmentState::Dropped;
+
 	EquipmentMesh->SetSimulatePhysics(true);
 	EquipmentMesh->SetEnableGravity(true);
 	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -115,16 +105,7 @@ void AEquipment::OnDropped()
 
 	// 丢弃一定时间后销毁
 	GetWorldTimerManager().SetTimer(DestroyEquipmentTimerHandle, this, &ThisClass::DestroyEquipment, 10.f);
-}
 
-void AEquipment::SetAreaSphereCollision()
-{
-	AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-}
-
-void AEquipment::DropEquipment()
-{
-	SetEquipmentState(EEquipmentState::Dropped);
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 	EquipmentMesh->DetachFromComponent(DetachRules);
 	// 丢弃武器时，给予一个向前的冲量
@@ -143,10 +124,16 @@ void AEquipment::DropEquipment()
 			// UE_LOG(LogTemp, Warning, TEXT("EquipmentMesh->GetMass(): %f"), EquipmentMesh->GetMass());
 		}
 	}
+
 	SetOwner(nullptr);
 	HumanCharacter = nullptr;
 	HumanController = nullptr;
 	OwnerTeam = ETeam::NoTeam;
+}
+
+void AEquipment::SetAreaSphereCollision()
+{
+	AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
 void AEquipment::DestroyEquipment()

@@ -21,7 +21,6 @@ public:
 	class AMelee* GetCurrentMeleeEquipment(); // If MeleeEquipment is in use return it, or return nullptr
 	class AThrowing* GetCurrentThrowingEquipment();
 
-	void FinishSwapAttach(EEquipmentType EquipmentType);
 	void FinishSwap();
 
 	void ShellReload();
@@ -32,7 +31,6 @@ public:
 	void ThrowOut();
 
 protected:
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -43,7 +41,7 @@ protected:
 	UPROPERTY()
 	UAnimInstance* AnimInstance;
 
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	ECombatState CombatState;
 
 	UPROPERTY(EditAnywhere)
@@ -64,17 +62,17 @@ protected:
 	float CurrentFOV;
 	void InterpFOV(float DeltaSeconds);
 
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	AWeapon* PrimaryEquipment;
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	AWeapon* SecondaryEquipment;
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	AMelee* MeleeEquipment;
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	AThrowing* ThrowingEquipment;
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	EEquipmentType CurrentEquipmentType;
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	EEquipmentType LastEquipmentType;
 
 	AEquipment* GetLastEquipment();
@@ -99,7 +97,8 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSwapEquipment(EEquipmentType EquipmentType);
 	void LocalSwapEquipment(EEquipmentType EquipmentType);
-	void PlaySwapMontage(AEquipment* EquipmentType);
+	void PlaySwapOutMontage(AEquipment* SwapInEquipment);
+	void PlaySwapInMontage(UAnimMontage* AnimMontage, bool bInterrupted, AEquipment* SwapInEquipment);
 
 	// 使用
 	void UseEquipment(AEquipment* EquipmentType);

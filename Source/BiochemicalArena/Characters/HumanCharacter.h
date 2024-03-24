@@ -35,8 +35,10 @@ protected:
 	void PollInit();
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetDefaultEquipment();
-	FString GetEquipmentClassPath(int32 BagIndex, EEquipmentType EquipmentType);
+	void ServerSetDefaultEquipment(const FString& PrimaryEquipmentName,
+		const FString& SecondaryEquipmentName, const FString& MeleeEquipmentName, const FString& ThrowingEquipmentName);
+	FString GetEquipmentName(int32 BagIndex, EEquipmentType EquipmentType);
+	FString GetEquipmentClassPath(FString EquipmentName);
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimaryEquipment)
 	class AWeapon* DefaultPrimaryEquipment;
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultSecondaryEquipment)

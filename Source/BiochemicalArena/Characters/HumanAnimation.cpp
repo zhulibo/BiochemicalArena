@@ -47,7 +47,7 @@ void UHumanAnimation::NativeUpdateAnimation(float DeltaSeconds)
 		FVector OutPosition;
 		FRotator OutRotation;
 		// 转换为相对于右手骨骼空间的坐标
-		HumanCharacter->GetMesh()->TransformToBoneSpace(FName("RightHand"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
+		HumanCharacter->GetMesh()->TransformToBoneSpace(FName("Hand_R"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
 		LeftHandTransform.SetLocation(OutPosition);
 		LeftHandTransform.SetRotation(FQuat(OutRotation));
 		// 红色为准心指向，黄色为枪管指向

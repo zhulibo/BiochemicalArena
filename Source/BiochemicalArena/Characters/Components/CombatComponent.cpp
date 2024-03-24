@@ -3,7 +3,6 @@
 #include "CombatStateType.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Engine/SkeletalMeshSocket.h"
-#include "Net/UnrealNetwork.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
@@ -18,20 +17,9 @@
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-}
 
-void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ThisClass, CombatState);
-
-	DOREPLIFETIME(ThisClass, PrimaryEquipment);
-	DOREPLIFETIME(ThisClass, SecondaryEquipment);
-	DOREPLIFETIME(ThisClass, MeleeEquipment);
-	DOREPLIFETIME(ThisClass, ThrowingEquipment);
-	DOREPLIFETIME(ThisClass, CurrentEquipmentType);
-	DOREPLIFETIME(ThisClass, LastEquipmentType);
+	CombatState = ECombatState::Ready;
+	CurrentEquipmentType = EEquipmentType::Secondary; // 模拟正在使用副武器，以便切换到主武器后，LastEquipmentType被置为副武器
 }
 
 void UCombatComponent::BeginPlay()
@@ -260,7 +248,7 @@ void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 {
 	if (Equipment == nullptr || Character == nullptr) return;
 	Equipment->SetOwner(Character);
-	Equipment->SetEquipmentState(EEquipmentState::Equipped);
+	Equipment->EquipEquipment();
 	switch (Equipment->GetEquipmentType())
 	{
 	case EEquipmentType::Primary:
@@ -298,10 +286,10 @@ void UCombatComponent::AttachEquipmentToBodySocket(AEquipment* Equipment)
 		BodySocketName = FName("LeftCrotchSocket");
 		break;
 	}
-	const USkeletalMeshSocket* BodyScoket = Character->GetMesh()->GetSocketByName(BodySocketName);
-	if (BodyScoket)
+	const USkeletalMeshSocket* BodySocket = Character->GetMesh()->GetSocketByName(BodySocketName);
+	if (BodySocket)
 	{
-		BodyScoket->AttachActor(Equipment, Character->GetMesh());
+		BodySocket->AttachActor(Equipment, Character->GetMesh());
 
 		if (EquipSound) UGameplayStatics::PlaySoundAtLocation(this, EquipSound, Character->GetActorLocation());
 	}
@@ -332,47 +320,62 @@ void UCombatComponent::MulticastSwapEquipment_Implementation(EEquipmentType Equi
 void UCombatComponent::LocalSwapEquipment(EEquipmentType EquipmentType)
 {
 	if (Character == nullptr) return;
-	AEquipment* Equipment = GetEquipmentByType(EquipmentType);
-	if (Equipment)
+	AEquipment* SwapInEquipment = GetEquipmentByType(EquipmentType);
+	if (SwapInEquipment)
 	{
-		PlaySwapMontage(Equipment);
+		PlaySwapOutMontage(SwapInEquipment);
 		CombatState = ECombatState::Swapping;
 	}
 }
 
-void UCombatComponent::PlaySwapMontage(AEquipment* Equipment)
+// 播放旧装备切出动画
+void UCombatComponent::PlaySwapOutMontage(AEquipment* SwapInEquipment)
 {
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	UAnimMontage* SwapMontage = Equipment->SwapMontage;
-	if (AnimInstance && SwapMontage)
+	if (GetCurrentEquipment())
 	{
-		AnimInstance->Montage_Play(SwapMontage);
+		if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+		UAnimMontage* SwapOutMontage = GetCurrentEquipment()->SwapMontage;
+
+		if (AnimInstance && SwapOutMontage)
+		{
+			AnimInstance->Montage_Play(SwapOutMontage);
+			AnimInstance->Montage_JumpToSection(FName("Out"));
+
+			// 旧装备切出动画播放完后播放新装备切入动画
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindWeakLambda(this, [this, SwapInEquipment](UAnimMontage* AnimMontage, bool bInterrupted)
+			{
+				PlaySwapInMontage(AnimMontage, bInterrupted, SwapInEquipment);
+			});
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, SwapOutMontage);
+		}
+	}
+	else // 投掷装备扔出后切换到上一个武器时 or 开局赋予武器时，当前武器为空
+	{
+		PlaySwapInMontage(nullptr, false, SwapInEquipment);
 	}
 }
 
-// TODO 逻辑修改 创建变量记录切枪状态是否中断 不依赖MontageSectionName 且不需要判断CombatState == ECombatState::Ready
-void UCombatComponent::FinishSwapAttach(EEquipmentType EquipmentType)
+// 播放新装备切入动画
+void UCombatComponent::PlaySwapInMontage(UAnimMontage* AnimMontage, bool bInterrupted, AEquipment* SwapInEquipment)
 {
-	if (Character == nullptr) return;
-	AEquipment* CurrentEquipment = GetCurrentEquipment();
-	if (CurrentEquipment) AttachEquipmentToBodySocket(CurrentEquipment); // If DropEquipment, OldEquipment is nullptr
+	if (bInterrupted) return;
 
-	LastEquipmentType = CurrentEquipmentType;
-	switch (EquipmentType)
+	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
+	UAnimMontage* SwapInMontage = SwapInEquipment->SwapMontage;
+	if (AnimInstance && SwapInMontage)
 	{
-	case EEquipmentType::Primary:
-		UseEquipment(PrimaryEquipment);
-		break;
-	case EEquipmentType::Secondary:
-		UseEquipment(SecondaryEquipment);
-		break;
-	case EEquipmentType::Melee:
-		UseEquipment(MeleeEquipment);
-		break;
-	case EEquipmentType::Throwing:
-		UseEquipment(ThrowingEquipment);
-		break;
+		AnimInstance->Montage_Play(SwapInMontage);
+		AnimInstance->Montage_JumpToSection(FName("In"));
 	}
+
+	AEquipment* CurrentEquipment = GetCurrentEquipment();
+	if (CurrentEquipment && CurrentEquipment->GetEquipmentState() != EEquipmentState::Thrown)
+	{
+		AttachEquipmentToBodySocket(CurrentEquipment);
+	}
+
+	UseEquipment(SwapInEquipment);
 }
 
 void UCombatComponent::FinishSwap()
@@ -387,6 +390,8 @@ void UCombatComponent::UseEquipment(AEquipment* Equipment)
 {
 	if (Equipment == nullptr) return;
 	AttachEquipmentToRightHand(Equipment);
+
+	LastEquipmentType = CurrentEquipmentType;
 	CurrentEquipmentType = Equipment->GetEquipmentType();
 
 	// 更新子弹
@@ -416,10 +421,10 @@ void UCombatComponent::UseEquipment(AEquipment* Equipment)
 void UCombatComponent::AttachEquipmentToRightHand(AEquipment* Equipment)
 {
 	if (Character == nullptr || Character->GetMesh() == nullptr || Equipment == nullptr) return;
-	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
-	if (HandSocket)
+	const USkeletalMeshSocket* RightHandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+	if (RightHandSocket)
 	{
-		HandSocket->AttachActor(Equipment, Character->GetMesh());
+		RightHandSocket->AttachActor(Equipment, Character->GetMesh());
 	}
 }
 
@@ -657,16 +662,19 @@ void UCombatComponent::MulticastDropEquipment2_Implementation()
 
 void UCombatComponent::LocalDropEquipment()
 {
-	if (GetCurrentEquipment() == nullptr) return;
-	GetCurrentEquipment()->DropEquipment();
-	switch (GetCurrentEquipment()->GetEquipmentType())
+	if (GetCurrentEquipment())
 	{
-	case EEquipmentType::Primary:
-		PrimaryEquipment = nullptr;
-		break;
-	case EEquipmentType::Secondary:
-		SecondaryEquipment = nullptr;
-		break;
+		GetCurrentEquipment()->DropEquipment();
+
+		switch (GetCurrentEquipment()->GetEquipmentType())
+		{
+		case EEquipmentType::Primary:
+			PrimaryEquipment = nullptr;
+			break;
+		case EEquipmentType::Secondary:
+			SecondaryEquipment = nullptr;
+			break;
+		}
 	}
 }
 
@@ -701,7 +709,7 @@ void UCombatComponent::LocalMeleeAttack(int32 Type)
 	if (CombatState == ECombatState::Ready)
 	{
 		if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-		if (AnimInstance == nullptr && GetCurrentMeleeEquipment())
+		if (AnimInstance && GetCurrentMeleeEquipment())
 		{
 			UAnimMontage* AttackMontage = GetCurrentMeleeEquipment()->AttackMontage;
 			if (AttackMontage)
@@ -772,23 +780,28 @@ void UCombatComponent::LocalThrow()
 
 void UCombatComponent::ThrowOut()
 {
-	if (ThrowingEquipment && ThrowingEquipment->GetEquipmentMesh() && Character)
+	if (ThrowingEquipment)
 	{
-		ThrowingEquipment->GetEquipmentMesh()->SetSimulatePhysics(true);
-		ThrowingEquipment->GetEquipmentMesh()->SetEnableGravity(true);
-		ThrowingEquipment->GetEquipmentMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-
-		FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-		ThrowingEquipment->GetEquipmentMesh()->DetachFromComponent(DetachRules);
-
-		UCameraComponent* CameraComponent = Character->FindComponentByClass<UCameraComponent>();
-		if (CameraComponent)
-		{
-			ThrowingEquipment->GetEquipmentMesh()->AddImpulse(CameraComponent->GetForwardVector() * 1000.f * ThrowingEquipment->GetEquipmentMesh()->GetMass());
-		}
-
 		ThrowingEquipment->ThrowOut();
 
+		ThrowingEquipment = nullptr;
 		CombatState = ECombatState::Ready;
+
+		// 切换至上一个装备
+		if (Character && Character->IsLocallyControlled())
+		{
+			switch (LastEquipmentType)
+			{
+			case EEquipmentType::Primary:
+				if (PrimaryEquipment) SwapEquipment(EEquipmentType::Primary);
+				break;
+			case EEquipmentType::Secondary:
+				if (SecondaryEquipment) SwapEquipment(EEquipmentType::Secondary);
+				break;
+			case EEquipmentType::Melee:
+				if (MeleeEquipment) SwapEquipment(EEquipmentType::Melee);
+				break;
+			}
+		}
 	}
 }
