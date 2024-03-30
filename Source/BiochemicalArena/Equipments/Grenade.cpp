@@ -59,6 +59,7 @@ void AGrenade::ExplodeDamage()
 	Destroy();
 }
 
+// Called when character is dead
 void AGrenade::ManualDestroy()
 {
 	bManualDestroyed = true;

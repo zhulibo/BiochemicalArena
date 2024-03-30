@@ -421,7 +421,10 @@ void UCombatComponent::UseEquipment(AEquipment* Equipment)
 void UCombatComponent::AttachEquipmentToRightHand(AEquipment* Equipment)
 {
 	if (Character == nullptr || Character->GetMesh() == nullptr || Equipment == nullptr) return;
-	const USkeletalMeshSocket* RightHandSocket = Character->GetMesh()->GetSocketByName(FName("RightHandSocket"));
+	FString EquipmentName = UEnum::GetValueAsString(Equipment->GetEquipmentName());
+	EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
+	// UE_LOG(LogTemp, Warning, TEXT("EquipmentName: %s"), *EquipmentName);
+	const USkeletalMeshSocket* RightHandSocket = Character->GetMesh()->GetSocketByName(*EquipmentName);
 	if (RightHandSocket)
 	{
 		RightHandSocket->AttachActor(Equipment, Character->GetMesh());

@@ -26,7 +26,7 @@ void AThrowing::ThrowOut()
 		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
 		if (CameraComponent)
 		{
-			EquipmentMesh->AddImpulse(CameraComponent->GetForwardVector() * 1000.f * EquipmentMesh->GetMass());
+			EquipmentMesh->AddImpulse(CameraComponent->GetForwardVector() * 200.f * EquipmentMesh->GetMass());
 		}
 	}
 }

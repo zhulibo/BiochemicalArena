@@ -69,6 +69,7 @@ void AMelee::OnMeshOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 	{
 		HitEnemies.Add(OtherActor);
 
+		// 近战武器对Overlap的精度要求较高，所以在本地做伤害判定，再把结果传给服务器
 		float DamageToApply;
 		if (InstigatorHumanCharacter->GetCombat() && InstigatorHumanCharacter->GetCombat()->GetCombatState() == ECombatState::LightAttacking)
 		{
@@ -81,6 +82,7 @@ void AMelee::OnMeshOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		ServerApplyDamage(OtherActor, InstigatorHumanCharacter, DamageToApply);
 	}
 }
+
 
 void AMelee::ServerApplyDamage_Implementation(AActor* OtherActor, AHumanCharacter* InstigatorHumanCharacter, float DamageToApply)
 {
