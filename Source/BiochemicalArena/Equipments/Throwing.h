@@ -13,7 +13,9 @@ public:
 	AThrowing();
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	UAnimMontage* ThrowMontage;
+	UAnimMontage* ThrowMontage_C;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* ThrowMontage_E;
 	virtual void ThrowOut();
 
 	virtual void ManualDestroy();

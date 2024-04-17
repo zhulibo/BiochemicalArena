@@ -117,7 +117,7 @@ AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerC
 	{
 		SpawnCharacterName = "SAS";
 	}
-	FString ClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Human_%s.Human_%s_C'"), *SpawnCharacterName, *SpawnCharacterName);
+	FString ClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Humans/%s/BP_%s.BP_%s_C'"), *SpawnCharacterName, *SpawnCharacterName, *SpawnCharacterName);
 	UClass* HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ClassPath);
 	if (HumanCharacterClass == nullptr) return nullptr;
 

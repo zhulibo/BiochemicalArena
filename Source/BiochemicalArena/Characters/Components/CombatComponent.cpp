@@ -9,6 +9,8 @@
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
 #include "..\..\Equipments\Throwing.h"
+#include "BiochemicalArena/Characters/HumanAnimInstance.h"
+#include "BiochemicalArena/Equipments/EquipmentAnimInstance.h"
 #include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
@@ -37,8 +39,8 @@ void UCombatComponent::BeginPlay()
 		}
 	}
 
-	EquipSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	EquipSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 }
 
 void UCombatComponent::TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -274,16 +276,16 @@ void UCombatComponent::AttachEquipmentToBodySocket(AEquipment* Equipment)
 	switch (Equipment->GetEquipmentType())
 	{
 	case EEquipmentType::Primary:
-		BodySocketName = FName("RightShoulderSocket");
+		BodySocketName = FName("RightShoulder");
 		break;
 	case EEquipmentType::Secondary:
-		BodySocketName = FName("RightCrotchSocket");
+		BodySocketName = FName("RightCrotch");
 		break;
 	case EEquipmentType::Melee:
-		BodySocketName = FName("LeftShoulderSocket");
+		BodySocketName = FName("LeftShoulder");
 		break;
 	case EEquipmentType::Throwing:
-		BodySocketName = FName("LeftCrotchSocket");
+		BodySocketName = FName("LeftCrotch");
 		break;
 	}
 	const USkeletalMeshSocket* BodySocket = Character->GetMesh()->GetSocketByName(BodySocketName);
@@ -320,62 +322,73 @@ void UCombatComponent::MulticastSwapEquipment_Implementation(EEquipmentType Equi
 void UCombatComponent::LocalSwapEquipment(EEquipmentType EquipmentType)
 {
 	if (Character == nullptr) return;
-	AEquipment* SwapInEquipment = GetEquipmentByType(EquipmentType);
-	if (SwapInEquipment)
+	AEquipment* NewEquipment = GetEquipmentByType(EquipmentType);
+	if (NewEquipment)
 	{
-		PlaySwapOutMontage(SwapInEquipment);
+		PlaySwapOutMontage(NewEquipment);
 		CombatState = ECombatState::Swapping;
 	}
 }
 
-// 播放旧装备切出动画
-void UCombatComponent::PlaySwapOutMontage(AEquipment* SwapInEquipment)
+// 播放当前装备切出动画
+void UCombatComponent::PlaySwapOutMontage(AEquipment* NewEquipment)
 {
 	if (GetCurrentEquipment())
 	{
-		if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-		UAnimMontage* SwapOutMontage = GetCurrentEquipment()->SwapMontage;
-
-		if (AnimInstance && SwapOutMontage)
+		if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+		if (HumanAnimInstance)
 		{
-			AnimInstance->Montage_Play(SwapOutMontage);
-			AnimInstance->Montage_JumpToSection(FName("Out"));
+			// 播放切出时的角色动画
+			HumanAnimInstance->Montage_Play(GetCurrentEquipment()->SwapOutMontage_C);
 
-			// 旧装备切出动画播放完后播放新装备切入动画
-			FOnMontageEnded EndDelegate;
-			EndDelegate.BindWeakLambda(this, [this, SwapInEquipment](UAnimMontage* AnimMontage, bool bInterrupted)
+			// 播放切出时的装备动画
+			if (GetCurrentEquipment()->GetEquipmentAnimInstance())
 			{
-				PlaySwapInMontage(AnimMontage, bInterrupted, SwapInEquipment);
+				GetCurrentEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurrentEquipment()->SwapOutMontage_E);
+			}
+
+			// 切出动画播放完后播放切入动画
+			FOnMontageBlendingOutStarted InOnMontageBlendingOut;
+			InOnMontageBlendingOut.BindWeakLambda(this, [this, NewEquipment](UAnimMontage* AnimMontage, bool bInterrupted)
+			{
+				PlaySwapInMontage(bInterrupted, NewEquipment);
 			});
-			AnimInstance->Montage_SetEndDelegate(EndDelegate, SwapOutMontage);
+			// Don't use Montage_SetEndDelegate, if SwapOutMontage ended, current frame will be the base pose.
+			HumanAnimInstance->Montage_SetBlendingOutDelegate(InOnMontageBlendingOut, GetCurrentEquipment()->SwapOutMontage_C);
 		}
 	}
-	else // 投掷装备扔出后切换到上一个武器时 or 开局赋予武器时，当前武器为空
+	else // 投掷装备扔出后切换到上一个武器 or 开局赋予武器时，当前武器为空
 	{
-		PlaySwapInMontage(nullptr, false, SwapInEquipment);
+		PlaySwapInMontage(false, NewEquipment);
 	}
 }
 
 // 播放新装备切入动画
-void UCombatComponent::PlaySwapInMontage(UAnimMontage* AnimMontage, bool bInterrupted, AEquipment* SwapInEquipment)
+void UCombatComponent::PlaySwapInMontage(bool bInterrupted, AEquipment* NewEquipment)
 {
 	if (bInterrupted) return;
 
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	UAnimMontage* SwapInMontage = SwapInEquipment->SwapMontage;
-	if (AnimInstance && SwapInMontage)
-	{
-		AnimInstance->Montage_Play(SwapInMontage);
-		AnimInstance->Montage_JumpToSection(FName("In"));
-	}
-
+	// 切出当前装备
 	AEquipment* CurrentEquipment = GetCurrentEquipment();
 	if (CurrentEquipment && CurrentEquipment->GetEquipmentState() != EEquipmentState::Thrown)
 	{
 		AttachEquipmentToBodySocket(CurrentEquipment);
 	}
 
-	UseEquipment(SwapInEquipment);
+	if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+	if (HumanAnimInstance)
+	{
+		// 播放切入时的角色动画
+		HumanAnimInstance->Montage_Play(NewEquipment->SwapInMontage_C);
+
+		// 播放切入时的装备动画
+		if (NewEquipment->GetEquipmentAnimInstance())
+		{
+			NewEquipment->GetEquipmentAnimInstance()->Montage_Play(NewEquipment->SwapInMontage_E);
+		}
+	}
+
+	UseEquipment(NewEquipment);
 }
 
 void UCombatComponent::FinishSwap()
@@ -389,10 +402,17 @@ void UCombatComponent::FinishSwap()
 void UCombatComponent::UseEquipment(AEquipment* Equipment)
 {
 	if (Equipment == nullptr) return;
-	AttachEquipmentToRightHand(Equipment);
+	AttachToHand(Equipment, "_R");
 
 	LastEquipmentType = CurrentEquipmentType;
 	CurrentEquipmentType = Equipment->GetEquipmentType();
+
+	// 记录装备名字，以便动画蓝图应用不同的idle animation
+	if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+	if (HumanAnimInstance)
+	{
+		HumanAnimInstance->EquipmentName = Equipment->GetEquipmentName();
+	}
 
 	// 更新子弹
 	if (Character && Character->IsLocallyControlled() && GetCurrentEquipment())
@@ -418,16 +438,15 @@ void UCombatComponent::UseEquipment(AEquipment* Equipment)
 	}
 }
 
-void UCombatComponent::AttachEquipmentToRightHand(AEquipment* Equipment)
+void UCombatComponent::AttachToHand(AEquipment* Equipment, FString SocketNameSuffix)
 {
-	if (Character == nullptr || Character->GetMesh() == nullptr || Equipment == nullptr) return;
+	if (Character == nullptr || Character->GetMesh() == nullptr || Equipment == nullptr || SocketNameSuffix.IsEmpty()) return;
 	FString EquipmentName = UEnum::GetValueAsString(Equipment->GetEquipmentName());
-	EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
-	// UE_LOG(LogTemp, Warning, TEXT("EquipmentName: %s"), *EquipmentName);
-	const USkeletalMeshSocket* RightHandSocket = Character->GetMesh()->GetSocketByName(*EquipmentName);
-	if (RightHandSocket)
+	EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2) + SocketNameSuffix;
+	const USkeletalMeshSocket* HandSocket = Character->GetMesh()->GetSocketByName(*EquipmentName);
+	if (HandSocket)
 	{
-		RightHandSocket->AttachActor(Equipment, Character->GetMesh());
+		HandSocket->AttachActor(Equipment, Character->GetMesh());
 	}
 }
 
@@ -543,14 +562,10 @@ void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 
 void UCombatComponent::PlayFireMontage()
 {
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance && GetCurrentShotEquipment())
+	if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+	if (HumanAnimInstance && GetCurrentShotEquipment())
 	{
-		UAnimMontage* FireMontage = GetCurrentShotEquipment()->FireMontage;
-		if (FireMontage)
-		{
-			AnimInstance->Montage_Play(FireMontage);
-		}
+		HumanAnimInstance->Montage_Play(GetCurrentShotEquipment()->FireMontage_C);
 	}
 }
 
@@ -584,15 +599,26 @@ void UCombatComponent::LocalReload()
 
 void UCombatComponent::PlayReloadMontage()
 {
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance && GetCurrentShotEquipment())
+	if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+	if (HumanAnimInstance && GetCurrentShotEquipment())
 	{
-		UAnimMontage* ReloadMontage = GetCurrentShotEquipment()->ReloadMontage;
-		if (ReloadMontage)
+		HumanAnimInstance->Montage_Play(GetCurrentShotEquipment()->ReloadMontage_C);
+
+		if (GetCurrentShotEquipment()->GetEquipmentAnimInstance())
 		{
-			AnimInstance->Montage_Play(ReloadMontage);
+			GetCurrentShotEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurrentShotEquipment()->ReloadMontage_E);
 		}
 	}
+}
+
+void UCombatComponent::AttachToRightHand()
+{
+	AttachToHand(GetCurrentEquipment(), "_R");
+}
+
+void UCombatComponent::AttachToLeftHand()
+{
+	AttachToHand(GetCurrentEquipment(), "_L");
 }
 
 void UCombatComponent::FinishReload()
@@ -632,10 +658,15 @@ void UCombatComponent::ShellReload()
 
 void UCombatComponent::JumpToShotgunEnd()
 {
-	if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-	if (AnimInstance && GetCurrentShotEquipment() && GetCurrentShotEquipment()->ReloadMontage)
+	if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+	if (HumanAnimInstance && GetCurrentShotEquipment())
 	{
-		AnimInstance->Montage_JumpToSection(FName("ReloadEnd"));
+		HumanAnimInstance->Montage_JumpToSection(FName("ReloadEnd"));
+
+		if (GetCurrentShotEquipment()->GetEquipmentAnimInstance())
+		{
+			GetCurrentShotEquipment()->GetEquipmentAnimInstance()->Montage_JumpToSection(FName("ReloadEnd"));
+		}
 	}
 }
 
@@ -711,23 +742,30 @@ void UCombatComponent::LocalMeleeAttack(int32 Type)
 {
 	if (CombatState == ECombatState::Ready)
 	{
-		if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-		if (AnimInstance && GetCurrentMeleeEquipment())
+		if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+		if (HumanAnimInstance && GetCurrentMeleeEquipment())
 		{
-			UAnimMontage* AttackMontage = GetCurrentMeleeEquipment()->AttackMontage;
-			if (AttackMontage)
+			if (Type == 0)
 			{
-				AnimInstance->Montage_Play(AttackMontage);
-				if (Type == 0)
+				HumanAnimInstance->Montage_Play(GetCurrentMeleeEquipment()->LightAttackMontage_C);
+
+				if (GetCurrentMeleeEquipment()->GetEquipmentAnimInstance())
 				{
-					AnimInstance->Montage_JumpToSection(FName("LightAttack"));
-					CombatState = ECombatState::LightAttacking;
+					GetCurrentMeleeEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurrentMeleeEquipment()->LightAttackMontage_E);
 				}
-				else
+
+				CombatState = ECombatState::LightAttacking;
+			}
+			else
+			{
+				HumanAnimInstance->Montage_Play(GetCurrentMeleeEquipment()->HeavyAttackMontage_C);
+
+				if (GetCurrentMeleeEquipment()->GetEquipmentAnimInstance())
 				{
-					AnimInstance->Montage_JumpToSection(FName("HeavyAttack"));
-					CombatState = ECombatState::HeavyAttacking;
+					GetCurrentMeleeEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurrentMeleeEquipment()->HeavyAttackMontage_E);
 				}
+
+				CombatState = ECombatState::HeavyAttacking;
 			}
 		}
 	}
@@ -768,15 +806,17 @@ void UCombatComponent::LocalThrow()
 {
 	if (CombatState == ECombatState::Ready)
 	{
-		if (AnimInstance == nullptr) AnimInstance = Character->GetMesh()->GetAnimInstance();
-		if (AnimInstance && GetCurrentThrowingEquipment())
+		if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(Character->GetMesh()->GetAnimInstance());
+		if (HumanAnimInstance && GetCurrentThrowingEquipment())
 		{
-			UAnimMontage* ThrowMontage = GetCurrentThrowingEquipment()->ThrowMontage;
-			if (ThrowMontage)
+			HumanAnimInstance->Montage_Play(GetCurrentThrowingEquipment()->ThrowMontage_C);
+
+			if (GetCurrentThrowingEquipment()->GetEquipmentAnimInstance())
 			{
-				AnimInstance->Montage_Play(ThrowMontage);
-				CombatState = ECombatState::Throwing;
+				GetCurrentThrowingEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurrentThrowingEquipment()->ThrowMontage_E);
 			}
+
+			CombatState = ECombatState::Throwing;
 		}
 	}
 }

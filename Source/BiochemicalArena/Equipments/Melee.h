@@ -13,7 +13,14 @@ public:
 	AMelee();
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	UAnimMontage* AttackMontage;
+	UAnimMontage* LightAttackMontage_C;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* LightAttackMontage_E;
+
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* HeavyAttackMontage_C;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* HeavyAttackMontage_E;
 
 	virtual void EquipEquipment() override;
 

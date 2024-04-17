@@ -16,13 +16,15 @@ public:
 	UCombatComponent();
 	friend class AHumanCharacter;
 
-	class AEquipment* GetCurrentEquipment(); // If has a equipment in use return it, or return nullptr
+	class AEquipment* GetCurrentEquipment(); // If it has equipment in use return it, or return nullptr
 	class AWeapon* GetCurrentShotEquipment(); // If primary or secondary equipment is in use return it, or return nullptr
 	class AMelee* GetCurrentMeleeEquipment(); // If MeleeEquipment is in use return it, or return nullptr
 	class AThrowing* GetCurrentThrowingEquipment();
 
 	void FinishSwap();
 
+	void AttachToRightHand();
+	void AttachToLeftHand();
 	void ShellReload();
 	void FinishReload();
 
@@ -39,7 +41,7 @@ protected:
 	UPROPERTY()
 	class AHumanController* Controller;
 	UPROPERTY()
-	UAnimInstance* AnimInstance;
+	class UHumanAnimInstance* HumanAnimInstance;
 
 	UPROPERTY()
 	ECombatState CombatState;
@@ -97,12 +99,12 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSwapEquipment(EEquipmentType EquipmentType);
 	void LocalSwapEquipment(EEquipmentType EquipmentType);
-	void PlaySwapOutMontage(AEquipment* SwapInEquipment);
-	void PlaySwapInMontage(UAnimMontage* AnimMontage, bool bInterrupted, AEquipment* SwapInEquipment);
+	void PlaySwapOutMontage(AEquipment* NewEquipment);
+	void PlaySwapInMontage(bool bInterrupted, AEquipment* NewEquipment);
 
 	// 使用
 	void UseEquipment(AEquipment* EquipmentType);
-	void AttachEquipmentToRightHand(AEquipment* EquipmentType);
+	void AttachToHand(AEquipment* Equipment, FString SocketNameSuffix);
 
 	// 瞄准
 	UPROPERTY()

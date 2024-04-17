@@ -127,8 +127,8 @@ void UStorageSubsystem::InitDefaultSetting()
 	GEngine->DisplayGamma = StorageSaveGameCache->Brightness;
 
 	// 加载声音资源
-	SoundMix = LoadObject<USoundMix>(nullptr,TEXT("/Script/Engine.SoundMix'/Game/Assets/Sounds/SoundMix.SoundMix'"));
-	MasterClass = LoadObject<USoundClass>(nullptr, TEXT("/Script/Engine.SoundClass'/Game/Assets/Sounds/Master.Master'"));
+	SoundMix = LoadObject<USoundMix>(nullptr,TEXT("/Script/Engine.SoundMix'/Game/Audio/SoundMix.SoundMix'"));
+	MasterClass = LoadObject<USoundClass>(nullptr, TEXT("/Script/Engine.SoundClass'/Game/Audio/Master.Master'"));
 
 	AudioDevice = GEngine->GetActiveAudioDevice();
 	if (AudioDevice && SoundMix)

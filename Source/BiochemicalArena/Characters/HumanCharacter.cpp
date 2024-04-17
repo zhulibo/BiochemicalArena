@@ -29,7 +29,7 @@ AHumanCharacter::AHumanCharacter()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, "HeadSocket");
+	CameraBoom->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, "Camera");
 	CameraBoom->TargetArmLength = 0.f;
 	CameraBoom->bUsePawnControlRotation = true;
 
@@ -213,7 +213,7 @@ FString AHumanCharacter::GetEquipmentName(int32 BagIndex, EEquipmentType Equipme
 FString AHumanCharacter::GetEquipmentClassPath(FString EquipmentName)
 {
 	if (EquipmentName.IsEmpty()) return FString();
-	return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/%s.%s_C'"), *EquipmentName, *EquipmentName);
+	return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/Main/%s/Default/BP_%s.BP_%s_C'"), *EquipmentName, *EquipmentName, *EquipmentName);
 }
 
 void AHumanCharacter::OnRep_DefaultPrimaryEquipment()

@@ -22,15 +22,15 @@ void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MetalSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	WaterSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	GrassSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	MudSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	CommonSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Common_Cue.Footsteps_Common_Cue'"));
+	MetalSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	WaterSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	GrassSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	MudSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	CommonSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Common_Cue.Footsteps_Common_Cue'"));
 
-	OuchSound1 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	OuchSound2 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Assets/Sounds/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	OuchSound1 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	OuchSound2 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
+	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 
 	// 监听输入设备变化
 	UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController());
@@ -85,7 +85,7 @@ void ABaseCharacter::Tick(float DeltaSeconds)
 
 	PollInitMeshCollision();
 
-	CalculateAO_Pitch();
+	CalcAimPitch();
 }
 
 // 设置碰撞
@@ -114,16 +114,16 @@ void ABaseCharacter::PollInitMeshCollision()
 }
 
 // 计算俯仰
-void ABaseCharacter::CalculateAO_Pitch()
+void ABaseCharacter::CalcAimPitch()
 {
-	AO_Pitch = GetBaseAimRotation().Pitch;
+	AimPitch = GetBaseAimRotation().Pitch;
 
 	// Remote character need map pitch from [360, 270) to [0, -90)
-	if (AO_Pitch > 90.f && !IsLocallyControlled())
+	if (AimPitch > 90.f && !IsLocallyControlled())
 	{
 		FVector2D InRange(360.f, 270.f);
 		FVector2D OutRange(0.f, -90.f);
-		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+		AimPitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AimPitch);
 	}
 }
 

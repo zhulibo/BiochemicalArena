@@ -19,7 +19,7 @@ void AGeneralWeapon::Fire(const FVector& HitTarget)
 
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (OwnerTeam == ETeam::NoTeam) SetOwnerTeam();
-	if (MuzzleSocket == nullptr) MuzzleSocket = GetEquipmentMesh()->GetSocketByName(FName("MuzzleSocket"));
+	if (MuzzleSocket == nullptr) MuzzleSocket = GetEquipmentMesh()->GetSocketByName(FName("Muzzle"));
 
 	if (ProjectileClass && HumanCharacter && OwnerTeam != ETeam::NoTeam && MuzzleSocket)
 	{

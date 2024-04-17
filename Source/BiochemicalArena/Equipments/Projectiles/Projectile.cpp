@@ -25,7 +25,7 @@ void AProjectile::PostActorCreated()
 {
 	Super::PostActorCreated();
 
-	// 尽早执行，避免因网络同步造成客户端OnHit时Component为空
+	// 尽早生成，避免OnHit时Component还未生成
 	SpawnTracer();
 	SpawnTrail();
 }

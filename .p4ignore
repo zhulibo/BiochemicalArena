@@ -1,14 +1,16 @@
-.git
-.idea
-.vscode
-.vs
+.git/
+.idea/
+.vscode/
+.vs/
 
-**/Binaries/**
-**/Build/**
-**/DerivedDataCache/**
-**/Intermediate/**
-**/Saved/**
+/Binaries/
+/Plugins/*/Binaries/
+/Build/
+/DerivedDataCache/
+/Intermediate/
+/Plugins/*/Intermediate/
+/Saved/
 
 *.sln
 
-.vsconfig
+/.vsconfig

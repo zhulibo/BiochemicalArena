@@ -41,7 +41,7 @@ protected:
 	bool HasInitMeshCollision = false;
 	void PollInitMeshCollision();
 
-	void CalculateAO_Pitch();
+	void CalcAimPitch();
 
 	void OnLocalControllerReady();
 
@@ -78,7 +78,7 @@ private:
 	UPROPERTY()
 	class ABasePlayerState* BasePlayerState;
 
-	float AO_Pitch; // 俯仰
+	float AimPitch; // 俯仰
 
 	UPROPERTY()
 	USoundCue* MetalSound;
@@ -128,6 +128,6 @@ private:
 	bool bIsRadialMenuOpened; // 径向菜单是否已打开
 
 public:
-	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
+	FORCEINLINE float GetAimPitch() const { return AimPitch; }
 
 };

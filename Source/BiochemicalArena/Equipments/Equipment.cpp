@@ -1,4 +1,6 @@
 #include "Equipment.h"
+
+#include "EquipmentAnimInstance.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Animation/AnimationAsset.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
@@ -53,6 +55,12 @@ void AEquipment::OnAreaSphereOverlap(UPrimitiveComponent* OverlappedComponent, A
 	{
 		OverlapHumanCharacter->EquipOverlappingEquipment(this);
 	}
+}
+
+UEquipmentAnimInstance* AEquipment::GetEquipmentAnimInstance()
+{
+	if (EquipmentAnimInstance == nullptr) EquipmentAnimInstance = Cast<UEquipmentAnimInstance>(EquipmentMesh->GetAnimInstance());
+	return EquipmentAnimInstance;
 }
 
 void AEquipment::EquipEquipment()

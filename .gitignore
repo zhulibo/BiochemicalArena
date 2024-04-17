@@ -1,15 +1,17 @@
-.idea
-.vscode
-.vs
+.idea/
+.vscode/
+.vs/
 
-**/Binaries/**
-**/Build/**
-**/DerivedDataCache/**
-**/Intermediate/**
-**/Saved/**
+/Binaries/
+/Plugins/*/Binaries/
+/Build/
+/DerivedDataCache/
+/Intermediate/
+/Plugins/*/Intermediate/
+/Saved/
 
-/Content
+/Content/
 
 *.sln
 
-.vsconfig
+/.vsconfig

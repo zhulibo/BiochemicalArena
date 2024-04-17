@@ -11,12 +11,15 @@ class BIOCHEMICALARENA_API AWeapon : public AEquipment
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	UAnimMontage* FireMontage;
-
+	UAnimMontage* FireMontage_C;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* FireMontage_E;
 	virtual void Fire(const FVector& HitTarget);
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	UAnimMontage* ReloadMontage;
+	UAnimMontage* ReloadMontage_C;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* ReloadMontage_E;
 	virtual void SetAmmo(int32 AmmoNum);
 	virtual void SetCarriedAmmo(int32 AmmoNum);
 
@@ -54,8 +57,6 @@ protected:
 	void SetHUDCarriedAmmo();
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	UAnimationAsset* FireAnimation;
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	TSubclassOf<class ACasing> CasingClass;
 

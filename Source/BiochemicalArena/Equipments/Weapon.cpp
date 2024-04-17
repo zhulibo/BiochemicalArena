@@ -1,4 +1,6 @@
 #include "Weapon.h"
+
+#include "EquipmentAnimInstance.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Cassings/Casing.h"
@@ -8,7 +10,7 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MuzzleSocket = EquipmentMesh->GetSocketByName(FName("MuzzleSocket"));
+	MuzzleSocket = EquipmentMesh->GetSocketByName(FName("Muzzle"));
 
 	Ammo = MagCapacity;
 	CarriedAmmo = MaxCarriedAmmo;
@@ -16,17 +18,17 @@ void AWeapon::BeginPlay()
 
 void AWeapon::Fire(const FVector& HitTarget)
 {
-	if (FireAnimation)
+	if (GetEquipmentAnimInstance())
 	{
-		EquipmentMesh->PlayAnimation(FireAnimation, false);
+		GetEquipmentAnimInstance()->Montage_Play(FireMontage_E);
 	}
 
 	if (CasingClass)
 	{
-		const USkeletalMeshSocket* AmmoEjectSocket = EquipmentMesh->GetSocketByName(FName("AmmoEject"));
-		if (AmmoEjectSocket)
+		const USkeletalMeshSocket* ShellEjectSocket = EquipmentMesh->GetSocketByName(FName("ShellEject"));
+		if (ShellEjectSocket)
 		{
-			FTransform SocketTransform = AmmoEjectSocket->GetSocketTransform(EquipmentMesh);
+			FTransform SocketTransform = ShellEjectSocket->GetSocketTransform(EquipmentMesh);
 			GetWorld()->SpawnActor<ACasing>(
 				CasingClass,
 				SocketTransform.GetLocation(),

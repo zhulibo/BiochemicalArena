@@ -19,7 +19,16 @@ public:
 	AEquipment();
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	UAnimMontage* SwapMontage;
+	UAnimMontage* SwapInMontage_C;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* SwapInMontage_E;
+
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* SwapOutMontage_C;
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UAnimMontage* SwapOutMontage_E;
+
+	class UEquipmentAnimInstance* GetEquipmentAnimInstance();
 
 	virtual void EquipEquipment();
 	virtual void DropEquipment();
@@ -32,6 +41,9 @@ protected:
 	USkeletalMeshComponent* EquipmentMesh;
 	UPROPERTY(VisibleAnywhere, Category = "Equipment")
 	class USphereComponent* AreaSphere;
+
+	UPROPERTY()
+	UEquipmentAnimInstance* EquipmentAnimInstance;
 
 	UFUNCTION()
 	virtual void OnAreaSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
