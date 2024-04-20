@@ -58,7 +58,7 @@ protected:
 
 private:
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	TSubclassOf<class ACasing> CasingClass;
+	TSubclassOf<class AShell> ShellClass;
 
 public:
 	FORCEINLINE float GetAimingFOVFactor() const { return AimingFOVFactor; }

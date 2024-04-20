@@ -14,6 +14,11 @@ class BIOCHEMICALARENA_API UStorageSaveGame : public USaveGame
 public:
 	UStorageSaveGame();
 
+	/*
+	 * 本类所有属性虽然都会上传到了云端，但云端数据读取下来之后只有Bags和Character会应用到本地，
+	 * 其他属性因玩家设备不同，只采用本地数据。
+	 */
+
 	UPROPERTY()
 	TArray<FBag> Bags;
 	UPROPERTY()
@@ -22,15 +27,15 @@ public:
 	UPROPERTY()
 	float MouseSensitivity = 50.f;
 	UPROPERTY()
-	FString MouseAimAssistSteering = "off";
+	bool MouseAimAssistSteering = false;
 	UPROPERTY()
-	FString MouseAimAssistSlowdown = "off";
+	bool MouseAimAssistSlowdown = false;
 	UPROPERTY()
 	float ControllerSensitivity = 50.f;
 	UPROPERTY()
-	FString ControllerAimAssistSteering = "on";
+	bool ControllerAimAssistSteering = true;
 	UPROPERTY()
-	FString ControllerAimAssistSlowdown = "on";
+	bool ControllerAimAssistSlowdown = true;
 
 	UPROPERTY()
 	float Brightness = 2.2f;

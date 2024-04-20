@@ -1,7 +1,8 @@
 #include "StorageSubsystem.h"
+
+#include "AssetSubsystem.h"
 #include "AudioDevice.h"
 #include "StorageSaveGame.h"
-#include "BiochemicalArena/Characters/BaseCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
@@ -23,7 +24,9 @@ void UStorageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	{
 		if (UStorageSaveGame* StorageSaveGame = Cast<UStorageSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex)))
 		{
-			StorageSaveGameCache = StorageSaveGame;
+			StorageCache = StorageSaveGame;
+
+			ApplySetting();
 		}
 		else
 		{
@@ -39,40 +42,42 @@ void UStorageSubsystem::CreateStorageSaveGame()
 	if (StorageSaveGame)
 	{
 		// 保存存档至缓存
-		StorageSaveGameCache = StorageSaveGame;
+		StorageCache = StorageSaveGame;
+
+		ApplySetting();
 
 		// 保存存档至本地
-		UGameplayStatics::SaveGameToSlot(StorageSaveGameCache, SlotName, UserIndex);
+		UGameplayStatics::SaveGameToSlot(StorageCache, SlotName, UserIndex);
 	}
 }
 
-// 保存
-void UStorageSubsystem::Save()
+// 保存到硬盘
+void UStorageSubsystem::SaveToDisk()
 {
-	if (StorageSaveGameCache)
+	if (StorageCache)
 	{
-		// Save to local immediately
-		UGameplayStatics::AsyncSaveGameToSlot(StorageSaveGameCache, SlotName, UserIndex);
+		// Save to disk
+		UGameplayStatics::AsyncSaveGameToSlot(StorageCache, SlotName, UserIndex);
 
 		// Throttle save to Cloud
-		// GetWorld()->GetTimerManager().SetTimer(WriteFileTimerHandle, this, &ThisClass::WriteFile, 5.f);
+		// GetWorld()->GetTimerManager().SetTimer(SaveToCloudTimerHandle, this, &ThisClass::SaveToCloud, 5.f);
 	}
 }
 
 // 保存到云端
-void UStorageSubsystem::WriteFile()
+void UStorageSubsystem::SaveToCloud()
 {
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		if (StorageSaveGameCache)
+		if (StorageCache)
 		{
 			TArray<uint8> FileContents;
 			FMemoryWriter MemoryWriter(FileContents, true);
 			FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, false);
 			Ar.ArIsSaveGame = false; // 无论属性设否设置了UPROPERTY(SaveGame)，都将进行序列化
 			Ar.ArNoDelta = true;
-			StorageSaveGameCache->Serialize(Ar);
+			StorageCache->Serialize(Ar);
 
 			EOSSubsystem->WriteFile(SlotName, FileContents); // 将本地存档保存到云端
 		}
@@ -85,68 +90,29 @@ void UStorageSubsystem::OnWriteFileComplete(bool bWasSuccessful)
 	UE_LOG(LogTemp, Warning, TEXT("OnWriteFileComplete: %d"), bWasSuccessful);
 }
 
-// 设置角色控制变量
-void UStorageSubsystem::SetCharacterControlVariable()
+// 应用设置
+void UStorageSubsystem::ApplySetting()
 {
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-	if (BaseCharacter)
-	{
-		BaseCharacter->MouseSensitivityRate = MapSensitivity(StorageSaveGameCache->MouseSensitivity);
-		BaseCharacter->bMouseAimAssistSteering = StorageSaveGameCache->MouseAimAssistSteering == "on";
-		BaseCharacter->bMouseAimAssistSlowdown = StorageSaveGameCache->MouseAimAssistSlowdown == "on";
-		BaseCharacter->ControllerSensitivityRate = MapSensitivity(StorageSaveGameCache->ControllerSensitivity);
-		BaseCharacter->bControllerAimAssistSteering = StorageSaveGameCache->ControllerAimAssistSteering == "on";
-		BaseCharacter->bControllerAimAssistSlowdown = StorageSaveGameCache->ControllerAimAssistSlowdown == "on";
-	}
-}
+	// 设置亮度
+	GEngine->DisplayGamma = StorageCache->Brightness;
 
-float UStorageSubsystem::MapSensitivity(float Value)
-{
-	if (Value < 50.f)
-	{
-		FVector2D InRange(1.f, 50.f);
-		FVector2D OutRange(0.2f, 1.f);
-		return FMath::GetMappedRangeValueClamped(InRange, OutRange, Value);
-	}
-	else if (Value > 50.f)
-	{
-		FVector2D InRange(50.f, 100.f);
-		FVector2D OutRange(1.f, 5.f);
-		return FMath::GetMappedRangeValueClamped(InRange, OutRange, Value);
-	}
-	else
-	{
-		return 1.f;
-	}
-}
-
-// 初始化默认设置
-void UStorageSubsystem::InitDefaultSetting()
-{
-	// 设置默认亮度
-	GEngine->DisplayGamma = StorageSaveGameCache->Brightness;
-
-	// 加载声音资源
-	SoundMix = LoadObject<USoundMix>(nullptr,TEXT("/Script/Engine.SoundMix'/Game/Audio/SoundMix.SoundMix'"));
-	MasterClass = LoadObject<USoundClass>(nullptr, TEXT("/Script/Engine.SoundClass'/Game/Audio/Master.Master'"));
-
+	// 设置音量
 	AudioDevice = GEngine->GetActiveAudioDevice();
-	if (AudioDevice && SoundMix)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AudioDevice && AssetSubsystem && AssetSubsystem->GetSoundMix())
 	{
-		AudioDevice->PushSoundMixModifier(SoundMix);
+		AudioDevice->PushSoundMixModifier(AssetSubsystem->GetSoundMix());
+		SetAudio(StorageCache->Volume);
 	}
-
-	SetAudio(StorageSaveGameCache->Volume);
 }
 
 // 设置音量
 void UStorageSubsystem::SetAudio(float Value)
 {
-	if (AudioDevice && SoundMix && MasterClass)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AudioDevice && AssetSubsystem && AssetSubsystem->GetSoundMix() && AssetSubsystem->GetMasterSound())
 	{
-		FVector2D InRange(1.f, 100.f);
-		FVector2D OutRange(0.01f, 1.f);
-		Value =  FMath::GetMappedRangeValueClamped(InRange, OutRange, Value);
-		AudioDevice->SetSoundMixClassOverride(SoundMix, MasterClass, Value, 1.f, 0.2f, true);
+		// UE_LOG(LogTemp, Warning, TEXT("SetAudio: %f"), Value); // TODO test
+		AudioDevice->SetSoundMixClassOverride(AssetSubsystem->GetSoundMix(), AssetSubsystem->GetMasterSound(), Value, 1.f, 0.2f, true);
 	}
 }

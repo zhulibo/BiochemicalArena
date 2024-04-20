@@ -10,33 +10,30 @@ void UTabAudio::NativeConstruct()
 
 	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 
-	// GameUserSettings = GEngine->GetGameUserSettings();
-
-	SetDefaultValue();
+	SetUIDefaultValue();
 
 	VolumeController->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnVolumeChanged);
 }
 
-void UTabAudio::SetDefaultValue()
+void UTabAudio::SetUIDefaultValue()
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		VolumeController->SetValue(StorageSubsystem->StorageSaveGameCache->Volume);
-		Volume->SetText(FText::AsNumber(StorageSubsystem->StorageSaveGameCache->Volume));
+		VolumeController->SetValue(StorageSubsystem->StorageCache->Volume * 100.f);
+		Volume->SetText(FText::AsNumber(StorageSubsystem->StorageCache->Volume * 100.f));
 	}
 }
 
 void UTabAudio::OnVolumeChanged(float Value)
 {
+	Value = FMath::RoundToFloat(Value);
 	Volume->SetText(FText::AsNumber(Value));
-
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->SetAudio(Value);
-
-		StorageSubsystem->StorageSaveGameCache->Volume = Value;
-		StorageSubsystem->Save();
+		StorageSubsystem->SetAudio(Value / 100.f);
+		StorageSubsystem->StorageCache->Volume = Value / 100.f;
+		StorageSubsystem->SaveToDisk();
 	}
 }

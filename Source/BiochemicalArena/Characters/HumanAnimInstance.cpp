@@ -32,9 +32,8 @@ void UHumanAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	HeadRotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 30.f, -30.f);
 	NeckRotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 20.f, -20.f);
 
-	// TODO FABRIK
-	Arm_1_R_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 75.f, -75.f);
-	Arm_1_L_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 80.f, -80.f);
+	Arm_01_R_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 75.f, -75.f);
+	Arm_01_L_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 80.f, -80.f);
 
 	if (HumanCharacter->IsLocallyControlled() && HumanCharacter->GetCurrentEquipment())
 	{

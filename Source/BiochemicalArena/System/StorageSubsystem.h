@@ -13,12 +13,10 @@ class BIOCHEMICALARENA_API UStorageSubsystem : public UGameInstanceSubsystem
 public:
 	void CreateStorageSaveGame();
 	UPROPERTY()
-	class UStorageSaveGame* StorageSaveGameCache; // 存档缓存
-	void Save();
+	class UStorageSaveGame* StorageCache; // 存档缓存
+	void SaveToDisk();
 
-	void InitDefaultSetting();
-
-	void SetCharacterControlVariable();
+	void ApplySetting();
 
 	void SetAudio(float Value);
 
@@ -32,17 +30,13 @@ protected:
 
 	UPROPERTY()
 	UEOSSubsystem* EOSSubsystem;
-	FTimerHandle WriteFileTimerHandle;
-	void WriteFile();
+	FTimerHandle SaveToCloudTimerHandle;
+	void SaveToCloud();
 	void OnWriteFileComplete(bool bWasSuccessful);
 
-	float MapSensitivity(float Value);
-
 	UPROPERTY()
-	USoundMix* SoundMix;
+	class UAssetSubsystem* AssetSubsystem;
 	FAudioDeviceHandle AudioDevice;
-	UPROPERTY()
-	USoundClass* MasterClass;
 
 public:
 	FORCEINLINE FString GetSlotName() const { return SlotName; }

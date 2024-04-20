@@ -1,0 +1,50 @@
+#include "Shell.h"
+
+#include "BiochemicalArena/System/AssetSubsystem.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
+#include "Kismet/KismetMathLibrary.h"
+
+AShell::AShell()
+{
+	PrimaryActorTick.bCanEverTick = false;
+
+	ShellMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ShellMesh"));
+	SetRootComponent(ShellMesh);
+
+	ShellMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	ShellMesh->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	ShellMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+
+	ShellMesh->SetSimulatePhysics(true);
+	ShellMesh->SetEnableGravity(true);
+	ShellMesh->SetNotifyRigidBodyCollision(true);
+
+	bIsFirstOnHit = true;
+}
+
+void AShell::BeginPlay()
+{
+	Super::BeginPlay();
+
+	ShellMesh->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
+
+	const FVector RandomShell = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(GetActorForwardVector(), 10.f);
+	ShellMesh->AddImpulse(RandomShell * ShellEjectionImpulsePerKg * ShellMesh->GetMass());
+
+	SetLifeSpan(10.f);
+}
+
+void AShell::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (bIsFirstOnHit) // 第一次触地时播放声音
+	{
+		bIsFirstOnHit = false;
+
+		UAssetSubsystem* AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+		if (AssetSubsystem && AssetSubsystem->ShellSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->ShellSound, GetActorLocation());
+		}
+	}
+}

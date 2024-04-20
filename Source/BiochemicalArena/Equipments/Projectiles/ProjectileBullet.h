@@ -12,7 +12,7 @@ class BIOCHEMICALARENA_API AProjectileBullet : public AProjectile
 public:
 	AProjectileBullet();
 
-	void SetDamage(float TemDamage);
+	void SetDamage(float TempDamage);
 
 protected:
 	// virtual void PostActorCreated() override;

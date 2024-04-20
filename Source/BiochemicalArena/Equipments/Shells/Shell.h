@@ -2,32 +2,28 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Casing.generated.h"
+#include "Shell.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API ACasing : public AActor
+class BIOCHEMICALARENA_API AShell : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ACasing();
+	AShell();
 
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* CasingMesh;
+	UPROPERTY(VisibleAnywhere, Category = "Equipment")
+	UStaticMeshComponent* ShellMesh;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	float ShellEjectionImpulsePerKg = 200.f;;
 
 	UPROPERTY()
 	bool bIsFirstOnHit;
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
-private:
-	UPROPERTY(EditAnywhere)
-	USoundCue* ShellSound;
 
 };

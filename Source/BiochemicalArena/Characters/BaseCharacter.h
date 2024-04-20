@@ -43,12 +43,10 @@ protected:
 
 	void CalcAimPitch();
 
-	void OnLocalControllerReady();
-
 	UPROPERTY()
 	ECommonInputType CommonInputType;
 	UFUNCTION()
-	void OnInputMethodChanged(ECommonInputType TemCommonInputType);
+	void OnInputMethodChanged(ECommonInputType TempCommonInputType);
 
 	void Move(const struct FInputActionValue& Value);
 	void LookMouse(const FInputActionValue& Value);
@@ -77,26 +75,10 @@ private:
 	class ABaseController* BaseController;
 	UPROPERTY()
 	class ABasePlayerState* BasePlayerState;
+	UPROPERTY()
+	class UAssetSubsystem* AssetSubsystem;
 
 	float AimPitch; // 俯仰
-
-	UPROPERTY()
-	USoundCue* MetalSound;
-	UPROPERTY()
-	USoundCue* WaterSound;
-	UPROPERTY()
-	USoundCue* GrassSound;
-	UPROPERTY()
-	USoundCue* MudSound;
-	UPROPERTY()
-	USoundCue* CommonSound;
-
-	UPROPERTY()
-	USoundCue* OuchSound1;
-	UPROPERTY()
-	USoundCue* OuchSound2;
-	UPROPERTY()
-	USoundCue* OuchSound3;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Base", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* BaseMappingContext;

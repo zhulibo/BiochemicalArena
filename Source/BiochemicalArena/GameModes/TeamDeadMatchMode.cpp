@@ -108,17 +108,20 @@ AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerC
 
 	// 获取角色类
 	AHumanState* HumanState = Cast<AHumanState>(NewPlayerController->PlayerState);
-	FString SpawnCharacterName;
+	FString SpawnCharacterName = "SAS";
 	if (HumanState && !HumanState->GetSpawnCharacterName().IsEmpty())
 	{
 		SpawnCharacterName = HumanState->GetSpawnCharacterName();
 	}
-	else
-	{
-		SpawnCharacterName = "SAS";
-	}
+
+	// double StartTime = FPlatformTime::Seconds();
+
 	FString ClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Humans/%s/BP_%s.BP_%s_C'"), *SpawnCharacterName, *SpawnCharacterName, *SpawnCharacterName);
 	UClass* HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ClassPath);
+
+	// double EndTime = FPlatformTime::Seconds();
+	// UE_LOG(LogTemp, Warning, TEXT("Load HumanCharacterClass time: %f seconds"), EndTime - StartTime);
+
 	if (HumanCharacterClass == nullptr) return nullptr;
 
 	// 生成角色
@@ -154,16 +157,16 @@ void ATeamDeadMatchMode::KillPlayer(AHumanCharacter* KilledCharacter, AHumanCont
 
 	if (TeamDeadMatchState && AttackerState && DamageCauser && KilledState)
 	{
-		EEquipmentName TemEquipmentName;
+		EEquipmentName TempEquipmentName;
 		if (AEquipment* DamageCauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner())) // Projectile's owner is Equipment
 		{
-			TemEquipmentName = DamageCauserEquipment->GetEquipmentName();
+			TempEquipmentName = DamageCauserEquipment->GetEquipmentName();
 		}
 		else // Melee's owner is Character
 		{
-			TemEquipmentName = Cast<AEquipment>(DamageCauser)->GetEquipmentName();
+			TempEquipmentName = Cast<AEquipment>(DamageCauser)->GetEquipmentName();
 		}
-		FString EquipmentName = UEnum::GetValueAsString(TemEquipmentName);
+		FString EquipmentName = UEnum::GetValueAsString(TempEquipmentName);
 		EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
 		TeamDeadMatchState->MulticastAddKillLog(AttackerState, EquipmentName, KilledState);
 	}

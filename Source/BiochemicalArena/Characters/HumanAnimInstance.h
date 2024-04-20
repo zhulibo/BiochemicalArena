@@ -42,8 +42,8 @@ protected:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
 	FRotator NeckRotator;
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	FRotator Arm_1_R_Rotator;
+	FRotator Arm_01_R_Rotator;
 	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	FRotator Arm_1_L_Rotator;
+	FRotator Arm_01_L_Rotator;
 
 };

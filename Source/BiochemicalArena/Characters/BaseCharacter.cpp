@@ -10,27 +10,25 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "CommonInputSubsystem.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
+#include "BiochemicalArena/System/StorageSaveGame.h"
+#include "Components/CapsuleComponent.h"
 
 ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	GetCharacterMovement()->NavAgentProps.bCanCrouch = true; // 设置CharacterMovementComponent可蹲下
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->SetCrouchedHalfHeight(50.f);
+	GetCharacterMovement()->AirControl = 0.4;
+	GetCharacterMovement()->AirControlBoostMultiplier = 1;
+
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 }
 
 void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
-	MetalSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	WaterSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	GrassSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	MudSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	CommonSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Common_Cue.Footsteps_Common_Cue'"));
-
-	OuchSound1 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	OuchSound2 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	OuchSound3 = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 
 	// 监听输入设备变化
 	UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController());
@@ -86,6 +84,11 @@ void ABaseCharacter::Tick(float DeltaSeconds)
 	PollInitMeshCollision();
 
 	CalcAimPitch();
+
+	// if (!HasAuthority() && IsLocallyControlled())
+	// {
+	// 	AddMovementInput(GetActorForwardVector(), 1);
+	// }
 }
 
 // 设置碰撞
@@ -127,22 +130,11 @@ void ABaseCharacter::CalcAimPitch()
 	}
 }
 
-// LocalController就绪
-void ABaseCharacter::OnLocalControllerReady()
-{
-	// 获取设置数据
-	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
-	{
-		StorageSubsystem->SetCharacterControlVariable();
-	}
-}
-
 // 输入设备变化
-void ABaseCharacter::OnInputMethodChanged(ECommonInputType TemCommonInputType)
+void ABaseCharacter::OnInputMethodChanged(ECommonInputType TempCommonInputType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnInputMethodChanged: %d"), TemCommonInputType);
-	CommonInputType = TemCommonInputType;
+	UE_LOG(LogTemp, Warning, TEXT("OnInputMethodChanged: %d"), TempCommonInputType);
+	CommonInputType = TempCommonInputType;
 }
 
 // 根据地形播放不同脚步声
@@ -158,25 +150,25 @@ void ABaseCharacter::PlayFootstepSound()
 	Params.bReturnPhysicalMaterial = true;
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
-
-	if (HitResult.bBlockingHit)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (HitResult.bBlockingHit && AssetSubsystem)
 	{
 		switch (UGameplayStatics::GetSurfaceType(HitResult))
 		{
 		case EPhysicalSurface::SurfaceType1:
-			if (MetalSound) UGameplayStatics::PlaySoundAtLocation(this, MetalSound, HitResult.Location);
+			if (AssetSubsystem->MetalSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->MetalSound, HitResult.Location);
 			break;
 		case EPhysicalSurface::SurfaceType2:
-			if (WaterSound) UGameplayStatics::PlaySoundAtLocation(this, WaterSound, HitResult.Location);
+			if (AssetSubsystem->WaterSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->WaterSound, HitResult.Location);
 			break;
 		case EPhysicalSurface::SurfaceType3:
-			if (GrassSound) UGameplayStatics::PlaySoundAtLocation(this, GrassSound, HitResult.Location);
+			if (AssetSubsystem->GrassSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->GrassSound, HitResult.Location);
 			break;
 		case EPhysicalSurface::SurfaceType4:
-			if (MudSound) UGameplayStatics::PlaySoundAtLocation(this, MudSound, HitResult.Location);
+			if (AssetSubsystem->MudSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->MudSound, HitResult.Location);
 			break;
 		default:
-			if (CommonSound) UGameplayStatics::PlaySoundAtLocation(this, CommonSound, HitResult.Location);
+			if (AssetSubsystem->CommonSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->CommonSound, HitResult.Location);
 			break;
 		}
 	}
@@ -194,16 +186,18 @@ void ABaseCharacter::LookMouse(const FInputActionValue& Value)
 {
 	if (bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
-	AddControllerYawInput(AxisVector.X * MouseSensitivityRate);
-	AddControllerPitchInput(AxisVector.Y * MouseSensitivityRate);
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	AddControllerYawInput(AxisVector.X * StorageSubsystem->StorageCache->MouseSensitivity);
+	AddControllerPitchInput(AxisVector.Y * StorageSubsystem->StorageCache->MouseSensitivity);
 }
 
 void ABaseCharacter::LookStick(const FInputActionValue& Value)
 {
 	if (bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
-	AddControllerYawInput(AxisVector.X * ControllerSensitivityRate);
-	AddControllerPitchInput(AxisVector.Y * ControllerSensitivityRate);
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	AddControllerYawInput(AxisVector.X * StorageSubsystem->StorageCache->ControllerSensitivity);
+	AddControllerPitchInput(AxisVector.Y * StorageSubsystem->StorageCache->ControllerSensitivity);
 }
 
 void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
@@ -343,17 +337,19 @@ float ABaseCharacter::CalcFallDamageRate()
 // 播放跌落受伤声音
 void ABaseCharacter::PlayOuchSound(float DamageRate)
 {
-	if (DamageRate == 0.05f)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr) return;
+	if (DamageRate == 0.05f && AssetSubsystem->OuchSound1)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, OuchSound1, GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->OuchSound1, GetActorLocation());
 	}
-	else if (DamageRate == 0.1f)
+	else if (DamageRate == 0.1f && AssetSubsystem->OuchSound2)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, OuchSound2, GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->OuchSound2, GetActorLocation());
 	}
-	else if (DamageRate == 0.15f)
+	else if (DamageRate == 0.15f && AssetSubsystem->OuchSound3)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, OuchSound3, GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->OuchSound3, GetActorLocation());
 	}
 }
 

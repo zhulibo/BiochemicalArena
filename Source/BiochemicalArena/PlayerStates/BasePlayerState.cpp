@@ -2,7 +2,8 @@
 #include "Net/UnrealNetwork.h"
 #include "TeamType.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
-#include "BiochemicalArena/System/PlayerSubsystem.h"
+#include "BiochemicalArena/System/StorageSaveGame.h"
+#include "BiochemicalArena/System/StorageSubsystem.h"
 
 ABasePlayerState::ABasePlayerState()
 {
@@ -14,7 +15,6 @@ void ABasePlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, Team);
-	DOREPLIFETIME(ThisClass, SpawnCharacterName);
 	DOREPLIFETIME(ThisClass, Defeat);
 }
 
@@ -25,26 +25,27 @@ void ABasePlayerState::BeginPlay()
 	BaseController = Cast<ABaseController>(GetOwner());
 	if (BaseController && BaseController->IsLocalController())
 	{
-		UPlayerSubsystem* PlayerSubsystem = BaseController->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
-		if (PlayerSubsystem)
+		UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+		if (StorageSubsystem && StorageSubsystem->StorageCache)
 		{
-			ServerSetSpawnCharacterName(PlayerSubsystem->GetSpawnCharacterName());
+			SpawnCharacterName = StorageSubsystem->StorageCache->Character;
+			ServerSetSpawnCharacterName(StorageSubsystem->StorageCache->Character);
 		}
 	}
 }
 
-void ABasePlayerState::SetTeam(ETeam TemTeam)
+void ABasePlayerState::SetTeam(ETeam TempTeam)
 {
-	Team = TemTeam;
+	Team = TempTeam;
 }
 
 void ABasePlayerState::OnRep_Team()
 {
 }
 
-void ABasePlayerState::ServerSetSpawnCharacterName_Implementation(const FString& TemSpawnCharacterName)
+void ABasePlayerState::ServerSetSpawnCharacterName_Implementation(const FString& TempSpawnCharacterName)
 {
-	SpawnCharacterName = TemSpawnCharacterName;
+	SpawnCharacterName = TempSpawnCharacterName;
 }
 
 void ABasePlayerState::AddScore(float ScoreAmount)

@@ -136,8 +136,8 @@ void UShop::OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPur
 }
 
 // 获取已购商品完成
-void UShop::OnOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership)
+void UShop::OnOwnershipComplete(bool bWasSuccessful, const TArray<FString> TempOwnership)
 {
 	if(!bWasSuccessful) return;
-	Ownership = TemOwnership;
+	Ownership = TempOwnership;
 }

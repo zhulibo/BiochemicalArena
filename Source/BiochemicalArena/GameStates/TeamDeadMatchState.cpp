@@ -50,6 +50,10 @@ TArray<AHumanState*> ATeamDeadMatchState::GetTeam(ETeam Team)
 	{
 		return Team1;
 	}
+	else if (Team == ETeam::Team2)
+	{
+		return Team2;
+	}
 	return Team2; // HACK 避免调用GetTeam时需要判断返回值是否为nullptr
 }
 

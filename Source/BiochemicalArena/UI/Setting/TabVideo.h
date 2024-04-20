@@ -18,7 +18,7 @@ protected:
 	UPROPERTY()
 	UGameUserSettings* GameUserSettings;
 
-	void SetDefaultValue();
+	void SetUIDefaultValue();
 
 	UPROPERTY(meta = (BindWidget))
 	class UAnalogSlider* BrightnessController;

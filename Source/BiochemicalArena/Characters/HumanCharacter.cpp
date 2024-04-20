@@ -71,10 +71,10 @@ void AHumanCharacter::BeginPlay()
 
 	if (OverheadWidget)
 	{
-		UUserWidget* TemUserWidget = OverheadWidget->GetUserWidgetObject();
-		if (TemUserWidget)
+		UUserWidget* TempUserWidget = OverheadWidget->GetUserWidgetObject();
+		if (TempUserWidget)
 		{
-			UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(TemUserWidget);
+			UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(TempUserWidget);
 			if (OverheadWidgetClass && OverheadWidgetClass->HumanCharacter == nullptr)
 			{
 				OverheadWidgetClass->HumanCharacter = this;
@@ -135,11 +135,9 @@ void AHumanCharacter::PollInit()
 		HumanController = Cast<AHumanController>(Controller);
 		if (HumanController)
 		{
-			OnLocalControllerReady();
-
 			HumanController->SetHasInitDefaultHUD(false);
 
-			// 获取装备的名字
+			// 获取本地背包里的装备的名字
 			FString PrimaryEquipmentName = GetEquipmentName(0, EEquipmentType::Primary);
 			FString SecondaryEquipmentName = GetEquipmentName(0, EEquipmentType::Secondary);
 			FString MeleeEquipmentName = GetEquipmentName(0, EEquipmentType::Melee);
@@ -189,21 +187,21 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation(const FString& Pr
 FString AHumanCharacter::GetEquipmentName(int32 BagIndex, EEquipmentType EquipmentType)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem == nullptr || StorageSubsystem->StorageSaveGameCache->Bags.Num() == 0) return FString();
+	if (StorageSubsystem == nullptr || StorageSubsystem->StorageCache->Bags.Num() == 0) return FString();
 	FString EquipmentName;
 	switch (EquipmentType)
 	{
 	case EEquipmentType::Primary:
-		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Primary;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Primary;
 		break;
 	case EEquipmentType::Secondary:
-		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Secondary;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Secondary;
 		break;
 	case EEquipmentType::Melee:
-		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Melee;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Melee;
 		break;
 	case EEquipmentType::Throwing:
-		EquipmentName = StorageSubsystem->StorageSaveGameCache->Bags[BagIndex].Throwing;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Throwing;
 		break;
 	}
 	return EquipmentName;
@@ -213,6 +211,11 @@ FString AHumanCharacter::GetEquipmentName(int32 BagIndex, EEquipmentType Equipme
 FString AHumanCharacter::GetEquipmentClassPath(FString EquipmentName)
 {
 	if (EquipmentName.IsEmpty()) return FString();
+	if (EquipmentName.Contains("_")) // HACK 如果装备名字包含下划线，说明是带皮肤的装备
+	{
+		FString EquipmentFolderName = EquipmentName.Left(EquipmentName.Find("_"));
+		return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/Main/%s/%s/BP_%s.BP_%s_C'"), *EquipmentFolderName, *EquipmentName, *EquipmentName, *EquipmentName);
+	}
 	return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/Main/%s/Default/BP_%s.BP_%s_C'"), *EquipmentName, *EquipmentName, *EquipmentName);
 }
 

@@ -21,7 +21,7 @@ protected:
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
 
 	TArray<FString> Ownership;
-	void OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership);
+	void OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TempOwnership);
 
 	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
 	void InitPlayerConfig(class UStorageSaveGame* StorageSaveGame);
@@ -30,13 +30,8 @@ protected:
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
-
 	UPROPERTY()
-	UDataTable* HumanCharacterDataTable;
-	TArray<struct FHumanCharacterData*> HumanCharacterDataRows;
-	UPROPERTY()
-	UDataTable* EquipmentDataTable;
-	TArray<struct FEquipmentData*> EquipmentDataRows;
+	class UAssetSubsystem* AssetSubsystem;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* StorageTypeButtonContainer;
@@ -66,7 +61,5 @@ protected:
 	void OnCharacterButtonClicked(UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Character;
-	UPROPERTY()
-	class UPlayerSubsystem* PlayerSubsystem;
 
 };

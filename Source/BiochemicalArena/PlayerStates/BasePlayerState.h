@@ -14,10 +14,10 @@ class BIOCHEMICALARENA_API ABasePlayerState : public APlayerState
 public:
 	ABasePlayerState();
 
-	void SetTeam(ETeam TemTeam);
+	void SetTeam(ETeam TempTeam);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetSpawnCharacterName(const FString& TemSpawnCharacterName);
+	void ServerSetSpawnCharacterName(const FString& TempSpawnCharacterName);
 
 	void AddScore(float ScoreAmount);
 	void AddDefeat(int32 DefeatAmount);
@@ -33,7 +33,7 @@ protected:
 
 	UPROPERTY()
 	class ABaseController* BaseController;
-	UPROPERTY(Replicated)
+	UPROPERTY()
 	FString SpawnCharacterName; // 角色名字，开局生成角色时使用
 
 	virtual void OnRep_Score() override;

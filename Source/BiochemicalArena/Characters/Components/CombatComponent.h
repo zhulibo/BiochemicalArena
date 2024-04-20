@@ -42,6 +42,8 @@ protected:
 	class AHumanController* Controller;
 	UPROPERTY()
 	class UHumanAnimInstance* HumanAnimInstance;
+	UPROPERTY()
+	class UAssetSubsystem* AssetSubsystem;
 
 	UPROPERTY()
 	ECombatState CombatState;
@@ -89,8 +91,6 @@ protected:
 	void MulticastEquipEquipment(AEquipment* Equipment);
 	void LocalEquipEquipment(AEquipment* Equipment);
 	void AttachEquipmentToBodySocket(AEquipment* Equipment);
-	UPROPERTY()
-	USoundCue* EquipSound;
 
 	// 切换
 	void SwapEquipment(EEquipmentType EquipmentType);
@@ -120,8 +120,6 @@ protected:
 	bool bCanFire = true;
 	bool bFireButtonPressed;
 	FTimerHandle FireTimer;
-	UPROPERTY()
-	USoundCue* ClickSound; // 无子弹时扣动扳机的声音
 	void FireHandle(bool bPressed);
 	void Fire();
 	bool CanFire();

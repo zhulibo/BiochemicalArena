@@ -8,7 +8,7 @@
 #include "..\..\System\StorageSaveGameType.h"
 #include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "..\..\System\StorageSaveGame.h"
-#include "BiochemicalArena/System/PlayerSubsystem.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/WrapBox.h"
@@ -17,18 +17,6 @@
 void UStorage::NativeConstruct()
 {
 	Super::NativeConstruct();
-
-	// 加载数据表
-	HumanCharacterDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Characters/Data/DT_HumanCharacter.DT_HumanCharacter'"));
-	if (HumanCharacterDataTable)
-	{
-		HumanCharacterDataTable->GetAllRows<FHumanCharacterData>("", HumanCharacterDataRows);
-	}
-	EquipmentDataTable = LoadObject<UDataTable>(nullptr, TEXT("/Script/Engine.DataTable'/Game/Equipments/Data/DT_Equipment.DT_Equipment'"));
-	if (EquipmentDataTable)
-	{
-		EquipmentDataTable->GetAllRows<FEquipmentData>("", EquipmentDataRows);
-	}
 
 	// 添加顶部库存分类Tab按钮
 	AddStorageTypeButton();
@@ -56,11 +44,11 @@ void UStorage::OnLoginComplete(bool bWasSuccessful)
 }
 
 // 获取已购商品完成
-void UStorage::OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership)
+void UStorage::OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TempOwnership)
 {
 	if(!bWasSuccessful) return;
 
-	Ownership = TemOwnership;
+	Ownership = TempOwnership;
 
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
@@ -94,7 +82,7 @@ void UStorage::OnEnumerateFilesComplete(bool bWasSuccessful)
 		}
 		else // 云不包含该存档文件
 		{
-			InitPlayerConfig(StorageSubsystem->StorageSaveGameCache); // 使用本地存档
+			InitPlayerConfig(StorageSubsystem->StorageCache); // 使用本地存档
 		}
 	}
 }
@@ -118,7 +106,7 @@ void UStorage::OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRe
 	}
 	else // 使用本地存档
 	{
-		InitPlayerConfig(StorageSubsystem->StorageSaveGameCache);
+		InitPlayerConfig(StorageSubsystem->StorageCache);
 	}
 }
 
@@ -154,32 +142,28 @@ void UStorage::InitPlayerConfig(UStorageSaveGame* StorageSaveGame)
 
 		// 设置角色
 		Character->SetText(FText::FromString(StorageSaveGame->Character));
-
-		// 保存角色到PlayerSubsystem，开局生成角色时使用
-		if (PlayerSubsystem == nullptr) PlayerSubsystem = GetOwningPlayer()->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
-		if (PlayerSubsystem)
-		{
-			PlayerSubsystem->SetSpawnCharacterName(StorageSaveGame->Character);
-		}
 	}
 }
 
 // 是否拥有装备
 bool UStorage::HasEquipment(FString EquipmentName)
 {
-	for (int32 i = 0; i < EquipmentDataRows.Num(); ++i)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->GetEquipmentDataRows().Num() == 0) return false;
+
+	for (int32 i = 0; i < AssetSubsystem->GetEquipmentDataRows().Num(); ++i)
 	{
-		FString TemEquipmentName = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
-		TemEquipmentName = TemEquipmentName.Right(TemEquipmentName.Len() - TemEquipmentName.Find("::") - 2);
+		FString TempEquipmentName = UEnum::GetValueAsString(AssetSubsystem->GetEquipmentDataRows()[i]->EquipmentName);
+		TempEquipmentName = TempEquipmentName.Right(TempEquipmentName.Len() - TempEquipmentName.Find("::") - 2);
 
 		// 名字不匹配
-		if (EquipmentName != TemEquipmentName) continue;
+		if (EquipmentName != TempEquipmentName) continue;
 
 		// 免费装备
-		if (EquipmentDataRows[i]->AudienceItemId == "-1") return true;
+		if (AssetSubsystem->GetEquipmentDataRows()[i]->AudienceItemId == "-1") return true;
 
 		// 付费装备判断是否已拥有
-		if (Ownership.Contains(EquipmentDataRows[i]->AudienceItemId)) return true;
+		if (Ownership.Contains(AssetSubsystem->GetEquipmentDataRows()[i]->AudienceItemId)) return true;
 	}
 
 	return false;
@@ -188,19 +172,22 @@ bool UStorage::HasEquipment(FString EquipmentName)
 // 是否拥有角色
 bool UStorage::HasHumanCharacter(FString HumanCharacterName)
 {
-	for (int32 i = 0; i < HumanCharacterDataRows.Num(); ++i)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->GetHumanCharacterDataRows().Num() == 0) return false;
+
+	for (int32 i = 0; i < AssetSubsystem->GetHumanCharacterDataRows().Num(); ++i)
 	{
-		FString TemHumanCharacterName = UEnum::GetValueAsString(HumanCharacterDataRows[i]->HumanCharacterName);
-		TemHumanCharacterName = TemHumanCharacterName.Right(TemHumanCharacterName.Len() - TemHumanCharacterName.Find("::") - 2);
+		FString TempHumanCharacterName = UEnum::GetValueAsString(AssetSubsystem->GetHumanCharacterDataRows()[i]->HumanCharacterName);
+		TempHumanCharacterName = TempHumanCharacterName.Right(TempHumanCharacterName.Len() - TempHumanCharacterName.Find("::") - 2);
 
 		// 名字不匹配
-		if (HumanCharacterName != TemHumanCharacterName) continue;
+		if (HumanCharacterName != TempHumanCharacterName) continue;
 
 		// 免费角色
-		if (HumanCharacterDataRows[i]->AudienceItemId == "-1") return true;
+		if (AssetSubsystem->GetHumanCharacterDataRows()[i]->AudienceItemId == "-1") return true;
 
 		// 付费角色判断是否已拥有
-		if (Ownership.Contains(HumanCharacterDataRows[i]->AudienceItemId)) return true;
+		if (Ownership.Contains(AssetSubsystem->GetHumanCharacterDataRows()[i]->AudienceItemId)) return true;
 	}
 
 	return false;
@@ -289,23 +276,26 @@ TArray<FText> UStorage::FilterEquipment(FString EquipmentType)
 {
 	TArray<FText> EquipmentNames;
 
-	for (int32 i = 0; i < EquipmentDataRows.Num(); ++i)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->GetEquipmentDataRows().Num() == 0) return EquipmentNames;
+
+	for (int32 i = 0; i < AssetSubsystem->GetEquipmentDataRows().Num(); ++i)
 	{
-		FString EnumValue = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentType);
+		FString EnumValue = UEnum::GetValueAsString(AssetSubsystem->GetEquipmentDataRows()[i]->EquipmentType);
 		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 
 		if (EquipmentType == "All" || EnumValue == EquipmentType) // 对应的装备类型
 		{
-			FString EquipmentName = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
+			FString EquipmentName = UEnum::GetValueAsString(AssetSubsystem->GetEquipmentDataRows()[i]->EquipmentName);
 			EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
 
-			if (EquipmentDataRows[i]->AudienceItemId == "-1") // 免费装备直接添加
+			if (AssetSubsystem->GetEquipmentDataRows()[i]->AudienceItemId == "-1") // 免费装备直接添加
 			{
 				EquipmentNames.Add(FText::FromString(EquipmentName));
 			}
 			else // 付费装备判断是否已拥有
 			{
-				if (Ownership.Contains(EquipmentDataRows[i]->AudienceItemId))
+				if (Ownership.Contains(AssetSubsystem->GetEquipmentDataRows()[i]->AudienceItemId))
 				{
 					EquipmentNames.Add(FText::FromString(EquipmentName));
 				}
@@ -320,19 +310,21 @@ TArray<FText> UStorage::FilterEquipment(FString EquipmentType)
 TArray<FText> UStorage::FilterHumanCharacter()
 {
 	TArray<FText> HumanCharacterNames;
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->GetHumanCharacterDataRows().Num() == 0) return HumanCharacterNames;
 
-	for (int32 i = 0; i < HumanCharacterDataRows.Num(); ++i)
+	for (int32 i = 0; i < AssetSubsystem->GetHumanCharacterDataRows().Num(); ++i)
 	{
-		FString HumanCharacterName = UEnum::GetValueAsString(HumanCharacterDataRows[i]->HumanCharacterName);
+		FString HumanCharacterName = UEnum::GetValueAsString(AssetSubsystem->GetHumanCharacterDataRows()[i]->HumanCharacterName);
 		HumanCharacterName = HumanCharacterName.Right(HumanCharacterName.Len() - HumanCharacterName.Find("::") - 2);
 
-		if (HumanCharacterDataRows[i]->AudienceItemId == "-1") // 免费角色直接添加
+		if (AssetSubsystem->GetHumanCharacterDataRows()[i]->AudienceItemId == "-1") // 免费角色直接添加
 		{
 			HumanCharacterNames.Add(FText::FromString(HumanCharacterName));
 		}
 		else // 付费角色判断是否已拥有
 		{
-			if (Ownership.Contains(HumanCharacterDataRows[i]->AudienceItemId))
+			if (Ownership.Contains(AssetSubsystem->GetHumanCharacterDataRows()[i]->AudienceItemId))
 			{
 				HumanCharacterNames.Add(FText::FromString(HumanCharacterName));
 			}
@@ -382,13 +374,16 @@ void UStorage::OnEquipmentButtonClicked(UStorageButton* EquipmentButton)
 {
 	FString EquipmentName = EquipmentButton->ButtonText->GetText().ToString();
 
-	for (int32 i = 0; i < EquipmentDataRows.Num(); ++i)
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->GetEquipmentDataRows().Num() == 0) return;
+
+	for (int32 i = 0; i < AssetSubsystem->GetEquipmentDataRows().Num(); ++i)
 	{
-		FString EnumValue = UEnum::GetValueAsString(EquipmentDataRows[i]->EquipmentName);
+		FString EnumValue = UEnum::GetValueAsString(AssetSubsystem->GetEquipmentDataRows()[i]->EquipmentName);
 		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 		if (EnumValue == EquipmentName)
 		{
-			SaveBag(EquipmentDataRows[i]->EquipmentType, EquipmentName);
+			SaveBag(AssetSubsystem->GetEquipmentDataRows()[i]->EquipmentType, EquipmentName);
 			break;
 		}
 	}
@@ -445,8 +440,8 @@ void UStorage::SaveBagToStorage()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->StorageSaveGameCache->Bags = Bags;
-		StorageSubsystem->Save();
+		StorageSubsystem->StorageCache->Bags = Bags;
+		StorageSubsystem->SaveToDisk();
 	}
 }
 
@@ -457,18 +452,11 @@ void UStorage::OnCharacterButtonClicked(UStorageButton* EquipmentButton)
 	FText CharacterName = EquipmentButton->ButtonText->GetText();
 	Character->SetText(CharacterName);
 
-	// 保存角色到PlayerSubsystem，开局生成角色时使用
-	if (PlayerSubsystem == nullptr) PlayerSubsystem = GetOwningPlayer()->GetLocalPlayer()->GetSubsystem<UPlayerSubsystem>();
-	if (PlayerSubsystem)
-	{
-		PlayerSubsystem->SetSpawnCharacterName(CharacterName.ToString());
-	}
-
 	// 保存角色到存档
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->StorageSaveGameCache->Character = CharacterName.ToString();
-		StorageSubsystem->Save();
+		StorageSubsystem->StorageCache->Character = CharacterName.ToString();
+		StorageSubsystem->SaveToDisk();
 	}
 }

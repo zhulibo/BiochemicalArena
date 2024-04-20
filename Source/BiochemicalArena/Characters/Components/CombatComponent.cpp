@@ -14,6 +14,7 @@
 #include "BiochemicalArena/Equipments/EquipmentType.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
 #include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
@@ -38,9 +39,6 @@ void UCombatComponent::BeginPlay()
 			CurrentFOV = DefaultFOV;
 		}
 	}
-
-	EquipSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
-	ClickSound = LoadObject<USoundCue>(nullptr, TEXT("/Script/Engine.SoundCue'/Game/Audio/Footsteps/Footsteps_Water_Cue.Footsteps_Water_Cue'"));
 }
 
 void UCombatComponent::TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -254,16 +252,16 @@ void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 	switch (Equipment->GetEquipmentType())
 	{
 	case EEquipmentType::Primary:
-		if (AWeapon* TemEquipment = Cast<AWeapon>(Equipment)) PrimaryEquipment = TemEquipment;
+		if (AWeapon* TempEquipment = Cast<AWeapon>(Equipment)) PrimaryEquipment = TempEquipment;
 		break;
 	case EEquipmentType::Secondary:
-		if (AWeapon* TemEquipment = Cast<AWeapon>(Equipment)) SecondaryEquipment = TemEquipment;
+		if (AWeapon* TempEquipment = Cast<AWeapon>(Equipment)) SecondaryEquipment = TempEquipment;
 		break;
 	case EEquipmentType::Melee:
-		if (AMelee* TemEquipment = Cast<AMelee>(Equipment)) MeleeEquipment = TemEquipment;
+		if (AMelee* TempEquipment = Cast<AMelee>(Equipment)) MeleeEquipment = TempEquipment;
 		break;
 	case EEquipmentType::Throwing:
-		if (AThrowing* TemEquipment = Cast<AThrowing>(Equipment)) ThrowingEquipment = TemEquipment;
+		if (AThrowing* TempEquipment = Cast<AThrowing>(Equipment)) ThrowingEquipment = TempEquipment;
 		break;
 	}
 	AttachEquipmentToBodySocket(Equipment);
@@ -292,8 +290,11 @@ void UCombatComponent::AttachEquipmentToBodySocket(AEquipment* Equipment)
 	if (BodySocket)
 	{
 		BodySocket->AttachActor(Equipment, Character->GetMesh());
-
-		if (EquipSound) UGameplayStatics::PlaySoundAtLocation(this, EquipSound, Character->GetActorLocation());
+		if (AssetSubsystem == nullptr) AssetSubsystem = Character->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+		if (AssetSubsystem && AssetSubsystem->EquipSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->EquipSound, Character->GetActorLocation());
+		}
 	}
 }
 
@@ -419,11 +420,11 @@ void UCombatComponent::UseEquipment(AEquipment* Equipment)
 	{
 		if (GetCurrentShotEquipment())
 		{
-			AWeapon* TemEquipment = Cast<AWeapon>(Equipment);
-			if (TemEquipment)
+			AWeapon* TempEquipment = Cast<AWeapon>(Equipment);
+			if (TempEquipment)
 			{
-				GetCurrentShotEquipment()->SetAmmo(TemEquipment->GetAmmo());
-				GetCurrentShotEquipment()->SetCarriedAmmo(TemEquipment->GetCarriedAmmo());
+				GetCurrentShotEquipment()->SetAmmo(TempEquipment->GetAmmo());
+				GetCurrentShotEquipment()->SetCarriedAmmo(TempEquipment->GetCarriedAmmo());
 			}
 		}
 		else
@@ -489,13 +490,14 @@ void UCombatComponent::FireHandle(bool bPressed)
 
 void UCombatComponent::Fire()
 {
+	if (Character == nullptr) return;
 	if (CanFire())
 	{
 		bCanFire = false;
 		CrosshairShootingFactor = .75f;
 		LocalFire(HitTarget);
 		ServerFire(HitTarget);
-		if (GetCurrentShotEquipment() && Character)
+		if (GetCurrentShotEquipment())
 		{
 			Character->GetWorldTimerManager().SetTimer(
 				FireTimer,
@@ -505,9 +507,13 @@ void UCombatComponent::Fire()
 			);
 		}
 	}
-	else if (GetCurrentShotEquipment() && GetCurrentShotEquipment()->GetAmmo() <= 0 && ClickSound && Character)
+	else if (GetCurrentShotEquipment() && GetCurrentShotEquipment()->GetAmmo() <= 0)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, ClickSound, Character->GetActorLocation());
+		if (AssetSubsystem == nullptr) AssetSubsystem = Character->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+		if (AssetSubsystem && AssetSubsystem->ClickSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->ClickSound, Character->GetActorLocation());
+		}
 	}
 }
 

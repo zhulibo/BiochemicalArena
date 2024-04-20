@@ -15,10 +15,7 @@ protected:
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
 
-	UPROPERTY()
-	UGameUserSettings* GameUserSettings;
-
-	void SetDefaultValue();
+	void SetUIDefaultValue();
 
 	UPROPERTY(meta = (BindWidget))
 	class UAnalogSlider* VolumeController;

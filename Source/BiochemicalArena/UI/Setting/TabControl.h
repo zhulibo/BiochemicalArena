@@ -15,7 +15,9 @@ protected:
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
 
-	void SetDefaultValue();
+	void SetUIDefaultValue();
+	float MapSensitivity(float Value);
+	float InverseMapSensitivity(float Value);
 
 	// 键鼠
 	UPROPERTY(meta = (BindWidget))

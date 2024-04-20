@@ -7,10 +7,10 @@ void UTabOther::NativeConstruct()
 
 	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 
-	SetDefaultValue();
+	SetUIDefaultValue();
 }
 
-void UTabOther::SetDefaultValue()
+void UTabOther::SetUIDefaultValue()
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)

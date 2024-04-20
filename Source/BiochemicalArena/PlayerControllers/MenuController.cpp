@@ -13,7 +13,7 @@ void AMenuController::BeginPlay()
 	UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		StorageSubsystem->InitDefaultSetting();
+		StorageSubsystem->ApplySetting();
 	}
 }
 

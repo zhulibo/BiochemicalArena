@@ -33,6 +33,6 @@ protected:
 
 	void OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
 	TArray<FString> Ownership;
-	void OnOwnershipComplete(bool bWasSuccessful, const TArray<FString> TemOwnership);
+	void OnOwnershipComplete(bool bWasSuccessful, const TArray<FString> TempOwnership);
 
 };

@@ -29,9 +29,9 @@ AProjectileBullet::AProjectileBullet()
 // 	}
 // }
 
-void AProjectileBullet::SetDamage(float TemDamage)
+void AProjectileBullet::SetDamage(float TempDamage)
 {
-	Damage = TemDamage;
+	Damage = TempDamage;
 }
 
 void AProjectileBullet::BeginPlay()

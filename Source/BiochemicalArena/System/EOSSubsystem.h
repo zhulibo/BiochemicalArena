@@ -68,6 +68,7 @@ public:
 	TSharedPtr<FAccountInfo> GetAccountInfo(FPlatformUserId ID);
 	FOnLoginStatusChanged OnLoginStatusChanged;
 	void BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
+	// TODO LoginStatus != ELoginStatus::LoggedIn 禁用一切操作
 
 	// Lobby
 	TSharedPtr<const FLobby> CurrentLobby;

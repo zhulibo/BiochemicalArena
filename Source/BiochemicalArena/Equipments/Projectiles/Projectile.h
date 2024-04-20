@@ -16,34 +16,34 @@ protected:
 	virtual void PostActorCreated() override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	class UBoxComponent* CollisionBox;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	UStaticMeshComponent* ProjectileMesh;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	class UProjectileMovementComponent* ProjectileMovementComponent;
 
 	UPROPERTY()
 	float Damage;
 
 	// 尾部效果
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	UParticleSystem* Tracer;
 	UPROPERTY()
 	UParticleSystemComponent* TracerComponent;
 	void SpawnTracer();
 
 	// 在空中留下的轨迹
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	class UNiagaraSystem* Trail; // TODO 实现效果
 	UPROPERTY()
 	class UNiagaraComponent* TrailComponent;
 	void SpawnTrail();
 
 	// 击中效果
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	UParticleSystem* ImpactParticle;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	USoundCue* ImpactSound;
 
 public:

@@ -48,8 +48,3 @@ void UPlayerSubsystem::OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthL
 		Login(); // TODO 重新登陆后，测试大厅功能
 	}
 }
-
-void UPlayerSubsystem::SetSpawnCharacterName(FString TemSpawnCharacterName)
-{
-	SpawnCharacterName = TemSpawnCharacterName;
-}

@@ -3,7 +3,7 @@
 #include "EquipmentAnimInstance.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
-#include "Cassings/Casing.h"
+#include "Shells/Shell.h"
 #include "Engine/SkeletalMeshSocket.h"
 
 void AWeapon::BeginPlay()
@@ -23,14 +23,14 @@ void AWeapon::Fire(const FVector& HitTarget)
 		GetEquipmentAnimInstance()->Montage_Play(FireMontage_E);
 	}
 
-	if (CasingClass)
+	if (ShellClass)
 	{
 		const USkeletalMeshSocket* ShellEjectSocket = EquipmentMesh->GetSocketByName(FName("ShellEject"));
 		if (ShellEjectSocket)
 		{
 			FTransform SocketTransform = ShellEjectSocket->GetSocketTransform(EquipmentMesh);
-			GetWorld()->SpawnActor<ACasing>(
-				CasingClass,
+			GetWorld()->SpawnActor<AShell>(
+				ShellClass,
 				SocketTransform.GetLocation(),
 				SocketTransform.GetRotation().Rotator()
 			);
