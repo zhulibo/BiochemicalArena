@@ -10,6 +10,8 @@ class BIOCHEMICALARENA_API AGrenade : public AThrowing
 	GENERATED_BODY()
 
 public:
+	AGrenade();
+
 	virtual void ThrowOut() override;
 
 protected:
@@ -21,9 +23,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	float Damage = 400.f;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	float DamageInnerRadius = 100.f;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Equipment")
 	float DamageOuterRadius = 400.f;
 	void ExplodeDamage();
 

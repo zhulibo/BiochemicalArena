@@ -29,8 +29,9 @@ void AShell::BeginPlay()
 
 	ShellMesh->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
 
+	ShellMesh->SetPhysicsLinearVelocity(InitVelocity); // 叠加角色移速
 	const FVector RandomShell = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(GetActorForwardVector(), 10.f);
-	ShellMesh->AddImpulse(RandomShell * ShellEjectionImpulsePerKg * ShellMesh->GetMass());
+	ShellMesh->AddImpulse(RandomShell * 200.f, NAME_None, true);
 
 	SetLifeSpan(10.f);
 }

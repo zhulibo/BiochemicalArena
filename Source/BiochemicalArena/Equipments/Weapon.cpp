@@ -3,8 +3,17 @@
 #include "EquipmentAnimInstance.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
+#include "Components/SphereComponent.h"
 #include "Shells/Shell.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Kismet/GameplayStatics.h"
+
+AWeapon::AWeapon()
+{
+	CollisionSphere->BodyInstance.bLockXRotation = true;
+	CollisionSphere->BodyInstance.bLockYRotation = true;
+	CollisionSphere->BodyInstance.bLockZRotation = true;
+}
 
 void AWeapon::BeginPlay()
 {
@@ -29,11 +38,24 @@ void AWeapon::Fire(const FVector& HitTarget)
 		if (ShellEjectSocket)
 		{
 			FTransform SocketTransform = ShellEjectSocket->GetSocketTransform(EquipmentMesh);
-			GetWorld()->SpawnActor<AShell>(
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.bDeferConstruction = true;
+
+			AShell* Shell = GetWorld()->SpawnActor<AShell>(
 				ShellClass,
 				SocketTransform.GetLocation(),
-				SocketTransform.GetRotation().Rotator()
+				SocketTransform.GetRotation().Rotator(),
+				SpawnParams
 			);
+
+			if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
+			if (HumanCharacter)
+			{
+				Shell->InitVelocity = HumanCharacter->GetVelocity();
+			}
+
+			UGameplayStatics::FinishSpawningActor(Shell, SocketTransform);
 		}
 	}
 

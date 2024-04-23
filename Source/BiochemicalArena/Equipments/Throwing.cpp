@@ -1,36 +1,32 @@
 #include "Throwing.h"
 
 #include "EquipmentType.h"
-#include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "Camera/CameraComponent.h"
+#include "Components/SphereComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 AThrowing::AThrowing()
 {
 	EquipmentCate = EEquipmentCate::Throwing;
+
+	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovement->SetUpdatedComponent(CollisionSphere);
+	ProjectileMovement->bRotationFollowsVelocity = true;
+	ProjectileMovement->SetIsReplicated(true);
+	ProjectileMovement->bShouldBounce = true;
+	ProjectileMovement->SetAutoActivate(false);
 }
 
 void AThrowing::ThrowOut()
 {
 	EquipmentState = EEquipmentState::Thrown;
 
-	EquipmentMesh->SetSimulatePhysics(true);
-	EquipmentMesh->SetEnableGravity(true);
-	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-	EquipmentMesh->DetachFromComponent(DetachRules);
-
-	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
-	if (HumanCharacter)
-	{
-		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
-		if (CameraComponent)
-		{
-			EquipmentMesh->AddImpulse(CameraComponent->GetForwardVector() * 200.f * EquipmentMesh->GetMass());
-		}
-	}
+	CollisionSphere->DetachFromComponent(DetachRules);
 }
 
 void AThrowing::ManualDestroy()
 {
+	// Empty function, just convenient to call when ignoring the type.
 }

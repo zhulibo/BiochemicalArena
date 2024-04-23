@@ -25,13 +25,13 @@ public:
 	FString Character = "SAS";
 
 	UPROPERTY()
-	float MouseSensitivity = 50.f;
+	float MouseSensitivity = 1.f;
 	UPROPERTY()
 	bool MouseAimAssistSteering = false;
 	UPROPERTY()
 	bool MouseAimAssistSlowdown = false;
 	UPROPERTY()
-	float ControllerSensitivity = 50.f;
+	float ControllerSensitivity = 1.f;
 	UPROPERTY()
 	bool ControllerAimAssistSteering = true;
 	UPROPERTY()
@@ -41,6 +41,6 @@ public:
 	float Brightness = 2.2f;
 
 	UPROPERTY()
-	float Volume = 50.f;
+	float Volume = 0.8f;
 
 };

@@ -17,18 +17,24 @@ AEquipment::AEquipment()
 	PrimaryActorTick.bCanEverTick = false;
 	bReplicates = true;
 
-	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-	SetRootComponent(EquipmentMesh);
-	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	EquipmentMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	EquipmentMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
+	SetRootComponent(CollisionSphere);
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	CollisionSphere->SetLinearDamping(1.f);
+	CollisionSphere->SetSphereRadius(20.f);
 
-	AreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
-	AreaSphere->SetupAttachment(RootComponent);
-	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	AreaSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	AreaSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
-	AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnAreaSphereOverlap);
+	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
+	EquipmentMesh->SetupAttachment(RootComponent);
+	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
+	OverlapSphere->SetupAttachment(RootComponent);
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	OverlapSphere->SetSphereRadius(50.f);
+	OverlapSphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnAreaSphereOverlap);
 
 	OwnerTeam = ETeam::NoTeam;
 }
@@ -73,14 +79,15 @@ void AEquipment::EquipEquipment()
 		GetWorld()->GetTimerManager().ClearTimer(DestroyEquipmentTimerHandle);
 	}
 
-	EquipmentMesh->SetSimulatePhysics(false);
-	EquipmentMesh->SetEnableGravity(false);
-	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionSphere->SetSimulatePhysics(false);
+	CollisionSphere->SetEnableGravity(false);
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	SetOwnerTeam();
 
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter) HumanController = Cast<AHumanController>(HumanCharacter->GetController()); // 缓存HumanController
 }
 
@@ -98,9 +105,9 @@ void AEquipment::DropEquipment()
 {
 	EquipmentState = EEquipmentState::Dropped;
 
-	EquipmentMesh->SetSimulatePhysics(true);
-	EquipmentMesh->SetEnableGravity(true);
-	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	CollisionSphere->SetSimulatePhysics(true);
+	CollisionSphere->SetEnableGravity(true);
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	/**
 	 * HACK 延迟开启AreaSphere碰撞
@@ -112,10 +119,10 @@ void AEquipment::DropEquipment()
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::SetAreaSphereCollision, .4f);
 
 	// 丢弃一定时间后销毁
-	GetWorldTimerManager().SetTimer(DestroyEquipmentTimerHandle, this, &ThisClass::DestroyEquipment, 10.f);
+	GetWorldTimerManager().SetTimer(DestroyEquipmentTimerHandle, this, &ThisClass::DestroyEquipment, 20.f);
 
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
-	EquipmentMesh->DetachFromComponent(DetachRules);
+	CollisionSphere->DetachFromComponent(DetachRules);
 	// 丢弃武器时，给予一个向前的冲量
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter)
@@ -123,13 +130,8 @@ void AEquipment::DropEquipment()
 		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
 		if (CameraComponent)
 		{
-			float ImpulsePerKg =  300.f;
-			if (HumanCharacter->IsKilled())
-			{
-				ImpulsePerKg = ImpulsePerKg / 2;
-			}
-			EquipmentMesh->AddImpulse(CameraComponent->GetForwardVector() * ImpulsePerKg * EquipmentMesh->GetMass());
-			// UE_LOG(LogTemp, Warning, TEXT("EquipmentMesh->GetMass(): %f"), EquipmentMesh->GetMass());
+			float Impulse = HumanCharacter->IsKilled() ? 100.f : 300.f;
+			CollisionSphere->AddImpulse(CameraComponent->GetForwardVector() * Impulse, NAME_None, true);
 		}
 	}
 
@@ -141,7 +143,7 @@ void AEquipment::DropEquipment()
 
 void AEquipment::SetAreaSphereCollision()
 {
-	AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
 
 void AEquipment::DestroyEquipment()

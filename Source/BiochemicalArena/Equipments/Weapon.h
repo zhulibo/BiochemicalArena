@@ -10,6 +10,8 @@ class BIOCHEMICALARENA_API AWeapon : public AEquipment
 	GENERATED_BODY()
 
 public:
+	AWeapon();
+
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	UAnimMontage* FireMontage_C;
 	UPROPERTY(EditAnywhere, Category = "Equipment")
@@ -48,8 +50,6 @@ protected:
 	bool bIsAutomatic = true;
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float ProjectileSpeed = 100000;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
 	float Damage = 60.f;
 
 	void SpendRound();
@@ -72,7 +72,6 @@ public:
 	FORCEINLINE bool IsEmpty() const { return Ammo <= 0; }
 	FORCEINLINE bool IsFull() const { return Ammo == MagCapacity; }
 
-	FORCEINLINE float GetProjectileSpeed() const { return ProjectileSpeed; }
 	FORCEINLINE float GetDamage() const { return Damage; }
 
 	FORCEINLINE float GetFireDelay() const { return FireDelay; }

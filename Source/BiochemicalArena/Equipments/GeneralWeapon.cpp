@@ -6,6 +6,7 @@
 #include "..\PlayerStates\TeamType.h"
 #include "Components/BoxComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Kismet/GameplayStatics.h"
 #include "Projectiles/ProjectileBullet.h"
 
 AGeneralWeapon::AGeneralWeapon()
@@ -27,18 +28,18 @@ void AGeneralWeapon::Fire(const FVector& HitTarget)
 		FVector ToTarget = HitTarget - SocketTransform.GetLocation();
 		FRotator TargetRotation = ToTarget.Rotation();
 
-		FActorSpawnParameters Params;
-		Params.Owner = this;
-		Params.Instigator = HumanCharacter;
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = HumanCharacter;
 
 		AProjectileBullet* Projectile = GetWorld()->SpawnActor<AProjectileBullet>(
 			ProjectileClass,
 			SocketTransform.GetLocation(),
 			TargetRotation,
-			Params
+			SpawnParams
 		);
 
-		Projectile->SetDamage(Damage);
+		Projectile->Damage = Damage;
 
 		switch (OwnerTeam)
 		{

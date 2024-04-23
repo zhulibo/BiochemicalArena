@@ -6,6 +6,7 @@
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "Components/BoxComponent.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Projectiles/ProjectileBullet.h"
 
@@ -28,9 +29,9 @@ void AShotgun::Fire(const FVector& HitTarget)
 		FVector ToTarget = HitTarget - SocketTransform.GetLocation();
 		if (ProjectileClass)
 		{
-			FActorSpawnParameters Params;
-			Params.Owner = this;
-			Params.Instigator = HumanCharacter;
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.Instigator = HumanCharacter;
 
 			for (int32 i = 0; i < PelletNum; ++i)
 			{
@@ -39,10 +40,10 @@ void AShotgun::Fire(const FVector& HitTarget)
 					ProjectileClass,
 					SocketTransform.GetLocation(),
 					ToTargetRandom.Rotation(),
-					Params
+					SpawnParams
 				);
 
-				Projectile->SetDamage(Damage);
+				Projectile->Damage = Damage;
 
 				switch (OwnerTeam)
 				{

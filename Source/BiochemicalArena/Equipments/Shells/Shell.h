@@ -12,14 +12,14 @@ class BIOCHEMICALARENA_API AShell : public AActor
 public:
 	AShell();
 
+	UPROPERTY()
+	FVector InitVelocity;
+
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	UStaticMeshComponent* ShellMesh;
-
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float ShellEjectionImpulsePerKg = 200.f;;
 
 	UPROPERTY()
 	bool bIsFirstOnHit;

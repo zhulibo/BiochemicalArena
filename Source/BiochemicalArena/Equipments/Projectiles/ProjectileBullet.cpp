@@ -8,30 +8,14 @@
 
 AProjectileBullet::AProjectileBullet()
 {
-	ProjectileMovementComponent = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovementComponent"));
-	ProjectileMovementComponent->bRotationFollowsVelocity = true;
-	ProjectileMovementComponent->SetIsReplicated(true);
-	ProjectileMovementComponent->InitialSpeed = 100000.f;
-	ProjectileMovementComponent->MaxSpeed = 100000.f;
-}
+	CollisionBox->SetBoxExtent(FVector(4.f, 2.f, 2.f));
 
-// Don't do this for now, Avoid cast
-// void AProjectileBullet::PostActorCreated()
-// {
-// 	Super::PostActorCreated();
-//
-// 	AWeapon* Weapon = Cast<AWeapon>(GetOwner());
-// 	if (Weapon)
-// 	{
-// 		ProjectileMovementComponent->InitialSpeed = Weapon->GetProjectileSpeed();
-// 		ProjectileMovementComponent->MaxSpeed = Weapon->GetProjectileSpeed();
-// 		Damage = Weapon->GetDamage();
-// 	}
-// }
-
-void AProjectileBullet::SetDamage(float TempDamage)
-{
-	Damage = TempDamage;
+	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovement->SetUpdatedComponent(CollisionBox);
+	ProjectileMovement->bRotationFollowsVelocity = true;
+	ProjectileMovement->SetIsReplicated(true);
+	ProjectileMovement->InitialSpeed = InitialSpeed;
+	ProjectileMovement->MaxSpeed = InitialSpeed;
 }
 
 void AProjectileBullet::BeginPlay()
@@ -43,7 +27,7 @@ void AProjectileBullet::BeginPlay()
 		CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
 	}
 
-	SetLifeSpan(2.f);
+	SetLifeSpan(1.f);
 }
 
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,

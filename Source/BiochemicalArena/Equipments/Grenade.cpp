@@ -3,12 +3,34 @@
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
+#include "Camera/CameraComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
+
+AGrenade::AGrenade()
+{
+	ProjectileMovement->Bounciness = 0.3f;
+	ProjectileMovement->Friction = 0.6f;
+}
 
 void AGrenade::ThrowOut()
 {
 	Super::ThrowOut();
+
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
+	if (HumanCharacter)
+	{
+		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
+		if (CameraComponent)
+		{
+			FVector ThrowVector = CameraComponent->GetForwardVector();
+			ThrowVector.Z += 0.1;
+			ProjectileMovement->Velocity = ThrowVector * 2000.f;
+		}
+	}
+
+	ProjectileMovement->Activate();
 
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::ExplodeDamage, 3.f);

@@ -12,19 +12,21 @@ class BIOCHEMICALARENA_API AProjectile : public AActor
 public:
 	AProjectile();
 
+	UPROPERTY(EditAnywhere, Category = "Equipment")
+	float InitialSpeed = 60000.f;
+	UPROPERTY()
+	float Damage = 60.f;
+
 protected:
 	virtual void PostActorCreated() override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	class UBoxComponent* CollisionBox;
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	UStaticMeshComponent* ProjectileMesh;
-	UPROPERTY()
-	class UProjectileMovementComponent* ProjectileMovementComponent;
-
-	UPROPERTY()
-	float Damage;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	class UProjectileMovementComponent* ProjectileMovement;
 
 	// 尾部效果
 	UPROPERTY(EditAnywhere, Category = "Equipment")
@@ -48,6 +50,5 @@ protected:
 
 public:
 	FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }
-	FORCEINLINE float GetDamage() const { return Damage; }
 
 };

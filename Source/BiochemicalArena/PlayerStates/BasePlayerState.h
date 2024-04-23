@@ -26,7 +26,7 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere, Category = "Player")
+	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere, BlueprintReadOnly, Category = "Player")
 	ETeam Team;
 	UFUNCTION()
 	void OnRep_Team();

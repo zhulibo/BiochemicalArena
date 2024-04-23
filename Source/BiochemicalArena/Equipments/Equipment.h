@@ -37,10 +37,12 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	class USphereComponent* CollisionSphere;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	USkeletalMeshComponent* EquipmentMesh;
-	UPROPERTY(VisibleAnywhere, Category = "Equipment")
-	class USphereComponent* AreaSphere;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	USphereComponent* OverlapSphere;
 
 	UPROPERTY()
 	UEquipmentAnimInstance* EquipmentAnimInstance;
@@ -54,7 +56,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	EEquipmentType EquipmentType;
-	UPROPERTY(VisibleAnywhere, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
 	EEquipmentCate EquipmentCate;
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	EEquipmentName EquipmentName;
