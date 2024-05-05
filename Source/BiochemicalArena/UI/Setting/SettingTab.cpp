@@ -5,14 +5,20 @@
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 
-void USettingTab::NativeConstruct()
+void USettingTab::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	// 把ActionData绑定给CommonActionWidget
 	LeftTabAction->SetInputAction(PreviousTabInputActionData);
 	RightTabAction->SetInputAction(NextTabInputActionData);
+}
+
+void USettingTab::NativeConstruct()
+{
+	Super::NativeConstruct();
 
 	LinkSwitcher();
 }
@@ -33,8 +39,8 @@ void USettingTab::LinkSwitcher()
 			if (TabButton)
 			{
 				TabButton->ButtonText->SetText(FText::FromName(TabButtonNameID));
-				TabButton->SetPadding(FMargin(10, 0, 10, 0));
-				TabButtonContainer->AddChildToHorizontalBox(TabButton);
+				UHorizontalBoxSlot* NewSlot = Cast<UHorizontalBoxSlot>(TabButtonContainer->AddChildToHorizontalBox(TabButton));
+				if (NewSlot) NewSlot->SetPadding(FMargin(10, 0, 10, 0));
 			}
 		}
 		SelectTabByID("Control");

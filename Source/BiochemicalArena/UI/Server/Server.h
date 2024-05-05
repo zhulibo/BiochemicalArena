@@ -11,24 +11,18 @@ class BIOCHEMICALARENA_API UServer : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	class AMenuController* MenuController;
 	UPROPERTY()
 	UEOSSubsystem* EOSSubsystem;
 
-	// 登录
-	UPROPERTY(meta = (BindWidget))
-	class UCommonButton* Login1Button;
-	UPROPERTY(meta = (BindWidget))
-	UCommonButton* Login2Button;
-	void OnLogin1ButtonClicked();
-	void OnLogin2ButtonClicked();
-
 	// 创建大厅
 	UPROPERTY(meta = (BindWidget))
-	UCommonButton* ServerCreateButton;
+	class UCommonButton* ServerCreateButton;
 	void OnServerCreateButtonClicked();
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class ULobby> LobbyClass;
@@ -36,15 +30,21 @@ protected:
 
 	// 搜索大厅
 	UPROPERTY(meta = (BindWidget))
-	class UEditableTextBox* ServerNameInput;
+	class UEditableTextBox* ServerNameEditableTextBox;
 	UPROPERTY()
 	FText ServerName;
 	UFUNCTION()
-	void OnServerNameInputTextChanged(const FText& Text);
+	void OnServerNameChanged(const FText& Text);
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonButton* ServerResetButton;
-	void OnServerResetButtonClicked();
+	class UCommonComboBox* ModeComboBox;
+	UFUNCTION()
+	void OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonComboBox* MapComboBox;
+	UFUNCTION()
+	void OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* ServerReFreshButton;
@@ -55,6 +55,18 @@ protected:
 	TSubclassOf<class UServerLineButton> ServerLineButtonClass;
 	void OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
 
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* ServerResetButton;
+	void OnServerResetButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* PagePrevButton;
+	void OnPagePrevButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* PageNextButton;
+	void OnPageNextButtonClicked();
+
 	// 加入大厅
 	void OnServerLineButtonClicked(class UServerLineButton* ServerLineButton);
 	void OnJoinLobbyComplete(bool bWasSuccessful);
@@ -62,5 +74,7 @@ protected:
 	// 邀请
 	void OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded);
 	void OnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested);
+
+	void OnLobbyJoined(const FLobbyJoined& LobbyJoined);
 
 };

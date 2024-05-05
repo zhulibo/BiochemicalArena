@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonActivatableWidget.h"
+#include "CommonUserWidget.h"
 #include "BagContent.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UBagContent : public UCommonActivatableWidget
+class BIOCHEMICALARENA_API UBagContent : public UCommonUserWidget
 {
 	GENERATED_BODY()
 

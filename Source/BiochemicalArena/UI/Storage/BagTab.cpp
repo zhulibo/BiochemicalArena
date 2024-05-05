@@ -1,11 +1,11 @@
 #include "BagTab.h"
 
-#include "CommonActivatableWidget.h"
+#include "BagContent.h"
 #include "CommonActivatableWidgetSwitcher.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/HorizontalBox.h"
-#include "Components/SizeBox.h"
 #include "CommonTextBlock.h"
+#include "Components/SizeBox.h"
 
 void UBagTab::NativeConstruct()
 {
@@ -29,20 +29,11 @@ void UBagTab::LinkSwitcher()
 			RegisterTab(TabButtonNameID, TabButtonClass, TabContent[i], i);
 
 			USizeBox* SizeBox = NewObject<USizeBox>(this);
-
 			UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID));
 			if (SizeBox && TabButton)
 			{
 				TabButton->ButtonText->SetText(FText::FromName(TabButtonNameID));
-				if (i != TabContent.Num() -1)
-				{
-					TabButton->SetPadding(FMargin(0, 0, 5, 0));
-					SizeBox->SetWidthOverride(55);
-				}
-				else
-				{
-					SizeBox->SetWidthOverride(50);
-				}
+				SizeBox->SetWidthOverride(50);
 				SizeBox->AddChild(TabButton);
 				TabButtonContainer->AddChild(SizeBox);
 			}

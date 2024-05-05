@@ -84,7 +84,7 @@ void AHumanCharacter::BeginPlay()
 
 	if (HasAuthority())
 	{
-		OnTakeAnyDamage.AddDynamic(this, &ThisClass::ReceiveDamage);
+		OnTakeAnyDamage.AddUniqueDynamic(this, &ThisClass::ReceiveDamage);
 	}
 }
 
@@ -278,6 +278,7 @@ void AHumanCharacter::Landed(const FHitResult& Hit)
 void AHumanCharacter::AimButtonPressed(const FInputActionValue& Value)
 {
 	if (Combat == nullptr) return;
+
 	if (Combat->GetCurrentShotEquipment())
 	{
 		Combat->SetAiming(true);
@@ -299,6 +300,7 @@ void AHumanCharacter::AimButtonReleased(const FInputActionValue& Value)
 void AHumanCharacter::FireButtonPressed(const FInputActionValue& Value)
 {
 	if (Combat == nullptr) return;
+
 	if (Combat->GetCurrentShotEquipment())
 	{
 		Combat->FireHandle(true);

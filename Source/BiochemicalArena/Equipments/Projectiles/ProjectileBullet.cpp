@@ -24,7 +24,7 @@ void AProjectileBullet::BeginPlay()
 
 	if (HasAuthority())
 	{
-		CollisionBox->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
+		CollisionBox->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 	}
 
 	SetLifeSpan(1.f);

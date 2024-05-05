@@ -1,6 +1,7 @@
 #include "RadialMenuContainer.h"
 #include "CommonTextBlock.h"
 #include "RadialMenu.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 
 void URadialMenuContainer::ShowRadialMenu()
@@ -9,9 +10,9 @@ void URadialMenuContainer::ShowRadialMenu()
 	RadialMenuRadio->SetVisibility(ESlateVisibility::Hidden);
 	RadialMenuPaint->SetVisibility(ESlateVisibility::Hidden);
 
-	TitleEquipment->SetColorAndOpacity(FLinearColor::Green);
-	TitleRadio->SetColorAndOpacity(FLinearColor::White);
-	TitlePaint->SetColorAndOpacity(FLinearColor::White);
+	TitleEquipment->SetColorAndOpacity(ColorMutate);
+	TitleRadio->SetColorAndOpacity(FColor::White);
+	TitlePaint->SetColorAndOpacity(FColor::White);
 
 	ActiveRadialMenuIndex = 1;
 
@@ -25,8 +26,8 @@ void URadialMenuContainer::ChangeRadialMenu()
 		RadialMenuEquipment->SetVisibility(ESlateVisibility::Hidden);
 		RadialMenuRadio->SetVisibility(ESlateVisibility::Visible);
 
-		TitleEquipment->SetColorAndOpacity(FLinearColor::White);
-		TitleRadio->SetColorAndOpacity(FLinearColor::Green);
+		TitleEquipment->SetColorAndOpacity(FColor::White);
+		TitleRadio->SetColorAndOpacity(ColorMutate);
 
 		ActiveRadialMenuIndex = 2;
 	}
@@ -35,8 +36,8 @@ void URadialMenuContainer::ChangeRadialMenu()
 		RadialMenuRadio->SetVisibility(ESlateVisibility::Hidden);
 		RadialMenuPaint->SetVisibility(ESlateVisibility::Visible);
 
-		TitleRadio->SetColorAndOpacity(FLinearColor::White);
-		TitlePaint->SetColorAndOpacity(FLinearColor::Green);
+		TitleRadio->SetColorAndOpacity(FColor::White);
+		TitlePaint->SetColorAndOpacity(ColorMutate);
 
 		ActiveRadialMenuIndex = 3;
 	}
@@ -45,8 +46,8 @@ void URadialMenuContainer::ChangeRadialMenu()
 		RadialMenuPaint->SetVisibility(ESlateVisibility::Hidden);
 		RadialMenuEquipment->SetVisibility(ESlateVisibility::Visible);
 
-		TitlePaint->SetColorAndOpacity(FLinearColor::White);
-		TitleEquipment->SetColorAndOpacity(FLinearColor::Green);
+		TitlePaint->SetColorAndOpacity(FColor::White);
+		TitleEquipment->SetColorAndOpacity(ColorMutate);
 
 		ActiveRadialMenuIndex = 1;
 	}
@@ -55,58 +56,59 @@ void URadialMenuContainer::ChangeRadialMenu()
 void URadialMenuContainer::SelectRadialMenu(double X, double Y)
 {
 	if (GetActiveRadialMenu() == nullptr) return;
+
 	// UE_LOG(LogTemp, Warning, TEXT("Select %f, %f"), X, Y);
 	if (X * X + Y * Y > .6)
 	{
-		GetActiveRadialMenu()->Item1->SetColorAndOpacity(FLinearColor::White);
-		GetActiveRadialMenu()->Item2->SetColorAndOpacity(FLinearColor::White);
-		GetActiveRadialMenu()->Item3->SetColorAndOpacity(FLinearColor::White);
-		GetActiveRadialMenu()->Item4->SetColorAndOpacity(FLinearColor::White);
-		GetActiveRadialMenu()->Item5->SetColorAndOpacity(FLinearColor::White);
-		GetActiveRadialMenu()->Item6->SetColorAndOpacity(FLinearColor::White);
-		GetActiveRadialMenu()->Item7->SetColorAndOpacity(FLinearColor::White);
-		GetActiveRadialMenu()->Item8->SetColorAndOpacity(FLinearColor::White);
+		GetActiveRadialMenu()->Item1->SetColorAndOpacity(FColor::White);
+		GetActiveRadialMenu()->Item2->SetColorAndOpacity(FColor::White);
+		GetActiveRadialMenu()->Item3->SetColorAndOpacity(FColor::White);
+		GetActiveRadialMenu()->Item4->SetColorAndOpacity(FColor::White);
+		GetActiveRadialMenu()->Item5->SetColorAndOpacity(FColor::White);
+		GetActiveRadialMenu()->Item6->SetColorAndOpacity(FColor::White);
+		GetActiveRadialMenu()->Item7->SetColorAndOpacity(FColor::White);
+		GetActiveRadialMenu()->Item8->SetColorAndOpacity(FColor::White);
 
 		float Angle = FMath::Atan2(Y, X) * 180 / PI;
 		// UE_LOG(LogTemp, Warning, TEXT("Angle %f"), Angle);
 		if (Angle > -112.5 && Angle <= -67.5)
 		{
-			GetActiveRadialMenu()->Item1->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item1->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 1;
 		}
 		else if (Angle > -67.5 && Angle <= -22.5)
 		{
-			GetActiveRadialMenu()->Item2->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item2->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 2;
 		}
 		else if (Angle > -22.5 && Angle <= 22.5)
 		{
-			GetActiveRadialMenu()->Item3->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item3->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 3;
 		}
 		else if (Angle > 22.5 && Angle <= 67.5)
 		{
-			GetActiveRadialMenu()->Item4->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item4->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 4;
 		}
 		else if (Angle > 67.5 && Angle <= 112.5)
 		{
-			GetActiveRadialMenu()->Item5->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item5->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 5;
 		}
 		else if (Angle > 112.5 && Angle <= 157.5)
 		{
-			GetActiveRadialMenu()->Item6->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item6->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 6;
 		}
 		else if (Angle > 157.5 || Angle <= -157.5)
 		{
-			GetActiveRadialMenu()->Item7->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item7->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 7;
 		}
 		else if (Angle > -157.5 && Angle <= -112.5)
 		{
-			GetActiveRadialMenu()->Item8->SetColorAndOpacity(FLinearColor::Green);
+			GetActiveRadialMenu()->Item8->SetColorAndOpacity(ColorMutate);
 			GetActiveRadialMenu()->SelectedItem = 8;
 		}
 	}

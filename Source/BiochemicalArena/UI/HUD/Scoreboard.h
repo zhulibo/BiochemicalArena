@@ -10,7 +10,7 @@ class BIOCHEMICALARENA_API UScoreboard : public UCommonUserWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UPROPERTY()
 	class ATeamDeadMatchState* TeamDeadMatchState;

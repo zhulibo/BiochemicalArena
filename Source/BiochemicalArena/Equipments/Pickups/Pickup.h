@@ -32,7 +32,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UStaticMeshComponent* PickupMesh;
 	UPROPERTY(EditAnywhere)
-	USoundCue* PickupSound;
+	class USoundCue* PickupSound;
 
 private:
 

@@ -1,5 +1,10 @@
 #include "EOSSubsystem.h"
+
+#include <string>
+
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "Online/OnlineAsyncOpHandle.h"
+#include "Online/CoreOnline.h"
 
 UEOSSubsystem::UEOSSubsystem()
 {
@@ -19,6 +24,7 @@ UEOSSubsystem::UEOSSubsystem()
 		}
 		if (LobbyPtr)
 		{
+			(void) LobbyPtr->OnLobbyJoined().Add(this, &ThisClass::BroadcastOnLobbyJoined);
 			(void) LobbyPtr->OnLobbyMemberJoined().Add(this, &ThisClass::BroadcastOnLobbyMemberJoined);
 			(void) LobbyPtr->OnLobbyMemberLeft().Add(this, &ThisClass::BroadcastOnLobbyMemberLeft);
 			(void) LobbyPtr->OnLobbyLeaderChanged().Add(this, &ThisClass::BroadcastOnLobbyLeaderChanged);
@@ -39,89 +45,74 @@ UEOSSubsystem::UEOSSubsystem()
 }
 
 // 登录
-void UEOSSubsystem::Login(FPlatformUserId ID, int32 Type)
+void UEOSSubsystem::Login(FPlatformUserId TempPlatformUserId, int32 Type)
 {
-	if (AuthPtr == nullptr) return;
-	PlatformUserId = ID;
+	if (AuthPtr == nullptr || !TempPlatformUserId.IsValid()) return;
 
-	TSharedPtr<FAccountInfo> AccountInfo = GetAccountInfo(PlatformUserId);
-	if (AccountInfo && AccountInfo->AccountId.IsValid() && AuthPtr->IsLoggedIn(AccountInfo->AccountId))
+	PlatformUserId = TempPlatformUserId;
+
+	// 是否已登录
+	GetAccountInfo(PlatformUserId);
+	if (AccountInfo && AuthPtr->IsLoggedIn(AccountInfo->AccountId))
 	{
+		GetUserInfo();
 		UE_LOG(LogTemp, Warning, TEXT("Already logged in"));
 		OnLoginComplete.Broadcast(true);
 		return;
 	}
 
 	FAuthLogin::Params Params;
-	Params.PlatformUserId = ID;
+	Params.PlatformUserId = PlatformUserId;
 
-	// 默认玩家账号密码登录
+	// Live - Epic Games Launcher
 	if (Type == 0)
 	{
-		Params.CredentialsType = LoginCredentialsType::Password;
-		Params.CredentialsId = FString("");
-		Params.CredentialsToken.Emplace<FString>("");
+		Params.CredentialsType = LoginCredentialsType::ExchangeCode;
+		FString Token;
+		FParse::Value(FCommandLine::Get(), TEXT("AUTH_PASSWORD"), Token);
+		Params.CredentialsToken.Emplace<FString>(Token);
 	}
-	// 本地开发者登录-账号1
+	// Dev - DevAuthTool Account 1
 	else if(Type == 1)
 	{
 		Params.CredentialsType = LoginCredentialsType::Developer;
 		Params.CredentialsId = FString("127.0.0.1:6000");
-		Params.CredentialsToken.Emplace<FString>("dust");
+		Params.CredentialsToken.Emplace<FString>("dust9923");
 	}
-	// 本地开发者登录-账号2
+	// Dev - DevAuthTool Account 2
 	else if(Type == 2)
 	{
 		Params.CredentialsType = LoginCredentialsType::Developer;
 		Params.CredentialsId = FString("127.0.0.1:6000");
-		Params.CredentialsToken.Emplace<FString>("dev");
+		Params.CredentialsToken.Emplace<FString>("dev10001");
 	}
-
+	// Dev - DevAuthTool Account 3
+	else if(Type == 3)
+	{
+		Params.CredentialsType = LoginCredentialsType::Developer;
+		Params.CredentialsId = FString("127.0.0.1:6000");
+		Params.CredentialsToken.Emplace<FString>("dev10002");
+	}
 	AuthPtr->Login(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FAuthLogin>& Result)
 	{
 		if(Result.IsOk())
 		{
-			TSharedRef<FAccountInfo> AccountInfo = Result.GetOkValue().AccountInfo;
-			OnLoginComplete.Broadcast(true);
+			this->AccountInfo = Result.GetOkValue().AccountInfo;
 			GetUserInfo();
+			OnLoginComplete.Broadcast(true);
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnLoginComplete.Broadcast(false);
 		}
 	});
 }
 
-// 获取玩家DisplayName
-void UEOSSubsystem::GetUserInfo()
-{
-	if (UserInfoPtr == nullptr) return;
-
-	FGetUserInfo::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
-	Params.AccountId = GetAccountInfo(PlatformUserId)->AccountId;
-
-	TOnlineResult<FGetUserInfo> Result = UserInfoPtr->GetUserInfo(MoveTemp(Params));
-	if (Result.IsOk())
-	{
-		UserInfo = Result.GetOkValue().UserInfo;
-	}
-	else
-	{
-		UserInfo = MakeShared<FUserInfo>();
-		FOnlineError Error = Result.GetErrorValue();
-		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Get user info failed!"));
-	}
-}
-
-// 获取玩家账号信息
+// 获取账号信息
 TSharedPtr<FAccountInfo> UEOSSubsystem::GetAccountInfo(FPlatformUserId ID)
 {
-	TSharedPtr<FAccountInfo> AccountInfo;
 	if (AuthPtr == nullptr) return AccountInfo;
 
 	FAuthGetLocalOnlineUserByPlatformUserId::Params Params = { ID };
@@ -131,6 +122,27 @@ TSharedPtr<FAccountInfo> UEOSSubsystem::GetAccountInfo(FPlatformUserId ID)
 		AccountInfo = Result.GetOkValue().AccountInfo;
 	}
 	return AccountInfo;
+}
+
+// 获取用户信息
+void UEOSSubsystem::GetUserInfo()
+{
+	if (UserInfoPtr == nullptr) return;
+
+	FGetUserInfo::Params Params;
+	Params.LocalAccountId = AccountInfo->AccountId;
+	Params.AccountId = AccountInfo->AccountId;
+
+	TOnlineResult<FGetUserInfo> Result = UserInfoPtr->GetUserInfo(MoveTemp(Params));
+	if (Result.IsOk())
+	{
+		UserInfo = Result.GetOkValue().UserInfo;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorHuman, TEXT("Get user info failed!"), false);
+	}
 }
 
 void UEOSSubsystem::BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged)
@@ -144,15 +156,19 @@ void UEOSSubsystem::CreateLobby()
 	if (LobbyPtr == nullptr) return;
 
 	FCreateLobby::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
-	Params.LocalName = FName(TEXT("Test"));
+	Params.LocalAccountId = AccountInfo->AccountId;
+	Params.LocalName = FName(UserInfo->DisplayName + FString(TEXT("'s Lobby LocalName")));
 	Params.SchemaId = FName(TEXT("GameLobby"));
-	Params.bPresenceEnabled = true;
 	Params.MaxMembers = 18;
 	Params.JoinPolicy = ELobbyJoinPolicy::PublicAdvertised;
+	Params.Attributes.Emplace(FName(TEXT("LobbyName")), FString(TEXT("TestLobbyName")));
 	Params.Attributes.Emplace(FName(TEXT("GameMode")), FString(TEXT("TeamDeadMatch")));
-	Params.Attributes.Emplace(FName(TEXT("SessionId")), FString(TEXT("None")));
 	Params.Attributes.Emplace(FName(TEXT("MapName")), FString(TEXT("Dev")));
+	Params.Attributes.Emplace(FName(TEXT("SessionId")), FString(TEXT("")));
+	Params.Attributes.Emplace(FName(TEXT("Status")), static_cast<int64>(0));
+	Params.UserAttributes.Emplace(FName(TEXT("Team")), static_cast<int64>(FMath::RandRange(1, 2)));
+	Params.UserAttributes.Emplace(FName(TEXT("PlayerName")), UserInfo->DisplayName);
+	Params.UserAttributes.Emplace(FName(TEXT("bIsReady")), false);
 
 	LobbyPtr->CreateLobby(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FCreateLobby>& Result)
@@ -164,8 +180,7 @@ void UEOSSubsystem::CreateLobby()
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnCreateLobbyComplete.Broadcast(false);
 		}
 	});
@@ -177,12 +192,23 @@ void UEOSSubsystem::FindLobby()
 	if (LobbyPtr == nullptr) return;
 
 	FFindLobbies::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.MaxResults = 50;
+	// TODO Near不可用
 	// Params.Filters.Emplace(FFindLobbySearchFilter{
-	// 	FSchemaAttributeId(TEXT("GameMode")),
-	// 	ESchemaAttributeComparisonOp::Near,
-	// 	FString(TEXT("TeamDeadMatch"))
+	// 	FSchemaAttributeId(TEXT("LobbyName")),
+	// 	ESchemaAttributeComparisonOp::Equals,
+	// 	FString(TEXT(""))
+	// });
+	Params.Filters.Emplace(FFindLobbySearchFilter{
+		FSchemaAttributeId(TEXT("GameMode")),
+		ESchemaAttributeComparisonOp::Equals,
+		FString(TEXT("TeamDeadMatch"))
+	});
+	// Params.Filters.Emplace(FFindLobbySearchFilter{
+	// 	FSchemaAttributeId(TEXT("MapName")),
+	// 	ESchemaAttributeComparisonOp::Equals,
+	// 	FString(TEXT(""))
 	// });
 
 	LobbyPtr->FindLobbies(MoveTemp(Params))
@@ -194,8 +220,7 @@ void UEOSSubsystem::FindLobby()
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnFindLobbyComplete.Broadcast(false, TArray<TSharedRef<const FLobby>>());
 		}
 	});
@@ -207,24 +232,29 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 	if (LobbyPtr == nullptr) return;
 
 	FJoinLobby::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
-	Params.LocalName = Lobby->LocalName;
+	Params.LocalAccountId = AccountInfo->AccountId;
+	Params.LocalName = FName(UserInfo->DisplayName + FString(TEXT("'s Lobby LocalName")));
 	Params.LobbyId = Lobby->LobbyId;
-	Params.bPresenceEnabled = true;
-	Params.UserAttributes.Emplace(FName(TEXT("Appearance")), UserInfo->DisplayName);
+	Params.UserAttributes.Emplace(FName(TEXT("Team")), static_cast<int64>(FMath::RandRange(1, 2)));
+	Params.UserAttributes.Emplace(FName(TEXT("PlayerName")), UserInfo->DisplayName);
+	Params.UserAttributes.Emplace(FName(TEXT("bIsReady")), false);
 
 	LobbyPtr->JoinLobby(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FJoinLobby>& Result)
 	{
 		if (Result.IsOk())
 		{
+			for (auto& Item : Result.GetOkValue().Lobby->Members)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Member->Attributes.Num(): %d"), Item.Value->Attributes.Num());
+			}
+
 			CurrentLobby = Result.GetOkValue().Lobby;
 			OnJoinLobbyComplete.Broadcast(true);
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnJoinLobbyComplete.Broadcast(false);
 		}
 	});
@@ -240,6 +270,12 @@ void UEOSSubsystem::BroadcastOnUILobbyJoinRequested(const FUILobbyJoinRequested&
 	OnUILobbyJoinRequested.Broadcast(UILobbyJoinRequested);
 }
 
+void UEOSSubsystem::BroadcastOnLobbyJoined(const FLobbyJoined& LobbyJoined)
+{
+	CurrentLobby = LobbyJoined.Lobby;
+	OnLobbyJoined.Broadcast(LobbyJoined);
+}
+
 void UEOSSubsystem::BroadcastOnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
 {
 	OnLobbyMemberJoined.Broadcast(LobbyMemberJoined);
@@ -251,35 +287,26 @@ void UEOSSubsystem::BroadcastOnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemb
 }
 
 // 房主提升另一名成员为房主
-void UEOSSubsystem::PromoteLobbyMember()
+void UEOSSubsystem::PromoteLobbyMember(FAccountId TargetAccountId)
 {
 	if (LobbyPtr == nullptr) return;
 
 	FPromoteLobbyMember::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.LobbyId = CurrentLobby->LobbyId;
-	for (auto& Member : CurrentLobby->Members)
-	{
-		if (Member.Value->AccountId != GetAccountInfo(PlatformUserId)->AccountId)
-		{
-			Params.TargetAccountId = Member.Value->AccountId;
-			break;
-		}
-	}
+	Params.TargetAccountId = TargetAccountId;
 
 	LobbyPtr->PromoteLobbyMember(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FPromoteLobbyMember>& Result)
 	{
 		if (Result.IsOk())
 		{
-			CurrentLobby = nullptr;
-			LeaveLobby();
+			OnPromoteLobbyMemberComplete.Broadcast(true);
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Promote lobby member failed!"));
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
+			OnPromoteLobbyMemberComplete.Broadcast(false);
 		}
 	});
 }
@@ -290,27 +317,27 @@ void UEOSSubsystem::BroadcastOnLobbyLeaderChanged(const FLobbyLeaderChanged& Lob
 }
 
 // 修改大厅属性
-void UEOSSubsystem::ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes)
+void UEOSSubsystem::ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes,
+	TSet<FSchemaAttributeId> RemovedAttributes)
 {
 	if (LobbyPtr == nullptr) return;
 
 	FModifyLobbyAttributes::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.LobbyId = CurrentLobby->LobbyId;
 	Params.UpdatedAttributes = MoveTemp(UpdatedAttributes);
+	Params.RemovedAttributes = MoveTemp(RemovedAttributes);
 
 	LobbyPtr->ModifyLobbyAttributes(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FModifyLobbyAttributes>& Result)
 	{
 		if (Result.IsOk())
 		{
-			CurrentLobby = nullptr;
 			OnModifyLobbyAttributesComplete.Broadcast(true);
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnModifyLobbyAttributesComplete.Broadcast(false);
 		}
 	});
@@ -322,27 +349,27 @@ void UEOSSubsystem::BroadcastOnLobbyAttributesChanged(const FLobbyAttributesChan
 }
 
 // 修改大厅成员属性
-void UEOSSubsystem::ModifyLobbyMemberAttributes()
+void UEOSSubsystem::ModifyLobbyMemberAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes,
+	TSet<FSchemaAttributeId> RemovedAttributes)
 {
 	if (LobbyPtr == nullptr) return;
 
 	FModifyLobbyMemberAttributes::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.LobbyId = CurrentLobby->LobbyId;
-	// TODO
+	Params.UpdatedAttributes = MoveTemp(UpdatedAttributes);
+	Params.RemovedAttributes = MoveTemp(RemovedAttributes);
 
 	LobbyPtr->ModifyLobbyMemberAttributes(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FModifyLobbyMemberAttributes>& Result)
 	{
 		if (Result.IsOk())
 		{
-			CurrentLobby = nullptr;
 			OnModifyLobbyMemberAttributesComplete.Broadcast(true);
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnModifyLobbyMemberAttributesComplete.Broadcast(false);
 		}
 	});
@@ -363,15 +390,8 @@ void UEOSSubsystem::LeaveLobby()
 {
 	if (LobbyPtr == nullptr) return;
 
-	// 如果是房主离开大厅，则提升另一名成员为房主
-	if(CurrentLobby->OwnerAccountId == GetAccountInfo(PlatformUserId)->AccountId && CurrentLobby->Members.Num() > 1)
-	{
-		PromoteLobbyMember();
-		return;
-	}
-
 	FLeaveLobby::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.LobbyId = CurrentLobby->LobbyId;
 
 	LobbyPtr->LeaveLobby(MoveTemp(Params))
@@ -379,13 +399,11 @@ void UEOSSubsystem::LeaveLobby()
 	{
 		if (Result.IsOk())
 		{
-			CurrentLobby = nullptr;
 			OnLeaveLobbyComplete.Broadcast(true);
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnLeaveLobbyComplete.Broadcast(false);
 		}
 	});
@@ -397,9 +415,11 @@ void UEOSSubsystem::CreateSession()
 	if (SessionPtr == nullptr) return;
 
 	FCreateSession::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
-	Params.SessionName = FName(TEXT("Main"));
-	Params.bPresenceEnabled = true;
+	Params.LocalAccountId = AccountInfo->AccountId;
+	Params.SessionName = FName(TEXT("LobbySession"));
+	Params.SessionIdOverride = FString(TEXT(""));
+	Params.SessionSettings.SchemaName = FName(TEXT("SchemaName"));
+	Params.SessionSettings.NumMaxConnections = 18;
 
 	SessionPtr->CreateSession(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FCreateSession>& Result)
@@ -407,15 +427,21 @@ void UEOSSubsystem::CreateSession()
 		if (Result.IsOk())
 		{
 			OnCreateSessionComplete.Broadcast(true);
-			FOnlineSessionId SessionId = GetPresenceSession()->GetSessionId();
-			// ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant>{
-			// 	{ FName(TEXT("SessionId")), FString(SessionId.ToString()) }
-			// });
+
+			// UE_LOG(LogTemp, Warning, TEXT("before convert FOnlineSessionId SessionId: %s"), *ToString(GetPresenceSession()->GetSessionId()));
+			// FOnlineIdRegistryRegistry& Registry = FOnlineIdRegistryRegistry::Get();
+			// TArray<uint8> SessionIdData = Registry.ToReplicationData(GetPresenceSession()->GetSessionId());
+			// const std::string cstr(reinterpret_cast<const char*>(SessionIdData.GetData()), SessionIdData.Num());
+			// FString SessionId = cstr.c_str();
+			// UE_LOG(LogTemp, Warning, TEXT("before transfer FString SessionId: %s"), *SessionId);
+
+			ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant>{
+				{ FName(TEXT("SessionId")), ToString(GetPresenceSession()->GetSessionId()) }
+			});
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnCreateSessionComplete.Broadcast(false);
 		}
 	});
@@ -428,7 +454,7 @@ TSharedPtr<const ISession> UEOSSubsystem::GetPresenceSession()
 	if (SessionPtr == nullptr) return Session;
 
 	FGetPresenceSession::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 
 	TOnlineResult<FGetPresenceSession> Result = SessionPtr->GetPresenceSession(MoveTemp(Params));
 	if (Result.IsOk())
@@ -437,23 +463,28 @@ TSharedPtr<const ISession> UEOSSubsystem::GetPresenceSession()
 	}
 	else
 	{
-		FOnlineError Error = Result.GetErrorValue();
-		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Get presence session failed!"));
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorHuman, TEXT("Get presence session failed!"), false);
 	}
 	return Session;
 }
 
 // 加入会话
-void UEOSSubsystem::JoinSession(FOnlineSessionId SessionId)
+void UEOSSubsystem::JoinSession(FString SessionId)
 {
 	if (SessionPtr == nullptr) return;
 
 	FJoinSession::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.SessionName = FName(TEXT("Main"));
-	Params.SessionId = SessionId;
-	Params.bPresenceEnabled = true;
+
+	// UE_LOG(LogTemp, Warning, TEXT("after transfer FString SessionId: %s"), *SessionId);
+	TArray<uint8> SessionIdData;
+	SessionIdData.SetNum(SessionId.Len());
+	memcpy(SessionIdData.GetData(), TCHAR_TO_ANSI(*SessionId), SessionId.Len());
+	FOnlineIdRegistryRegistry& Registry = FOnlineIdRegistryRegistry::Get();
+	Params.SessionId = Registry.ToSessionId(EOnlineServices::Epic, SessionIdData);
+	// UE_LOG(LogTemp, Warning, TEXT("after convert FOnlineSessionId SessionId: %s"), *ToString(Params.SessionId));
 
 	SessionPtr->JoinSession(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FJoinSession>& Result)
@@ -464,8 +495,7 @@ void UEOSSubsystem::JoinSession(FOnlineSessionId SessionId)
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnJoinSessionComplete.Broadcast(false);
 		}
 	});
@@ -477,9 +507,9 @@ void UEOSSubsystem::LeaveSession()
 	if (SessionPtr == nullptr) return;
 
 	FLeaveSession::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.SessionName = FName(TEXT("Main"));
-	Params.bDestroySession = CurrentLobby->OwnerAccountId == GetAccountInfo(PlatformUserId)->AccountId;
+	Params.bDestroySession = CurrentLobby->OwnerAccountId == AccountInfo->AccountId;
 
 	SessionPtr->LeaveSession(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FLeaveSession>& Result)
@@ -490,8 +520,7 @@ void UEOSSubsystem::LeaveSession()
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnLeaveSessionComplete.Broadcast(false);
 		}
 	});
@@ -503,7 +532,7 @@ void UEOSSubsystem::EnumerateFiles()
 	if (UserFilePtr == nullptr) return;
 
 	FUserFileEnumerateFiles::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 
 	UserFilePtr->EnumerateFiles(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FUserFileEnumerateFiles>& Result)
@@ -514,8 +543,7 @@ void UEOSSubsystem::EnumerateFiles()
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnEnumerateFilesComplete.Broadcast(false);
 		}
 	});
@@ -528,7 +556,7 @@ TArray<FString> UEOSSubsystem::GetEnumeratedFiles()
 	if (UserFilePtr == nullptr) return Filenames;
 
 	FUserFileGetEnumeratedFiles::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 
 	TOnlineResult<FUserFileGetEnumeratedFiles> Result = UserFilePtr->GetEnumeratedFiles(MoveTemp(Params));
 	if (Result.IsOk())
@@ -537,8 +565,7 @@ TArray<FString> UEOSSubsystem::GetEnumeratedFiles()
 	}
 	else
 	{
-		FOnlineError Error = Result.GetErrorValue();
-		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 	}
 	return Filenames;
 }
@@ -549,7 +576,7 @@ void UEOSSubsystem::ReadFile(FString Filename)
 	if (UserFilePtr == nullptr) return;
 
 	FUserFileReadFile::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.Filename = Filename;
 
 	UserFilePtr->ReadFile(MoveTemp(Params))
@@ -561,8 +588,7 @@ void UEOSSubsystem::ReadFile(FString Filename)
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnReadFileComplete.Broadcast(false, FUserFileContentsRef());
 		}
 	});
@@ -574,7 +600,7 @@ void UEOSSubsystem::WriteFile(FString Filename, FUserFileContents FileContents)
 	if (UserFilePtr == nullptr) return;
 
 	FUserFileWriteFile::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.Filename = Filename;
 	Params.FileContents = MoveTemp(FileContents);
 
@@ -587,8 +613,7 @@ void UEOSSubsystem::WriteFile(FString Filename, FUserFileContents FileContents)
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnWriteFileComplete.Broadcast(false);
 		}
 	});
@@ -600,7 +625,7 @@ void UEOSSubsystem::QueryOffers()
 	if (CommercePtr == nullptr) return;
 
 	FCommerceQueryOffers::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 
 	CommercePtr->QueryOffers(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FCommerceQueryOffers>& Result)
@@ -611,8 +636,7 @@ void UEOSSubsystem::QueryOffers()
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnQueryOffersComplete.Broadcast(false);
 		}
 	});
@@ -625,7 +649,7 @@ TArray<FOffer> UEOSSubsystem::GetOffers()
 	if (CommercePtr == nullptr) return Offers;
 
 	FCommerceGetOffers::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 
 	TOnlineResult<FCommerceGetOffers> Result = CommercePtr->GetOffers(MoveTemp(Params));
 	if (Result.IsOk())
@@ -634,8 +658,7 @@ TArray<FOffer> UEOSSubsystem::GetOffers()
 	}
 	else
 	{
-		FOnlineError Error = Result.GetErrorValue();
-		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 	}
 	return Offers;
 }
@@ -646,7 +669,7 @@ void UEOSSubsystem::Checkout(TArray<FPurchaseOffer> Offers)
 	if (CommercePtr == nullptr) return;
 
 	FCommerceCheckout::Params Params;
-	Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.Offers = Offers;
 
 	CommercePtr->Checkout(MoveTemp(Params))
@@ -658,8 +681,7 @@ void UEOSSubsystem::Checkout(TArray<FPurchaseOffer> Offers)
 		}
 		else
 		{
-			FOnlineError Error = Result.GetErrorValue();
-			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 			OnCheckoutComplete.Broadcast(false, FString(TEXT("")));
 		}
 	});
@@ -678,7 +700,7 @@ void UEOSSubsystem::QueryOwnership()
 	OnQueryOwnershipComplete.Broadcast(true, TArray<FString>());
 
 	// FCommerceQueryOwnership::Params Params;
-	// Params.LocalAccountId = GetAccountInfo(PlatformUserId)->AccountId;
+	// Params.LocalAccountId = AccountInfo->AccountId;
 	// Params.bIncludeRedeemed = true;
 	//
 	// CommercePtr->QueryOwnership(MoveTemp(Params))
@@ -690,8 +712,7 @@ void UEOSSubsystem::QueryOwnership()
 	// 	}
 	// 	else
 	// 	{
-	// 		FOnlineError Error = Result.GetErrorValue();
-	// 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Error.GetLogString());
+	// 		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
 	// 		OnQueryOwnershipComplete.Broadcast(false, TArray<FString>());
 	// 	}
 	// });

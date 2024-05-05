@@ -18,6 +18,8 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Server;
 	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* Mode;
+	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Map;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Player;

@@ -9,7 +9,7 @@ UStorageSaveGame::UStorageSaveGame()
 	Bag.Secondary = "Glock17";
 	Bag.Melee = "Kukri";
 	Bag.Throwing = "Grenade";
-	for (int i = 0; i < 4; ++i)
+	for (int32 i = 0; i < 4; ++i)
 	{
 		Bags.Add(Bag);
 	}

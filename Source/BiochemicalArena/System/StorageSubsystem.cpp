@@ -16,22 +16,25 @@ void UStorageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		EOSSubsystem->OnWriteFileComplete.AddUObject(this, &ThisClass::OnWriteFileComplete);
 	}
 
-	if (!UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex)) // 如果本地存档不存在，则创建本地存档
-	{
-		CreateStorageSaveGame();
-	}
-	else // 如果本地存档存在，则放到缓存里
+	// 如果本地存档存在，则放到缓存里
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, UserIndex))
 	{
 		if (UStorageSaveGame* StorageSaveGame = Cast<UStorageSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, UserIndex)))
 		{
 			StorageCache = StorageSaveGame;
 
+			// 应用设置
 			ApplySetting();
 		}
 		else
 		{
 			CreateStorageSaveGame();
 		}
+	}
+	// 如果本地存档不存在，则创建本地存档
+	else
+	{
+		CreateStorageSaveGame();
 	}
 }
 
@@ -44,6 +47,7 @@ void UStorageSubsystem::CreateStorageSaveGame()
 		// 保存存档至缓存
 		StorageCache = StorageSaveGame;
 
+		// 应用设置
 		ApplySetting();
 
 		// 保存存档至本地
@@ -79,7 +83,8 @@ void UStorageSubsystem::SaveToCloud()
 			Ar.ArNoDelta = true;
 			StorageCache->Serialize(Ar);
 
-			EOSSubsystem->WriteFile(SlotName, FileContents); // 将本地存档保存到云端
+			// 将本地存档保存到云端
+			EOSSubsystem->WriteFile(SlotName, FileContents);
 		}
 	}
 }

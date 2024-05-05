@@ -23,8 +23,8 @@ public:
 	EHumanCharacterName HumanCharacterName = EHumanCharacterName::SAS;
 
 	/**
-	 * Must be same as the audience item ID in dev portal
-	 * Used to determine whether you own the product
+	 * Must be same as the audience item ID in dev portal,
+	 * Used to determine whether account own the product.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString AudienceItemId = "-1";

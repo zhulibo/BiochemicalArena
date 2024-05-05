@@ -14,12 +14,14 @@ void UAssetSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// AssetThread* Runnable = new AssetThread(this);
 	// FRunnableThread* Thread = FRunnableThread::Create(Runnable, TEXT("AssetThread"));
 
-	double StartTime = FPlatformTime::Seconds();
+	// double StartTime = FPlatformTime::Seconds();
+
 	LoadSystemSoundAsset();
 	LoadDataTableAsset();
 	LoadCommonAsset();
-	double EndTime = FPlatformTime::Seconds();
-	UE_LOG(LogTemp, Warning, TEXT("LoadCommonAsset time: %f seconds"), EndTime - StartTime);
+
+	// double EndTime = FPlatformTime::Seconds();
+	// UE_LOG(LogTemp, Warning, TEXT("LoadCommonAsset time: %f seconds"), EndTime - StartTime);
 }
 
 // 加载系统音效资源

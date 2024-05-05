@@ -10,7 +10,7 @@ class BIOCHEMICALARENA_API UMenu : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UPROPERTY()
 	class AMenuController* MenuController;

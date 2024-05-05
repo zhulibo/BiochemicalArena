@@ -13,11 +13,11 @@ class BIOCHEMICALARENA_API UStorage : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	UEOSSubsystem* EOSSubsystem;
-	void OnLoginComplete(bool bWasSuccessful);
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
 
 	TArray<FString> Ownership;

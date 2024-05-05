@@ -59,10 +59,7 @@ void UCombatComponent::TickComponent(float DeltaSeconds, ELevelTick TickType, FA
 void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 {
 	FVector2D ViewportSize;
-	if (GEngine && GEngine->GameViewport)
-	{
-		GEngine->GameViewport->GetViewportSize(ViewportSize);
-	}
+	GEngine->GameViewport->GetViewportSize(ViewportSize);
 
 	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
 	FVector Position;
@@ -87,6 +84,7 @@ void UCombatComponent::TraceUnderCrosshair(FHitResult& TraceHitResult)
 void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 {
 	if (Character == nullptr || Character->Controller == nullptr) return;
+
 	if (Controller == nullptr) Controller = Cast<AHumanController>(Character->Controller);
 
 	if (Controller)
@@ -132,6 +130,7 @@ void UCombatComponent::SetHUDCrosshair(float DeltaSeconds)
 void UCombatComponent::InterpFOV(float DeltaSeconds)
 {
 	if (GetCurrentShotEquipment() == nullptr) return;
+
 	if (bIsAiming)
 	{
 		CurrentFOV = FMath::FInterpTo(CurrentFOV, GetCurrentShotEquipment()->GetAimingFOVFactor() * DefaultFOV, DeltaSeconds, GetCurrentShotEquipment()->GetAimSpeed());
@@ -247,6 +246,7 @@ void UCombatComponent::MulticastEquipEquipment_Implementation(AEquipment* Equipm
 void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 {
 	if (Equipment == nullptr || Character == nullptr) return;
+
 	Equipment->SetOwner(Character);
 	Equipment->EquipEquipment();
 	switch (Equipment->GetEquipmentType())
@@ -270,6 +270,7 @@ void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 void UCombatComponent::AttachEquipmentToBodySocket(AEquipment* Equipment)
 {
 	if (Equipment == nullptr || Character == nullptr || Character->GetMesh() == nullptr) return;
+
 	FName BodySocketName;
 	switch (Equipment->GetEquipmentType())
 	{
@@ -323,6 +324,7 @@ void UCombatComponent::MulticastSwapEquipment_Implementation(EEquipmentType Equi
 void UCombatComponent::LocalSwapEquipment(EEquipmentType EquipmentType)
 {
 	if (Character == nullptr) return;
+
 	AEquipment* NewEquipment = GetEquipmentByType(EquipmentType);
 	if (NewEquipment)
 	{
@@ -403,6 +405,7 @@ void UCombatComponent::FinishSwap()
 void UCombatComponent::UseEquipment(AEquipment* Equipment)
 {
 	if (Equipment == nullptr) return;
+
 	AttachToHand(Equipment, "_R");
 
 	LastEquipmentType = CurrentEquipmentType;
@@ -491,6 +494,7 @@ void UCombatComponent::FireHandle(bool bPressed)
 void UCombatComponent::Fire()
 {
 	if (Character == nullptr) return;
+
 	if (CanFire())
 	{
 		bCanFire = false;
@@ -551,6 +555,7 @@ void UCombatComponent::MulticastFire_Implementation(const FVector_NetQuantize& T
 void UCombatComponent::LocalFire(const FVector_NetQuantize& TraceHitTarget)
 {
 	if (Character == nullptr || GetCurrentShotEquipment() == nullptr) return;
+
 	if (CombatState == ECombatState::Reloading && GetCurrentShotEquipment()->GetEquipmentCate() == EEquipmentCate::Shotgun)
 	{
 		PlayFireMontage();
@@ -630,6 +635,7 @@ void UCombatComponent::AttachToLeftHand()
 void UCombatComponent::FinishReload()
 {
 	if (Character == nullptr || GetCurrentShotEquipment() == nullptr) return;
+
 	CombatState = ECombatState::Ready;
 
 	int32 Ammo = GetCurrentShotEquipment()->GetAmmo();
@@ -652,6 +658,7 @@ void UCombatComponent::FinishReload()
 void UCombatComponent::ShellReload()
 {
 	if (Character == nullptr || GetCurrentShotEquipment() == nullptr) return;
+
 	GetCurrentShotEquipment()->SetAmmo(GetCurrentShotEquipment()->GetAmmo() + 1);
 	GetCurrentShotEquipment()->SetCarriedAmmo(GetCurrentShotEquipment()->GetCarriedAmmo() - 1);
 	// 装入一发可立即开火

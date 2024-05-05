@@ -14,13 +14,26 @@ class BIOCHEMICALARENA_API UPlayerLineButton : public UCommonButtonBase
 
 public:
 	TSharedPtr<const FLobbyMember> Member;
+
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;
+	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* Status;
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+
+	void OnPlayerLineButtonHovered();
+	void OnPlayerLineButtonUnhovered();
 
 	UPROPERTY(meta = (BindWidget))
-	class UCommonButton* KickButton;
+	class UCommonButton* PromotePlayerButton;
+	UFUNCTION()
+	void OnPromotePlayerButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* KickPlayerButton;
+	UFUNCTION()
+	void OnKickPlayerButtonClicked();
 
 };

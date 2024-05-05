@@ -1,6 +1,7 @@
 ﻿#include "AssetThread.h"
 
 #include "AssetSubsystem.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 
 AssetThread::AssetThread(UAssetSubsystem* TempAssetSubsystem)
 {
@@ -20,7 +21,7 @@ uint32 AssetThread::Run()
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, "AssetSubsystem nullptr!");
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorMain, TEXT("AssetSubsystem nullptr!"), false);
 	}
 
 	return 0;

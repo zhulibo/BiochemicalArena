@@ -1,5 +1,6 @@
 #include "HumanAnimInstance.h"
 #include "HumanCharacter.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "BiochemicalArena/Equipments/Equipment.h"
@@ -40,7 +41,7 @@ void UHumanAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		// 红色为准心指向，黄色为枪管指向
 		FTransform MuzzleTipTransform = HumanCharacter->GetCurrentEquipment()->GetEquipmentMesh()->GetSocketTransform(FName("Muzzle"), ERelativeTransformSpace::RTS_World);
 		FVector MuzzleZ(FRotationMatrix(MuzzleTipTransform.GetRotation().Rotator()).GetUnitAxis(EAxis::Z));
-		DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), MuzzleTipTransform.GetLocation() + MuzzleZ * 2000.f, FColor::Yellow);
-		DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), HumanCharacter->GetHitTarget(), FColor::Red);
+		DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), MuzzleTipTransform.GetLocation() + MuzzleZ * 2000.f, ColorMain);
+		DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), HumanCharacter->GetHitTarget(), ColorHuman);
 	}
 }

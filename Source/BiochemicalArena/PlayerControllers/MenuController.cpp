@@ -1,5 +1,4 @@
 #include "MenuController.h"
-#include "BiochemicalArena/System/StorageSubsystem.h"
 #include "BiochemicalArena/UI/MenuContainer.h"
 #include "Blueprint/UserWidget.h"
 
@@ -8,13 +7,6 @@ void AMenuController::BeginPlay()
 	Super::BeginPlay();
 
 	AddMenuContainer();
-
-	// 初始化默认设置
-	UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
-	{
-		StorageSubsystem->ApplySetting();
-	}
 }
 
 void AMenuController::Tick(float DeltaSeconds)

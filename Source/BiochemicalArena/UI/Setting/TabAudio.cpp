@@ -4,15 +4,18 @@
 #include "..\..\System\StorageSaveGame.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 
-void UTabAudio::NativeConstruct()
+void UTabAudio::NativeOnInitialized()
 {
-	Super::NativeConstruct();
-
-	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	Super::NativeOnInitialized();
 
 	SetUIDefaultValue();
 
-	VolumeController->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnVolumeChanged);
+	VolumeAnalogSlider->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnVolumeChanged);
+}
+
+UWidget* UTabAudio::NativeGetDesiredFocusTarget() const
+{
+	return VolumeAnalogSlider;
 }
 
 void UTabAudio::SetUIDefaultValue()
@@ -20,7 +23,7 @@ void UTabAudio::SetUIDefaultValue()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		VolumeController->SetValue(StorageSubsystem->StorageCache->Volume * 100.f);
+		VolumeAnalogSlider->SetValue(StorageSubsystem->StorageCache->Volume * 100.f);
 		Volume->SetText(FText::AsNumber(StorageSubsystem->StorageCache->Volume * 100.f));
 	}
 }

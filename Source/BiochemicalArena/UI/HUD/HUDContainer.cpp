@@ -9,9 +9,9 @@
 #include "TeamDeadMatch.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 
-void UHUDContainer::NativeConstruct()
+void UHUDContainer::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
 	if (BaseController)

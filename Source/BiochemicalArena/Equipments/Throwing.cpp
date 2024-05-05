@@ -25,8 +25,3 @@ void AThrowing::ThrowOut()
 	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
 	CollisionSphere->DetachFromComponent(DetachRules);
 }
-
-void AThrowing::ManualDestroy()
-{
-	// Empty function, just convenient to call when ignoring the type.
-}

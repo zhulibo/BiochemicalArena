@@ -6,12 +6,11 @@
 #include "BiochemicalArena/UI/Setting/Setting.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 
-void UMenu::NativeConstruct()
+void UMenu::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	SettingButton->ButtonText->SetText(FText::FromString("Setting"));
-	SettingButton->SetPadding(FMargin(0, 0, 20, 0));
 	SettingButton->OnClicked().AddUObject(this, &ThisClass::OnSettingButtonClicked);
 
 	QuitButton->ButtonText->SetText(FText::FromString("Quit"));

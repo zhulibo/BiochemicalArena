@@ -11,36 +11,31 @@
 #include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
+#include "Components/ButtonSlot.h"
 #include "Components/WrapBox.h"
+#include "Components/WrapBoxSlot.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
-void UStorage::NativeConstruct()
+void UStorage::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	// 添加顶部库存分类Tab按钮
 	AddStorageTypeButton();
 
-	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (EOSSubsystem)
-	{
-		EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
-		EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnQueryOwnershipComplete);
-		EOSSubsystem->OnReadFileComplete.AddUObject(this, &ThisClass::OnReadFileComplete);
-		EOSSubsystem->OnEnumerateFilesComplete.AddUObject(this, &ThisClass::OnEnumerateFilesComplete);
-	}
-}
-
-// 登录完成
-void UStorage::OnLoginComplete(bool bWasSuccessful)
-{
-	if (!bWasSuccessful) return;
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		EOSSubsystem->QueryOwnership(); // 获取已购商品
+		EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnQueryOwnershipComplete);
+		EOSSubsystem->OnReadFileComplete.AddUObject(this, &ThisClass::OnReadFileComplete);
+		EOSSubsystem->OnEnumerateFilesComplete.AddUObject(this, &ThisClass::OnEnumerateFilesComplete);
+		// EOSSubsystem->QueryOwnership(); // TODO
 	}
+}
+
+UWidget* UStorage::NativeGetDesiredFocusTarget() const
+{
+	return StorageTypeButtonContainer->GetChildAt(0);
 }
 
 // 获取已购商品完成
@@ -57,8 +52,7 @@ void UStorage::OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FStrin
 		if (StorageTypeButtonContainer)
 		{
 			UCommonButton* AllTypeButton = Cast<UCommonButton>(StorageTypeButtonContainer->GetChildAt(0));
-			OnStorageTypeButtonClicked(AllTypeButton);
-			AllTypeButton->SetIsSelected(true);
+			if (AllTypeButton) OnStorageTypeButtonClicked(AllTypeButton);
 		}
 
 		// 缓存用户文件
@@ -116,7 +110,7 @@ void UStorage::InitPlayerConfig(UStorageSaveGame* StorageSaveGame)
 	if(StorageSaveGame)
 	{
 		// 判断是否拥有装备，没有置空
-		for (int i = 0; i < StorageSaveGame->Bags.Num(); ++i)
+		for (int32 i = 0; i < StorageSaveGame->Bags.Num(); ++i)
 		{
 			if (!HasEquipment(StorageSaveGame->Bags[i].Primary)) StorageSaveGame->Bags[i].Primary = "";
 			if (!HasEquipment(StorageSaveGame->Bags[i].Secondary)) StorageSaveGame->Bags[i].Secondary = "";
@@ -203,10 +197,10 @@ void UStorage::AddStorageTypeButton()
 		if (AllTypeButton)
 		{
 			AllTypeButton->ButtonText->SetText(FText::FromString("All"));
-			AllTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 			AllTypeButton->SetIsSelectable(true);
 			AllTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, AllTypeButton);
 			StorageTypeButtonContainer->AddChild(AllTypeButton);
+			AllTypeButton->SetIsSelected(true);
 		}
 		// 装备按钮
 		for (int32 i = 0; i < static_cast<int32>(EEquipmentType::MAX); ++i)
@@ -217,7 +211,6 @@ void UStorage::AddStorageTypeButton()
 				FString EnumValue = UEnum::GetValueAsString(static_cast<EEquipmentType>(i));
 				EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 				EquipmentTypeButton->ButtonText->SetText(FText::FromString(EnumValue));
-				EquipmentTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 				EquipmentTypeButton->SetIsSelectable(true);
 				EquipmentTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, EquipmentTypeButton);
 				StorageTypeButtonContainer->AddChild(EquipmentTypeButton);
@@ -228,7 +221,6 @@ void UStorage::AddStorageTypeButton()
 		if (CharacterTypeButton)
 		{
 			CharacterTypeButton->ButtonText->SetText(FText::FromString("Character"));
-			CharacterTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 			CharacterTypeButton->SetIsSelectable(true);
 			CharacterTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, CharacterTypeButton);
 			StorageTypeButtonContainer->AddChild(CharacterTypeButton);
@@ -345,9 +337,10 @@ void UStorage::AddEquipmentButton(TArray<FText> EquipmentNames)
 		if (EquipmentButton)
 		{
 			EquipmentButton->ButtonText->SetText(EquipmentNames[i]);
-			EquipmentButton->SetPadding(FMargin(0, 0, 20, 20));
 			EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentButtonClicked, EquipmentButton);
 			StorageButtonContainer->AddChild(EquipmentButton);
+			UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(StorageButtonContainer->AddChild(EquipmentButton));
+			if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 20));
 		}
 	}
 }
@@ -356,15 +349,16 @@ void UStorage::AddEquipmentButton(TArray<FText> EquipmentNames)
 void UStorage::AddCharacterButton(TArray<FText> CharacterNames)
 {
 	if (CharacterButtonClass == nullptr) return;
+
 	for (int32 i = 0; i < CharacterNames.Num(); ++i)
 	{
 		UStorageButton* CharacterButton = CreateWidget<UStorageButton>(this, CharacterButtonClass);
 		if (CharacterButton)
 		{
 			CharacterButton->ButtonText->SetText(CharacterNames[i]);
-			CharacterButton->SetPadding(FMargin(0, 0, 20, 20));
 			CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnCharacterButtonClicked, CharacterButton);
-			StorageButtonContainer->AddChild(CharacterButton);
+			UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(StorageButtonContainer->AddChild(CharacterButton));
+			if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 20));
 		}
 	}
 }

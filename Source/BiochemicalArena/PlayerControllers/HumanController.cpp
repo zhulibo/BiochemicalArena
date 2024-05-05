@@ -74,6 +74,7 @@ void AHumanController::SetHUDCarriedAmmo(int32 Ammo)
 void AHumanController::SetHUDTeamScore(float Score, ETeam Team)
 {
 	if (HUDContainer == nullptr) return;
+
 	switch (Team)
 	{
 	case ETeam::Team1:

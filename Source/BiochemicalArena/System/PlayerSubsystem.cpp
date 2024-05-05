@@ -1,5 +1,7 @@
 #include "PlayerSubsystem.h"
 
+#include "BiochemicalArena/BiochemicalArena.h"
+
 UPlayerSubsystem::UPlayerSubsystem()
 {
 	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
@@ -9,21 +11,20 @@ UPlayerSubsystem::UPlayerSubsystem()
 		{
 			EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
 			EOSSubsystem->OnLoginStatusChanged.AddUObject(this, &ThisClass::OnLoginStatusChanged);
-
-			// Login(0); // TODO
 		}
 	}
 }
 
 void UPlayerSubsystem::Login(int32 Type)
 {
-	if (EOSSubsystem == nullptr) return;
-	ULocalPlayer* LocalPlayer = GetLocalPlayer();
-	if (LocalPlayer)
+	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Silver, TEXT("Logging in..."));
-
-		EOSSubsystem->Login(LocalPlayer->GetPlatformUserId(), Type);
+		if (EOSSubsystem == nullptr) EOSSubsystem = LocalPlayer->GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+		if (EOSSubsystem)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorWhite, TEXT("Logging..."), false);
+			EOSSubsystem->Login(LocalPlayer->GetPlatformUserId(), Type);
+		}
 	}
 }
 
@@ -31,20 +32,20 @@ void UPlayerSubsystem::OnLoginComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Green, TEXT("Login success!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorMutate, TEXT("Login success!"), false);
+		GetWorld()->ServerTravel("/Game/Maps/Menu?listen");
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Login failed!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorHuman, TEXT("Login failed!"), false);
 	}
 }
 
 void UPlayerSubsystem::OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged)
 {
-	if (AuthLoginStatusChanged.LoginStatus != ELoginStatus::LoggedIn)
+	if (AuthLoginStatusChanged.LoginStatus != ELoginStatus::LoggedIn || AuthLoginStatusChanged.LoginStatus != ELoginStatus::LoggedInReducedFunctionality)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Login status changed!"));
-
-		Login(); // TODO 重新登陆后，测试大厅功能
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorMain, TEXT("Login status changed!"), false);
+		GetWorld()->ServerTravel("/Game/Maps/Login?listen");
 	}
 }

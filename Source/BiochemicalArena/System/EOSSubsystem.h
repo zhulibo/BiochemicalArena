@@ -25,8 +25,11 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinLobbyComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyInvitationAdded, const FLobbyInvitationAdded& LobbyInvitationAdded);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnUILobbyJoinRequested, const FUILobbyJoinRequested& UILobbyJoinRequested);
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyJoined, const FLobbyJoined& LobbyJoined);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyMemberJoined, const FLobbyMemberJoined& LobbyMemberJoined);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyMemberLeft, const FLobbyMemberLeft& LobbyMemberLeft);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnPromoteLobbyMemberComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyLeaderChanged, const FLobbyLeaderChanged& LobbyLeaderChanged);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnModifyLobbyAttributesComplete, bool bWasSuccessful);
@@ -61,11 +64,12 @@ public:
 	UEOSSubsystem();
 
 	// Login
-	void Login(FPlatformUserId ID, int32 Type = 0);
+	void Login(FPlatformUserId ID, int32 Type);
 	FOnLoginComplete OnLoginComplete;
+	TSharedPtr<FAccountInfo> AccountInfo;
+	TSharedPtr<FAccountInfo> GetAccountInfo(FPlatformUserId ID);
 	TSharedPtr<FUserInfo> UserInfo;
 	void GetUserInfo();
-	TSharedPtr<FAccountInfo> GetAccountInfo(FPlatformUserId ID);
 	FOnLoginStatusChanged OnLoginStatusChanged;
 	void BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
 	// TODO LoginStatus != ELoginStatus::LoggedIn 禁用一切操作
@@ -85,19 +89,25 @@ public:
 	FOnUILobbyJoinRequested OnUILobbyJoinRequested;
 	void BroadcastOnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested);
 
+	FOnLobbyJoined OnLobbyJoined;
+	void BroadcastOnLobbyJoined(const FLobbyJoined& LobbyJoined);
 	FOnLobbyMemberJoined OnLobbyMemberJoined;
 	void BroadcastOnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined);
 	FOnLobbyMemberLeft OnLobbyMemberLeft;
 	void BroadcastOnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft);
-	void PromoteLobbyMember();
+
+	void PromoteLobbyMember(FAccountId TargetAccountId);
+	FOnPromoteLobbyMemberComplete OnPromoteLobbyMemberComplete;
 	FOnLobbyLeaderChanged OnLobbyLeaderChanged;
 	void BroadcastOnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged);
 
-	void ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes);
+	void ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes = TMap<FSchemaAttributeId, FSchemaVariant>(),
+		TSet<FSchemaAttributeId> RemovedAttributes = TSet<FSchemaAttributeId>());
 	FOnModifyLobbyAttributesComplete OnModifyLobbyAttributesComplete;
 	FOnLobbyAttributesChanged OnLobbyAttributesChanged;
 	void BroadcastOnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged);
-	void ModifyLobbyMemberAttributes();
+	void ModifyLobbyMemberAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes = TMap<FSchemaAttributeId, FSchemaVariant>(),
+		TSet<FSchemaAttributeId> RemovedAttributes = TSet<FSchemaAttributeId>());
 	FOnModifyLobbyMemberAttributesComplete OnModifyLobbyMemberAttributesComplete;
 	FOnLobbyMemberAttributesChanged OnLobbyMemberAttributesChanged;
 	void BroadcastOnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged);
@@ -111,7 +121,7 @@ public:
 	void CreateSession();
 	FOnCreateSessionComplete OnCreateSessionComplete;
 	TSharedPtr<const ISession> GetPresenceSession();
-	void JoinSession(FOnlineSessionId SessionId);
+	void JoinSession(FString SessionId);
 	FOnJoinSessionComplete OnJoinSessionComplete;
 	void LeaveSession();
 	FOnLeaveSessionComplete OnLeaveSessionComplete;

@@ -27,7 +27,7 @@ void AShell::BeginPlay()
 {
 	Super::BeginPlay();
 
-	ShellMesh->OnComponentHit.AddDynamic(this, &ThisClass::OnHit);
+	ShellMesh->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 
 	ShellMesh->SetPhysicsLinearVelocity(InitVelocity); // 叠加角色移速
 	const FVector RandomShell = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(GetActorForwardVector(), 10.f);

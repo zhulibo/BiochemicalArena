@@ -10,7 +10,8 @@ class BIOCHEMICALARENA_API UTabAudio : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
@@ -18,7 +19,7 @@ protected:
 	void SetUIDefaultValue();
 
 	UPROPERTY(meta = (BindWidget))
-	class UAnalogSlider* VolumeController;
+	class UAnalogSlider* VolumeAnalogSlider;
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Volume;
 	UFUNCTION()

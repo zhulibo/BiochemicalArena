@@ -21,6 +21,6 @@ public:
 	UAnimMontage* ThrowMontage_E;
 	virtual void ThrowOut();
 
-	virtual void ManualDestroy();
+	virtual void ManualDestroy() {};
 
 };

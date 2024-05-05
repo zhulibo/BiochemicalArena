@@ -5,17 +5,18 @@
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Components/ComboBoxString.h"
 
-void UTabVideo::NativeConstruct()
+void UTabVideo::NativeOnInitialized()
 {
-	Super::NativeConstruct();
-
-	StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-
-	GameUserSettings = GEngine->GetGameUserSettings();
+	Super::NativeOnInitialized();
 
 	SetUIDefaultValue();
 
-	BrightnessController->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnBrightnessChanged);
+	BrightnessAnalogSlider->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnBrightnessChanged);
+}
+
+UWidget* UTabVideo::NativeGetDesiredFocusTarget() const
+{
+	return BrightnessAnalogSlider;
 }
 
 void UTabVideo::SetUIDefaultValue()
@@ -23,7 +24,7 @@ void UTabVideo::SetUIDefaultValue()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem)
 	{
-		BrightnessController->SetValue(StorageSubsystem->StorageCache->Brightness);
+		BrightnessAnalogSlider->SetValue(StorageSubsystem->StorageCache->Brightness);
 		Brightness->SetText(FText::AsNumber(StorageSubsystem->StorageCache->Brightness));
 	}
 }

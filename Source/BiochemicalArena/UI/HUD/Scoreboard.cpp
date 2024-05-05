@@ -6,11 +6,11 @@
 #include "BiochemicalArena/PlayerStates/HumanState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 
-void UScoreboard::NativeConstruct()
+void UScoreboard::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
-	if (!OnVisibilityChanged.IsBound()) OnVisibilityChanged.AddDynamic(this, &ThisClass::RefreshScoreBoard);
+	OnVisibilityChanged.AddUniqueDynamic(this, &ThisClass::RefreshScoreBoard);
 }
 
 void UScoreboard::RefreshScoreBoard(ESlateVisibility NewVisibility)

@@ -1,5 +1,6 @@
 #include "OverheadWidget.h"
 #include "CommonTextBlock.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerStates/HumanState.h"
 #include "Camera/CameraComponent.h"
@@ -28,9 +29,13 @@ void UOverheadWidget::SetPlayerName()
 		{
 			PlayerName->SetText(FText::FromString(HumanState->GetPlayerName()));
 
-			if (LocalHumanState->GetTeam() != HumanState->GetTeam())
+			if (LocalHumanState->GetTeam() == HumanState->GetTeam())
 			{
-				PlayerName->SetColorAndOpacity(FLinearColor::Red);
+				PlayerName->SetColorAndOpacity(ColorWhite);
+			}
+			else
+			{
+				PlayerName->SetColorAndOpacity(ColorHuman);
 			}
 		}
 	}

@@ -19,7 +19,7 @@ public:
 	TArray<struct FEquipmentData*> GetEquipmentDataRows();
 
 	UPROPERTY()
-	USoundCue* ShellSound;
+	class USoundCue* ShellSound;
 
 	UPROPERTY()
 	USoundCue* EquipSound;

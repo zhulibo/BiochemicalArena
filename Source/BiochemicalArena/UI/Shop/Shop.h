@@ -11,7 +11,8 @@ class BIOCHEMICALARENA_API UShop : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY(meta = (BindWidget))
 	class UWrapBox* GoodsButtonContainer;
@@ -28,7 +29,6 @@ protected:
 
 	UPROPERTY()
 	UEOSSubsystem* EOSSubsystem;
-	void OnLoginComplete(bool bWasSuccessful);
 	void OnQueryOffersComplete(bool bWasSuccessful);
 
 	void OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);

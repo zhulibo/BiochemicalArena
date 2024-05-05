@@ -10,7 +10,7 @@ class BIOCHEMICALARENA_API UHUDContainer : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHUD* CommonHUD;

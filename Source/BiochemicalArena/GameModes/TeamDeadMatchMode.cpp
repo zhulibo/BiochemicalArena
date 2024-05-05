@@ -83,6 +83,7 @@ void ATeamDeadMatchMode::Respawn(ACharacter* KilledCharacter, AController* Kille
 // 分配队伍
 void ATeamDeadMatchMode::AssignPlayerTeam(AHumanController* HumanController)
 {
+	if (TeamDeadMatchState == nullptr) TeamDeadMatchState = GetGameState<ATeamDeadMatchState>();
 	if (TeamDeadMatchState == nullptr || HumanController == nullptr) return;
 
 	AHumanState* HumanState = HumanController->GetPlayerState<AHumanState>();
@@ -144,6 +145,8 @@ AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerC
 void ATeamDeadMatchMode::KillPlayer(AHumanCharacter* KilledCharacter, AHumanController* KilledController,
 	AHumanController* AttackerController, AActor* DamageCauser)
 {
+	if (TeamDeadMatchState == nullptr) TeamDeadMatchState = GetGameState<ATeamDeadMatchState>();
+
 	AHumanState* AttackerState = AttackerController ? Cast<AHumanState>(AttackerController->PlayerState) : nullptr;
 	AHumanState* KilledState = KilledController ? Cast<AHumanState>(KilledController->PlayerState) : nullptr;
 

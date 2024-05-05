@@ -1,6 +1,7 @@
 #include "CommonHUD.h"
 #include "CommonTextBlock.h"
 #include "KillLogLine.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "Components/VerticalBox.h"
 
@@ -21,11 +22,11 @@ void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& Equi
 				{
 					if (LocalPlayerState->GetTeam() == AttackerState->GetTeam())
 					{
-						KillLogLine->AttackerPlayer->SetColorAndOpacity(FLinearColor::Green);
+						KillLogLine->AttackerPlayer->SetColorAndOpacity(ColorMutate);
 					}
 					else
 					{
-						KillLogLine->AttackerPlayer->SetColorAndOpacity(FLinearColor::Red);
+						KillLogLine->AttackerPlayer->SetColorAndOpacity(ColorHuman);
 					}
 				}
 			}
@@ -37,11 +38,11 @@ void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& Equi
 				{
 					if (LocalPlayerState->GetTeam() == KilledState->GetTeam())
 					{
-						KillLogLine->KilledPlayer->SetColorAndOpacity(FLinearColor::Green);
+						KillLogLine->KilledPlayer->SetColorAndOpacity(ColorMutate);
 					}
 					else
 					{
-						KillLogLine->KilledPlayer->SetColorAndOpacity(FLinearColor::Red);
+						KillLogLine->KilledPlayer->SetColorAndOpacity(ColorHuman);
 					}
 				}
 			}

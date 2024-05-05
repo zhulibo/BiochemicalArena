@@ -13,7 +13,7 @@ class BIOCHEMICALARENA_API UPlayerSubsystem : public ULocalPlayerSubsystem
 public:
 	UPlayerSubsystem();
 
-	void Login(int32 Type = 0);
+	void Login(int32 Type);
 
 protected:
 	UPROPERTY()

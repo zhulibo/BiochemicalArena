@@ -14,7 +14,7 @@ AMelee::AMelee()
 
 	EquipmentMesh->SetGenerateOverlapEvents(true);
 	EquipmentMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	EquipmentMesh->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnMeshOverlap);
+	EquipmentMesh->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnMeshOverlap);
 }
 
 void AMelee::BeginPlay()

@@ -19,7 +19,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UCommonButton> TabButtonClass;
 	UPROPERTY(EditInstanceOnly, Category = "UI")
-	TArray<class UCommonActivatableWidget*> TabContent;
+	TArray<class UBagContent*> TabContent;
 	void LinkSwitcher();
 
 };

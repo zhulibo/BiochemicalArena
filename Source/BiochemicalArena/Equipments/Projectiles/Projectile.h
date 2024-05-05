@@ -46,7 +46,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Equipment")
 	UParticleSystem* ImpactParticle;
 	UPROPERTY(EditAnywhere, Category = "Equipment")
-	USoundCue* ImpactSound;
+	class USoundCue* ImpactSound;
 
 public:
 	FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }

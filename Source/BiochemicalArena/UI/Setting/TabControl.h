@@ -10,7 +10,8 @@ class BIOCHEMICALARENA_API UTabControl : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
@@ -21,37 +22,37 @@ protected:
 
 	// 键鼠
 	UPROPERTY(meta = (BindWidget))
-	class UAnalogSlider* MouseSensitivityController;
+	class UAnalogSlider* MouseSensitivityAnalogSlider;
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* MouseSensitivity;
 	UFUNCTION()
 	void OnMouseSensitivityChanged(float Value);
 
 	UPROPERTY(meta = (BindWidget))
-	class UComboBoxString* MouseAimAssistSteeringController;
+	class UComboBoxString* MouseAimAssistSteeringComboBox;
 	UFUNCTION()
 	void OnMouseAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	UPROPERTY(meta = (BindWidget))
-	UComboBoxString* MouseAimAssistSlowdownController;
+	UComboBoxString* MouseAimAssistSlowdownComboBox;
 	UFUNCTION()
 	void OnMouseAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	// 手柄
 	UPROPERTY(meta = (BindWidget))
-	UAnalogSlider* ControllerSensitivityController;
+	UAnalogSlider* ControllerSensitivityAnalogSlider;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* ControllerSensitivity;
 	UFUNCTION()
 	void OnControllerSensitivityChanged(float Value);
 
 	UPROPERTY(meta = (BindWidget))
-	UComboBoxString* ControllerAimAssistSteeringController;
+	UComboBoxString* ControllerAimAssistSteeringComboBox;
 	UFUNCTION()
 	void OnControllerAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	UPROPERTY(meta = (BindWidget))
-	UComboBoxString* ControllerAimAssistSlowdownController;
+	UComboBoxString* ControllerAimAssistSlowdownComboBox;
 	UFUNCTION()
 	void OnControllerAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 

@@ -1,21 +1,22 @@
 #include "Setting.h"
 #include "CommonTextBlock.h"
+#include "SettingTab.h"
+#include "TabControl.h"
 #include "BiochemicalArena/GameModes/MenuMode.h"
 #include "BiochemicalArena/PlayerControllers/MenuController.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
-#include "BiochemicalArena/UI/Menu.h"
 #include "BiochemicalArena/UI/MenuContainer.h"
 #include "BiochemicalArena/UI/HUD/HUDContainer.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 
-void USetting::NativeConstruct()
+void USetting::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	BackButton->ButtonText->SetText(FText::FromString("Back"));
-	if (!BackButton->OnClicked().IsBoundToObject(this)) BackButton->OnClicked().AddUObject(this, &ThisClass::OnBackButtonClicked);
+	BackButton->OnClicked().AddUObject(this, &ThisClass::OnBackButtonClicked);
 }
 
 void USetting::OnBackButtonClicked()

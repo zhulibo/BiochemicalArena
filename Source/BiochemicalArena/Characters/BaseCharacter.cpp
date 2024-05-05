@@ -34,7 +34,7 @@ void ABaseCharacter::BeginPlay()
 	UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController());
 	if (CommonInputSubsystem)
 	{
-		CommonInputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::OnInputMethodChanged);
+		if (!CommonInputSubsystem->OnInputMethodChangedNative.IsBoundToObject(this)) CommonInputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::OnInputMethodChanged);
 	}
 }
 
@@ -339,6 +339,7 @@ void ABaseCharacter::PlayOuchSound(float DamageRate)
 {
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 	if (AssetSubsystem == nullptr) return;
+
 	if (DamageRate == 0.05f && AssetSubsystem->OuchSound1)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->OuchSound1, GetActorLocation());

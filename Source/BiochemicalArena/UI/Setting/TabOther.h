@@ -10,7 +10,8 @@ class BIOCHEMICALARENA_API UTabOther : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;

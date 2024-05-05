@@ -10,7 +10,7 @@ class BIOCHEMICALARENA_API USetting : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UPROPERTY()
 	class ABaseController* BaseController;
@@ -21,5 +21,10 @@ protected:
 	class UCommonButton* BackButton;
 	UFUNCTION()
 	void OnBackButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	class USettingTab* SettingTab;
+	UPROPERTY(meta = (BindWidget))
+	class UTabControl* TabControl;
 
 };

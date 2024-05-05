@@ -1,6 +1,11 @@
 #include "Dev.h"
 
-void UDev::NativeConstruct()
+void UDev::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
+}
+
+UWidget* UDev::NativeGetDesiredFocusTarget() const
+{
+	return Super::NativeGetDesiredFocusTarget();
 }

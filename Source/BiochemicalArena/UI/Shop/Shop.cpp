@@ -1,35 +1,29 @@
 #include "Shop.h"
 #include "CommonTextBlock.h"
 #include "GoodsButton.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/CharacterType.h"
 #include "Components/WrapBox.h"
 #include "BiochemicalArena/Equipments/EquipmentType.h"
+#include "Components/WrapBoxSlot.h"
 
-void UShop::NativeConstruct()
+void UShop::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
-	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
 		EOSSubsystem->OnQueryOffersComplete.AddUObject(this, &ThisClass::OnQueryOffersComplete);
 		EOSSubsystem->OnPurchaseCompleted.AddUObject(this, &ThisClass::OnPurchaseCompleted);
 		EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnOwnershipComplete);
+		// EOSSubsystem->QueryOffers(); // TODO
 	}
 }
 
-// 登录完成
-void UShop::OnLoginComplete(bool bWasSuccessful)
+UWidget* UShop::NativeGetDesiredFocusTarget() const
 {
-	if (bWasSuccessful)
-	{
-		if(EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-		if (EOSSubsystem)
-		{
-			EOSSubsystem->QueryOffers();
-		}
-	}
+	return GoodsButtonContainer->GetChildAt(0);
 }
 
 // 缓存商品列表
@@ -37,12 +31,12 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		if(EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+		if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 		if (EOSSubsystem)
 		{
 			TArray<FOffer> Offers = EOSSubsystem->GetOffers(); // 获取商品列表
 
-			for (int i = 0; i < Offers.Num(); ++i)
+			for (int32 i = 0; i < Offers.Num(); ++i)
 			{
 				for (int32 j = 0; j < static_cast<int32>(EEquipmentName::MAX); ++j)
 				{
@@ -81,9 +75,9 @@ void UShop::AddEquipmentButton(FOffer Offer)
 		EquipmentButton->Offer = Offer;
 		EquipmentButton->GoodsName->SetText(Offer.Title);
 		EquipmentButton->Price->SetText(FText::Format(FText::FromString("{0} / 1 year"), Offer.FormattedPrice));
-		EquipmentButton->SetPadding(FMargin(0, 0, 20, 20));
 		EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnGoodsButtonClicked, EquipmentButton);
-		GoodsButtonContainer->AddChild(EquipmentButton);
+		UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(GoodsButtonContainer->AddChild(EquipmentButton));
+		if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 20));
 	}
 }
 
@@ -96,9 +90,9 @@ void UShop::AddCharacterButton(FOffer Offer)
 		CharacterButton->Offer = Offer;
 		CharacterButton->GoodsName->SetText(Offer.Title);
 		CharacterButton->Price->SetText(FText::Format(FText::FromString("{0} / 1 year"), Offer.FormattedPrice));
-		CharacterButton->SetPadding(FMargin(0, 0, 20, 20));
 		CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnGoodsButtonClicked, CharacterButton);
-		GoodsButtonContainer->AddChild(CharacterButton);
+		UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(GoodsButtonContainer->AddChild(CharacterButton));
+		if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 20));
 	}
 }
 
@@ -111,12 +105,12 @@ void UShop::OnGoodsButtonClicked(UGoodsButton* GoodsButton)
 	// 商品已拥有直接退出
 	if (Ownership.Contains(GoodsButton->Offer.OfferId))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Yellow, TEXT("Already own this goods!"));
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorMain, TEXT("Already own this goods!"), false);
 		return;
 	}
 
 	// 结账
-	if(EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
 		TArray<FPurchaseOffer> Offers;
@@ -128,7 +122,7 @@ void UShop::OnGoodsButtonClicked(UGoodsButton* GoodsButton)
 // 购买完成
 void UShop::OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete)
 {
-	if(EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
 		EOSSubsystem->QueryOwnership(); // 获取已购商品

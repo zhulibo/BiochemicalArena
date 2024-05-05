@@ -10,18 +10,19 @@ class BIOCHEMICALARENA_API UTabVideo : public UCommonActivatableWidget
 	GENERATED_BODY()
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
 
-	UPROPERTY()
-	UGameUserSettings* GameUserSettings;
+	// UPROPERTY()
+	// UGameUserSettings* GameUserSettings;
 
 	void SetUIDefaultValue();
 
 	UPROPERTY(meta = (BindWidget))
-	class UAnalogSlider* BrightnessController;
+	class UAnalogSlider* BrightnessAnalogSlider;
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Brightness;
 	UFUNCTION()
