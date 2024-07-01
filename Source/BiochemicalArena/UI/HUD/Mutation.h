@@ -19,6 +19,8 @@ public:
 	UCommonTextBlock* MutantNumber;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* Round;
+	UCommonTextBlock* CurrentRound;
+	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* TotalRound;
 
 };

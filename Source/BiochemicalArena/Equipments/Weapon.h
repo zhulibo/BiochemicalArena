@@ -12,18 +12,53 @@ class BIOCHEMICALARENA_API AWeapon : public AEquipment
 public:
 	AWeapon();
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* FireMontage_C;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* FireMontage_E;
-	virtual void Fire(const FVector& HitTarget);
+	virtual void Fire(const FVector& HitTarget, float RecoilVert, float RecoilHor);
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* ReloadMontage_C;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* ReloadMontage_E;
 	virtual void SetAmmo(int32 AmmoNum);
 	virtual void SetCarriedAmmo(int32 AmmoNum);
+
+	// 后坐力范围
+	UPROPERTY(EditAnywhere)
+	float RecoilMaxVert;
+	UPROPERTY(EditAnywhere)
+	float RecoilMinVert;
+	UPROPERTY(EditAnywhere)
+	float RecoilMaxHor;
+	UPROPERTY(EditAnywhere)
+	float RecoilMinHor;
+
+	// 首发后坐力倍率
+	UPROPERTY(EditAnywhere)
+	float FirstShotRecoilMul;
+
+	// 应用后坐力需要的时间
+	UPROPERTY(EditAnywhere)
+	float RecoilIncTime;
+
+	// 总后坐力上限
+	UPROPERTY(EditAnywhere)
+	float RecoilTotalVertLimit;
+	UPROPERTY(EditAnywhere)
+	float RecoilTotalHorLimit;
+
+	// 后坐力回复速度
+	UPROPERTY(EditAnywhere)
+	float RecoilDecSpeed;
+
+	// 子弹散布，固定值，不受其他因素影响，固定存在
+	UPROPERTY(EditAnywhere)
+	float CenterSpread;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastFullAmmo();
 
 protected:
 	virtual void BeginPlay() override;
@@ -31,33 +66,37 @@ protected:
 	UPROPERTY()
 	const USkeletalMeshSocket* MuzzleSocket;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float AimingFOVFactor = 0.9; // 缩放倍数
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float AimSpeed = 30.f;
 
+	UPROPERTY(EditAnywhere)
+	int32 MaxCarriedAmmo; // 最大携弹量
+	UPROPERTY()
+	int32 CarriedAmmo; // 当前携弹量
+
+	UPROPERTY(EditAnywhere)
+	int32 MagCapacity; // 弹匣容量
 	UPROPERTY()
 	int32 Ammo; // 当前弹匣子弹数量
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	int32 MagCapacity; // 弹匣最大容量
-	int32 CarriedAmmo; // 当前携弹量
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	int32 MaxCarriedAmmo; // 最大携弹量
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float FireDelay = .1f;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
+	float FireRate;
+	UPROPERTY(EditAnywhere)
 	bool bIsAutomatic = true;
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float Damage = 60.f;
+	UPROPERTY(EditAnywhere)
+	float Damage;
+	UPROPERTY(EditAnywhere)
+	float Impulse;
 
 	void SpendRound();
 	void SetHUDAmmo();
 	void SetHUDCarriedAmmo();
 
 private:
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AShell> ShellClass;
 
 public:
@@ -74,7 +113,7 @@ public:
 
 	FORCEINLINE float GetDamage() const { return Damage; }
 
-	FORCEINLINE float GetFireDelay() const { return FireDelay; }
+	FORCEINLINE float GetFireDelay() const { return 60 / FireRate; }
 	FORCEINLINE bool IsAutomatic() const { return bIsAutomatic; }
 
 };

@@ -9,7 +9,7 @@ void ULogin::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
 		if (!EOSSubsystem->OnLoginComplete.IsBoundToObject(this)) EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
@@ -20,6 +20,17 @@ void ULogin::NativeOnInitialized()
 	LoginButton->ButtonText->SetText(FText::FromString("Login"));
 	LoginButton->OnClicked().AddUObject(this, &ThisClass::OnLoginButtonClicked, 0);
 
+	Login1Button->SetVisibility(ESlateVisibility::Collapsed);
+	Login2Button->SetVisibility(ESlateVisibility::Collapsed);
+	Login3Button->SetVisibility(ESlateVisibility::Collapsed);
+
+#if UE_BUILD_SHIPPING
+
+#else
+	Login1Button->SetVisibility(ESlateVisibility::Visible);
+	Login2Button->SetVisibility(ESlateVisibility::Visible);
+	Login3Button->SetVisibility(ESlateVisibility::Visible);
+
 	Login1Button->ButtonText->SetText(FText::FromString("Account 1"));
 	Login1Button->OnClicked().AddUObject(this, &ThisClass::OnLoginButtonClicked, 1);
 
@@ -28,8 +39,12 @@ void ULogin::NativeOnInitialized()
 
 	Login3Button->ButtonText->SetText(FText::FromString("Account 3"));
 	Login3Button->OnClicked().AddUObject(this, &ThisClass::OnLoginButtonClicked, 3);
+#endif
+}
 
-	// OnLoginButtonClicked(0); // TODO
+UWidget* ULogin::NativeGetDesiredFocusTarget() const
+{
+	return LoginButton;
 }
 
 void ULogin::OnLoginButtonClicked(int32 Type)

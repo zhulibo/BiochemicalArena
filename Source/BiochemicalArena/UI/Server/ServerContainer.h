@@ -14,7 +14,7 @@ public:
 	class UCommonActivatableWidgetStack* ServerStack;
 
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UServer> ServerClass;
 	UPROPERTY()
 	UServer* Server;

@@ -24,17 +24,13 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonButton* ServerCreateButton;
 	void OnServerCreateButtonClicked();
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class ULobby> LobbyClass;
 	void OnCreateLobbyComplete(bool bWasSuccessful);
 
 	// 搜索大厅
 	UPROPERTY(meta = (BindWidget))
 	class UEditableTextBox* ServerNameEditableTextBox;
-	UPROPERTY()
-	FText ServerName;
-	UFUNCTION()
-	void OnServerNameChanged(const FText& Text);
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonComboBox* ModeComboBox;
@@ -51,7 +47,7 @@ protected:
 	void OnServerReFreshButtonClicked();
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* ServerLineButtonContainer;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UServerLineButton> ServerLineButtonClass;
 	void OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
 

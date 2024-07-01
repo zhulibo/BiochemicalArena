@@ -24,7 +24,7 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* SettingButton;
-	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class USetting> SettingClass;
 	void OnSettingButtonClicked();
 

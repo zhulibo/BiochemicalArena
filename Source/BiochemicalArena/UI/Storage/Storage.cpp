@@ -23,7 +23,7 @@ void UStorage::NativeOnInitialized()
 	// 添加顶部库存分类Tab按钮
 	AddStorageTypeButton();
 
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
 		EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnQueryOwnershipComplete);
@@ -200,6 +200,7 @@ void UStorage::AddStorageTypeButton()
 			AllTypeButton->SetIsSelectable(true);
 			AllTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, AllTypeButton);
 			StorageTypeButtonContainer->AddChild(AllTypeButton);
+			AllTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 			AllTypeButton->SetIsSelected(true);
 		}
 		// 装备按钮
@@ -214,6 +215,7 @@ void UStorage::AddStorageTypeButton()
 				EquipmentTypeButton->SetIsSelectable(true);
 				EquipmentTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, EquipmentTypeButton);
 				StorageTypeButtonContainer->AddChild(EquipmentTypeButton);
+				EquipmentTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 			}
 		}
 		// 角色按钮
@@ -224,6 +226,7 @@ void UStorage::AddStorageTypeButton()
 			CharacterTypeButton->SetIsSelectable(true);
 			CharacterTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, CharacterTypeButton);
 			StorageTypeButtonContainer->AddChild(CharacterTypeButton);
+			CharacterTypeButton->SetPadding(FMargin(0, 0, 20, 0));
 		}
 	}
 }
@@ -338,7 +341,6 @@ void UStorage::AddEquipmentButton(TArray<FText> EquipmentNames)
 		{
 			EquipmentButton->ButtonText->SetText(EquipmentNames[i]);
 			EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentButtonClicked, EquipmentButton);
-			StorageButtonContainer->AddChild(EquipmentButton);
 			UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(StorageButtonContainer->AddChild(EquipmentButton));
 			if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 20));
 		}

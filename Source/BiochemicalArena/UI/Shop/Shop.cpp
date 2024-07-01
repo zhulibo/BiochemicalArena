@@ -11,7 +11,7 @@ void UShop::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
 		EOSSubsystem->OnQueryOffersComplete.AddUObject(this, &ThisClass::OnQueryOffersComplete);
@@ -99,13 +99,10 @@ void UShop::AddCharacterButton(FOffer Offer)
 // 点击商品
 void UShop::OnGoodsButtonClicked(UGoodsButton* GoodsButton)
 {
-	// GetWorld()->ServerTravel("/Game/Maps/Dev?listen");
-	// return;
-
 	// 商品已拥有直接退出
 	if (Ownership.Contains(GoodsButton->Offer.OfferId))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorMain, TEXT("Already own this goods!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_MAIN, TEXT("Already own this goods!"), false);
 		return;
 	}
 

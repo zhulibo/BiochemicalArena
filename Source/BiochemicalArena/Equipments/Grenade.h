@@ -16,21 +16,17 @@ public:
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UParticleSystem* ExplodeParticle;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	USoundCue* ExplodeSound;
+	UPROPERTY(EditAnywhere)
+	class USoundCue* ExplodeSound;
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float Damage = 400.f;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float DamageInnerRadius = 100.f;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float DamageOuterRadius = 400.f;
+	UPROPERTY(EditAnywhere)
+	float Damage;
+	UPROPERTY(EditAnywhere)
+	float DamageInnerRadius;
+	UPROPERTY(EditAnywhere)
+	float DamageOuterRadius;
 	void ExplodeDamage();
-
-	bool bManualDestroyed = false;
-	virtual void ManualDestroy() override;
-	virtual void Destroyed() override;
 
 };

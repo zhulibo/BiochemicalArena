@@ -11,7 +11,7 @@ class BIOCHEMICALARENA_API AGeneralWeapon : public AWeapon
 
 public:
 	AGeneralWeapon();
-	virtual void Fire(const FVector& HitTarget) override;
+	virtual void Fire(const FVector& HitTarget, float RecoilVert, float RecoilHor) override;
 
 protected:
 	UPROPERTY(EditAnywhere)

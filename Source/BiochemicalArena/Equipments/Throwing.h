@@ -12,15 +12,13 @@ class BIOCHEMICALARENA_API AThrowing : public AEquipment
 public:
 	AThrowing();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	class UProjectileMovementComponent* ProjectileMovement;
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* ThrowMontage_C;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* ThrowMontage_E;
 	virtual void ThrowOut();
-
-	virtual void ManualDestroy() {};
 
 };

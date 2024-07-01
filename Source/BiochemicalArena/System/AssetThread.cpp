@@ -21,7 +21,7 @@ uint32 AssetThread::Run()
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorMain, TEXT("AssetSubsystem nullptr!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_MAIN, TEXT("AssetSubsystem nullptr!"), false);
 	}
 
 	return 0;

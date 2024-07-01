@@ -1,8 +1,10 @@
 #include "Grenade.h"
 #include "BiochemicalArena/Characters/BaseCharacter.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/PlayerControllers/HumanController.h"
-#include "BiochemicalArena/PlayerStates/HumanState.h"
+#include "BiochemicalArena/GameStates/BaseGameState.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -38,27 +40,25 @@ void AGrenade::ThrowOut()
 
 void AGrenade::ExplodeDamage()
 {
-	if (HumanController == nullptr)
+	if (BaseController == nullptr)
 	{
 		if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
-		if (HumanCharacter) HumanController = Cast<AHumanController>(HumanCharacter->GetController());
+		if (HumanCharacter) BaseController = Cast<ABaseController>(HumanCharacter->GetController());
 	}
-	if (HumanController && HasAuthority())
+	if (BaseController && HasAuthority())
 	{
 		TArray<AActor*> IgnoreActors;
-		for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+		if (OwnerTeam == ETeam::NoTeam) SetOwnerTeam();
+		ETeam IgnoreTeam = OwnerTeam == ETeam::Team1 ? ETeam::Team2 : ETeam::Team1;
+		ABaseGameState* BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
+
+		if (BaseGameState && BaseGameState->GetTeam(IgnoreTeam).Num() > 0)
 		{
-			ABaseController* BaseController = Cast<ABaseController>(*It);
-			if (BaseController)
+			for (int32 i = 0; i < BaseGameState->GetTeam(IgnoreTeam).Num(); ++i)
 			{
-				ABasePlayerState* BasePlayerState = BaseController->GetPlayerState<ABasePlayerState>();
-				if (BasePlayerState && BasePlayerState->GetTeam() == OwnerTeam)
+				if (BaseGameState->GetTeam(IgnoreTeam)[i])
 				{
-					ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(BaseController->GetPawn());
-					if (BaseCharacter)
-					{
-						IgnoreActors.Add(BaseCharacter);
-					}
+					IgnoreActors.AddUnique(BaseGameState->GetTeam(IgnoreTeam)[i]->GetPawn());
 				}
 			}
 		}
@@ -74,34 +74,18 @@ void AGrenade::ExplodeDamage()
 			UDamageType::StaticClass(), // DamageTypeClass
 			IgnoreActors, // IgnoreActors
 			this, // DamageCauser
-			HumanController // InstigatorController
+			BaseController // InstigatorController
 		);
 	}
 
-	Destroy();
-}
-
-// Called when character is dead
-void AGrenade::ManualDestroy()
-{
-	bManualDestroyed = true;
-
-	Destroy();
-}
-
-void AGrenade::Destroyed()
-{
-	if (!bManualDestroyed)
+	if (ExplodeParticle)
 	{
-		if (ExplodeParticle)
-		{
-			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplodeParticle, GetActorTransform());
-		}
-		if (ExplodeSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, ExplodeSound, GetActorLocation());
-		}
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplodeParticle, GetActorTransform());
+	}
+	if (ExplodeSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, ExplodeSound, GetActorLocation());
 	}
 
-	Super::Destroyed();
+	Destroy();
 }

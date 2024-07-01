@@ -14,38 +14,65 @@ class BIOCHEMICALARENA_API ABasePlayerState : public APlayerState
 public:
 	ABasePlayerState();
 
-	void SetTeam(ETeam TempTeam);
+	virtual void SetTeam(ETeam TempTeam);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetSpawnCharacterName(const FString& TempSpawnCharacterName);
+	void ServerSetHumanCharacterName(const FString& TempHumanCharacterName);
 
-	void AddScore(float ScoreAmount);
-	void AddDefeat(int32 DefeatAmount);
+	UFUNCTION()
+	void SetMutantCharacterName(const FString& TempMutantCharacterName);
+
+	virtual void AddDamage(float TempDamage);
+	void AddDefeat();
+	void ResetKillStreak();
+	void AddKillStreak();
+	void ShowKillStreak();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere, BlueprintReadOnly, Category = "Player")
+	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere)
 	ETeam Team;
 	UFUNCTION()
-	void OnRep_Team();
+	virtual void OnRep_Team();
+	void SetPlayerNameTeamColor();
 
+	UPROPERTY()
+	class ABaseGameState* BaseGameState;
+	UPROPERTY()
+	class ABaseCharacter* BaseCharacter;
 	UPROPERTY()
 	class ABaseController* BaseController;
 	UPROPERTY()
-	FString SpawnCharacterName; // 角色名字，开局生成角色时使用
+	FString HumanCharacterName = "SAS";
+	UPROPERTY()
+	FString MutantCharacterName = "Tank";
 
-	virtual void OnRep_Score() override;
+	UPROPERTY(ReplicatedUsing = OnRep_Damage)
+	float Damage;
+	UFUNCTION()
+	virtual void OnRep_Damage();
 
 	UPROPERTY(ReplicatedUsing = OnRep_Defeat)
 	int32 Defeat;
 	UFUNCTION()
 	void OnRep_Defeat();
 
+	UPROPERTY(ReplicatedUsing = OnRep_KillStreak)
+	int32 KillStreak = 0;
+	UFUNCTION()
+	void OnRep_KillStreak();
+	FTimerHandle ResetKillStreakTimerHandle;
+	FTimerHandle ClearKillStreakTimerHandle;
+	void HiddenKillStreak();
+
 public:
 	FORCEINLINE ETeam GetTeam() const { return Team; }
-	FORCEINLINE FString GetSpawnCharacterName() const { return SpawnCharacterName; }
+	FORCEINLINE FString GetHumanCharacterName() const { return HumanCharacterName; }
+	FORCEINLINE FString GetMutantCharacterName() const { return MutantCharacterName; }
+
+	FORCEINLINE float GetDamage() const { return Damage; }
 	FORCEINLINE float GetDefeat() const { return Defeat; }
 
 };

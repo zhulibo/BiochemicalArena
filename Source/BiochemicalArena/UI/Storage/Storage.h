@@ -35,7 +35,7 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* StorageTypeButtonContainer;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UCommonButton> StorageTypeButtonClass;
 	void AddStorageTypeButton();
 
@@ -45,10 +45,10 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	class UWrapBox* StorageButtonContainer;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UStorageButton> EquipmentButtonClass;
 	void AddEquipmentButton(TArray<FText> EquipmentNames);
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<UStorageButton> CharacterButtonClass;
 	void AddCharacterButton(TArray<FText> EquipmentNames);
 

@@ -17,12 +17,10 @@ void UServer::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	ServerNameEditableTextBox->OnTextChanged.AddUniqueDynamic(this, &ThisClass::OnServerNameChanged);
-
 	ModeComboBox->AddOption(FString("All"));
-	for (int32 j = 0; j < static_cast<int32>(EGameMode::MAX); ++j)
+	for (int32 j = 0; j < static_cast<int32>(EGameMode2::MAX); ++j)
 	{
-		FString EnumValue = UEnum::GetValueAsString(static_cast<EGameMode>(j));
+		FString EnumValue = UEnum::GetValueAsString(static_cast<EGameMode2>(j));
 		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 		ModeComboBox->AddOption(EnumValue);
 	}
@@ -39,7 +37,7 @@ void UServer::NativeOnInitialized()
 	ServerResetButton->ButtonText->SetText(FText::FromString("Reset"));
 	ServerResetButton->OnClicked().AddUObject(this, &ThisClass::OnServerResetButtonClicked);
 
-	ServerCreateButton->ButtonText->SetText(FText::FromString("Create Server"));
+	ServerCreateButton->ButtonText->SetText(FText::FromString("Create"));
 	ServerCreateButton->OnClicked().AddUObject(this, &ThisClass::OnServerCreateButtonClicked);
 
 	PagePrevButton->ButtonText->SetText(FText::FromString("Prev Page"));
@@ -48,7 +46,7 @@ void UServer::NativeOnInitialized()
 	PageNextButton->ButtonText->SetText(FText::FromString("Next Page"));
 	PageNextButton->OnClicked().AddUObject(this, &ThisClass::OnPageNextButtonClicked);
 
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
 		EOSSubsystem->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
@@ -77,8 +75,12 @@ UWidget* UServer::NativeGetDesiredFocusTarget() const
 // 创建大厅
 void UServer::OnServerCreateButtonClicked()
 {
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
+		ServerCreateButton->ButtonText->SetText(FText::FromString("Creating..."));
+		ServerCreateButton->SetIsEnabled(false);
+
 		EOSSubsystem->CreateLobby();
 	}
 }
@@ -86,30 +88,16 @@ void UServer::OnServerCreateButtonClicked()
 // 创建大厅完成事件
 void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 {
+	ServerCreateButton->ButtonText->SetText(FText::FromString("Create"));
+	ServerCreateButton->SetIsEnabled(true);
+
 	if (bWasSuccessful)
 	{
-		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
-		if (MenuController)
-		{
-			MenuController->ServerStack->AddWidget(LobbyClass);
-			ULobby* Lobby = Cast<ULobby>(MenuController->ServerStack->GetActiveWidget());
-			if (Lobby)
-			{
-				Lobby->OnCreateInit();
-			}
-		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorHuman, TEXT("Create lobby failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Create lobby failed!"), false);
 	}
-}
-
-void UServer::OnServerNameChanged(const FText& Text)
-{
-	ServerName = Text;
-
-	UE_LOG(LogTemp, Warning, TEXT("ServerName: %s"), *ServerName.ToString());
 }
 
 void UServer::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
@@ -131,11 +119,11 @@ void UServer::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type Sele
 			MapComboBox->AddOption(EnumValue);
 		}
 	}
-	else if (SelectedItem == "TeamDeadMatchMatch")
+	else if (SelectedItem == "TeamDeadMatch")
 	{
-		for (int32 j = 0; j < static_cast<int32>(ETeamDeadMatchMatchMap::MAX); ++j)
+		for (int32 j = 0; j < static_cast<int32>(ETeamDeadMatchMap::MAX); ++j)
 		{
-			FString EnumValue = UEnum::GetValueAsString(static_cast<ETeamDeadMatchMatchMap>(j));
+			FString EnumValue = UEnum::GetValueAsString(static_cast<ETeamDeadMatchMap>(j));
 			EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 			MapComboBox->AddOption(EnumValue);
 		}
@@ -154,25 +142,30 @@ void UServer::OnServerReFreshButtonClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnServerReFreshButtonClicked"));
 
-	// for (int32 i = 0; i < 100; ++i)
-	// {
-	// 	UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass);
-	// 	ServerLineButton->Ping->SetText(FText::FromString(FString::FromInt(i + 1)));
-	// 	ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton);
-	// 	ServerLineButtonContainer->AddChild(ServerLineButton);
-	// }
-
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		EOSSubsystem->FindLobby();
+		ServerReFreshButton->ButtonText->SetText(FText::FromString("Refreshing..."));
+		ServerReFreshButton->SetIsEnabled(false);
+
+		EOSSubsystem->FindLobby(
+			ServerNameEditableTextBox->GetText().ToString(),
+			ModeComboBox->GetSelectedOption(),
+			MapComboBox->GetSelectedOption()
+		);
 	}
 }
 
 // 查找大厅完成事件
 void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies)
 {
+	ServerReFreshButton->ButtonText->SetText(FText::FromString("Refresh"));
+	ServerReFreshButton->SetIsEnabled(true);
+
 	if (bWasSuccessful)
 	{
+		ServerLineButtonContainer->ClearChildren();
+
 		if (Lobbies.Num() > 0)
 		{
 			if (ServerLineButtonContainer && ServerLineButtonClass)
@@ -184,9 +177,12 @@ void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<c
 					{
 						ServerLineButton->Lobby = Lobbies[i];
 
-						ServerLineButton->Server->SetText(FText::FromString(Lobbies[i]->Attributes.Find(FName(TEXT("LobbyName")))->GetString()));
-						ServerLineButton->Mode->SetText(FText::FromString(Lobbies[i]->Attributes.Find(FName(TEXT("GameMode")))->GetString()));
-						ServerLineButton->Map->SetText(FText::FromString(Lobbies[i]->Attributes.Find(FName(TEXT("MapName")))->GetString()));
+						if (Lobbies[i]->Attributes.Num() > 0)
+						{
+							ServerLineButton->Server->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_LOBBYNAME)->GetString()));
+							ServerLineButton->Mode->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_GAMEMODE)->GetString()));
+							ServerLineButton->Map->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_MAPNAME)->GetString()));
+						}
 						ServerLineButton->Player->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Lobbies[i]->Members.Num(), Lobbies[i]->MaxMembers)));
 						ServerLineButton->Ping->SetText(FText::FromString(TEXT("-"))); // TODO Lobby don't have ping
 
@@ -198,12 +194,12 @@ void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<c
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorMain, TEXT("No lobby found!"), false);
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_WHITE, TEXT("No lobby found!"), false);
 		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorHuman, TEXT("Find lobby failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Find lobby failed!"), false);
 	}
 }
 
@@ -213,8 +209,19 @@ void UServer::OnServerResetButtonClicked()
 	UE_LOG(LogTemp, Warning, TEXT("OnServerResetButtonClicked"));
 
 	ServerNameEditableTextBox->SetText(FText::FromString(""));
-	ServerName = FText::FromString("");
+
+	ModeComboBox->ClearOptions();
+	ModeComboBox->AddOption(FString("All"));
+	for (int32 j = 0; j < static_cast<int32>(EGameMode2::MAX); ++j)
+	{
+		FString EnumValue = UEnum::GetValueAsString(static_cast<EGameMode2>(j));
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		ModeComboBox->AddOption(EnumValue);
+	}
 	ModeComboBox->SetSelectedIndex(0);
+
+	MapComboBox->ClearOptions();
+	MapComboBox->AddOption(FString("All"));
 	MapComboBox->SetSelectedIndex(0);
 }
 
@@ -281,17 +288,6 @@ void UServer::OnPageNextButtonClicked()
 // 加入大厅
 void UServer::OnServerLineButtonClicked(UServerLineButton* ServerLineButton)
 {
-	// if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
-	// if (MenuController)
-	// {
-	// 	MenuController->ServerStack->AddWidget(LobbyClass);
-	// 	ULobby* Lobby = Cast<ULobby>(MenuController->ServerStack->GetActiveWidget());
-	// 	if (Lobby)
-	// 	{
-	// 		Lobby->OnJoinInit();
-	// 	}
-	// }
-
 	if (EOSSubsystem && ServerLineButton->Lobby.IsValid())
 	{
 		EOSSubsystem->JoinLobby(ServerLineButton->Lobby.ToSharedRef());
@@ -303,26 +299,18 @@ void UServer::OnJoinLobbyComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
-		if (MenuController)
-		{
-			MenuController->ServerStack->AddWidget(LobbyClass);
-			ULobby* Lobby = Cast<ULobby>(MenuController->ServerStack->GetActiveWidget());
-			if (Lobby)
-			{
-				Lobby->OnJoinInit();
-			}
-		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, ColorHuman, TEXT("Join lobby failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Join lobby failed!"), false);
 	}
 }
 
 // 收到邀请
 void UServer::OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnLobbyInvitationAdded"));
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
 		EOSSubsystem->JoinLobby(LobbyInvitationAdded.Lobby);
@@ -332,11 +320,16 @@ void UServer::OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitatio
 // 好友请求加入房间
 void UServer::OnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested)
 {
-	// TODO 玩家好像可以在UI界面同意
+	UE_LOG(LogTemp, Warning, TEXT("OnUILobbyJoinRequested"));
+
 }
 
 // 加入大厅完成事件
 void UServer::OnLobbyJoined(const FLobbyJoined& LobbyJoined)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnLobbyJoined"));
+	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
+	if (MenuController)
+	{
+		MenuController->ServerStack->AddWidget(LobbyClass);
+	}
 }

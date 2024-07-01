@@ -12,36 +12,37 @@ class BIOCHEMICALARENA_API AMelee : public AEquipment
 public:
 	AMelee();
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* LightAttackMontage_C;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* LightAttackMontage_E;
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* HeavyAttackMontage_C;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* HeavyAttackMontage_E;
 
 	virtual void EquipEquipment() override;
 
-	void EnableMeshCollision(bool bIsEnabled);
+	void SetAttackCollisionEnabled(bool bIsEnabled);
 
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float LightAttackDamage = 100.f;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
-	float HeavyAttackDamage = 200.f;
+	UPROPERTY(VisibleAnywhere)
+	class UCapsuleComponent* AttackCapsule;
 
-	void SetMeshCollision();
+	UPROPERTY(EditAnywhere)
+	float LightAttackDamage;
+	UPROPERTY(EditAnywhere)
+	float HeavyAttackDamage;
+
+	void SetAttackCapsuleCollision();
 
 	UPROPERTY()
 	TArray<AActor*> HitEnemies;
 	UFUNCTION()
-	virtual void OnMeshOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	virtual void OnAttackCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION(Server, Reliable)
-	void ServerApplyDamage(AActor* OtherActor, AHumanCharacter* InstigatorHumanCharacter, float DamageToApply);
 
 };

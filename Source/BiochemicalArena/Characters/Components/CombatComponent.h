@@ -7,7 +7,7 @@
 enum class ECombatState : uint8;
 enum class EEquipmentType : uint8;
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BIOCHEMICALARENA_API UCombatComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -16,19 +16,21 @@ public:
 	UCombatComponent();
 	friend class AHumanCharacter;
 
-	class AEquipment* GetCurrentEquipment(); // If it has equipment in use return it, or return nullptr
-	class AWeapon* GetCurrentShotEquipment(); // If primary or secondary equipment is in use return it, or return nullptr
-	class AMelee* GetCurrentMeleeEquipment(); // If MeleeEquipment is in use return it, or return nullptr
-	class AThrowing* GetCurrentThrowingEquipment();
+	class AEquipment* GetCurEquipment(); // If it has equipment in use return it, or return nullptr
+	class AWeapon* GetCurShotEquipment(); // If primary or secondary equipment is in use return it, or return nullptr
+	class AMelee* GetCurMeleeEquipment(); // If MeleeEquipment is in use return it, or return nullptr
+	class AThrowing* GetCurThrowingEquipment();
 
 	void FinishSwap();
 
-	void AttachToRightHand();
-	void AttachToLeftHand();
+	void AttachToRightHand(AEquipment* Equipment);
+	void AttachToLeftHand(AEquipment* Equipment);
+	void AttachToHand(AEquipment* Equipment, FString SocketNameSuffix);
+
 	void ShellReload();
 	void FinishReload();
 
-	void EnableMeshCollision(bool bIsEnabled);
+	void SetAttackCollisionEnabled(bool bIsEnabled);
 
 	void ThrowOut();
 
@@ -37,9 +39,9 @@ protected:
 	virtual void TickComponent(float DeltaSeconds, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UPROPERTY()
-	AHumanCharacter* Character;
+	AHumanCharacter* HumanCharacter;
 	UPROPERTY()
-	class AHumanController* Controller;
+	class ABaseController* BaseController;
 	UPROPERTY()
 	class UHumanAnimInstance* HumanAnimInstance;
 	UPROPERTY()
@@ -48,19 +50,13 @@ protected:
 	UPROPERTY()
 	ECombatState CombatState;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float BaseWalkSpeed = 600.f;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float AimWalkSpeed = 450.f;
 
 	FVector HitTarget;
 	void TraceUnderCrosshair(FHitResult& TraceHitResult); // 检测准星对应游戏世界的物体
-
-	float CrosshairVelocityFactor;
-	float CrosshairInAirFactor;
-	float CrosshairAimFactor;
-	float CrosshairShootingFactor;
-	void SetHUDCrosshair(float DeltaSeconds); // TODO 使用CrosshairSpread实现动态准心
 
 	float DefaultFOV;
 	float CurrentFOV;
@@ -89,8 +85,11 @@ protected:
 	void ServerEquipEquipment(AEquipment* Equipment);
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastEquipEquipment(AEquipment* Equipment);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastEquipEquipment2(AEquipment* Equipment);
+	void AssignEquipment(AEquipment* Equipment);
 	void LocalEquipEquipment(AEquipment* Equipment);
-	void AttachEquipmentToBodySocket(AEquipment* Equipment);
+	void AttachToBodySocket(AEquipment* Equipment);
 
 	// 切换
 	void SwapEquipment(EEquipmentType EquipmentType);
@@ -99,12 +98,14 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSwapEquipment(EEquipmentType EquipmentType);
 	void LocalSwapEquipment(EEquipmentType EquipmentType);
+	void PreLocalSwapEquipment();
 	void PlaySwapOutMontage(AEquipment* NewEquipment);
 	void PlaySwapInMontage(bool bInterrupted, AEquipment* NewEquipment);
 
 	// 使用
-	void UseEquipment(AEquipment* EquipmentType);
-	void AttachToHand(AEquipment* Equipment, FString SocketNameSuffix);
+	void UseEquipment(AEquipment* Equipment);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastReplaceCurEquipment(AEquipment* Equipment);
 
 	// 瞄准
 	UPROPERTY()
@@ -117,19 +118,31 @@ protected:
 	void LocalSetAiming(bool bNewAimingState);
 
 	// 射击
-	bool bCanFire = true;
+	bool bCanFire = true; // TODO 切换武器时重置为true
+	bool bIsFirstShot = true;
 	bool bFireButtonPressed;
-	FTimerHandle FireTimer;
 	void FireHandle(bool bPressed);
 	void Fire();
 	bool CanFire();
+	FTimerHandle LoadNewBulletTimerHandle;
 	void LoadNewBulletFinished();
 	UFUNCTION(Server, Reliable)
-	void ServerFire(const FVector_NetQuantize& TraceHitTarget);
+	void ServerFire(const FVector_NetQuantize& TraceHitTarget, float RecoilVert, float RecoilHor);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastFire(const FVector_NetQuantize& TraceHitTarget);
-	void LocalFire(const FVector_NetQuantize& TraceHitTarget);
+	void MulticastFire(const FVector_NetQuantize& TraceHitTarget, float RecoilVert, float RecoilHor);
+	void LocalFire(const FVector_NetQuantize& TraceHitTarget, float RecoilVert, float RecoilHor);
 	void PlayFireMontage();
+
+	float RecoilVertical = 0.f;
+	float RecoilHorizontal = 0.f;
+
+	float RecoilIncCostTime = 0.f;
+	float RecoilDecCostTime = 0.f;
+
+	float RecoilVerticalLastTick = 0.f;
+	float RecoilHorizontalLastTick = 0.f;
+	float RecoilVerticalLastTick2 = 0.f;
+	float RecoilHorizontalLastTick2 = 0.f;
 
 	// 装弹
 	void Reload();
@@ -142,18 +155,18 @@ protected:
 	void JumpToShotgunEnd();
 
 	// 丢弃
-	void DropEquipment();
+	void DropEquipment(EEquipmentType EquipmentType);
 	UFUNCTION(Server, Reliable)
-	void ServerDropEquipment();
+	void ServerDropEquipment(EEquipmentType EquipmentType);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastDropEquipment();
+	void MulticastDropEquipment(EEquipmentType EquipmentType);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastDropEquipment2();
-	void LocalDropEquipment();
+	void MulticastDropEquipment2(EEquipmentType EquipmentType);
+	void LocalDropEquipment(EEquipmentType EquipmentType);
 
 	// 销毁
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastDestroyEquipment();
+	UFUNCTION()
+	void DestroyEquipments();
 
 	// 近战攻击
 	void MeleeAttack(int32 Type);
@@ -174,5 +187,8 @@ protected:
 public:
 	FORCEINLINE AWeapon* GetPrimaryEquipment() const { return PrimaryEquipment; }
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
+	FORCEINLINE bool IsAiming() const { return bIsAiming; }
+	FORCEINLINE bool IsFireButtonPressed() const { return bFireButtonPressed; }
+	FORCEINLINE bool IsFirstShot() const { return bIsFirstShot; }
 
 };

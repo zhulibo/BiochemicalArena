@@ -28,6 +28,12 @@ public:
 	UCommonTextBlock* Item8;
 
 	UPROPERTY()
-	int32 SelectedItem;
+	int32 SelectedItemIndex;
+	UPROPERTY()
+	int32 LastSelectedItemIndex;
+	UFUNCTION()
+	FString GetSelectedItem();
+	UFUNCTION()
+	void SetSelectedItem(int32 NewSelectedItemIndex);
 
 };

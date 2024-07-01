@@ -2,28 +2,38 @@
 
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
-#include "BiochemicalArena/Interfaces/CrosshairInterface.h"
+#include "MutantCharacter.h"
 #include "HumanCharacter.generated.h"
 
 enum class EEquipmentType : uint8;
 enum class ECombatState : uint8;
 
 UCLASS()
-class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter, public ICrosshairInterface
+class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter
 {
 	GENERATED_BODY()
 
 public:
 	AHumanCharacter();
 
+	virtual void OnLocallyControllerReady() override;
+
 	void EquipOverlappingEquipment(class AEquipment* Equipment);
+
+	UFUNCTION(Server, Reliable)
+	void ServerGivePickupEquipment(class APickupEquipment* PickupEquipment);
 
 	void SwapPrimaryEquipmentButtonPressed();
 	void SwapSecondaryEquipmentButtonPressed();
 	void SwapMeleeEquipmentButtonPressed();
 	void SwapThrowingEquipmentButtonPressed();
 
-	void Kill();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastTeamDeadMatchDead();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastMutationDead();
+
+	void GetInfect(AMutantCharacter* AttackerCharacter, ABaseController* AttackerController, EMutantState MutantState);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -31,8 +41,50 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void UnPossessed() override;
 
-	void PollInit();
+	UPROPERTY(VisibleAnywhere)
+	class UCombatComponent* CombatComponent;
+	UPROPERTY(VisibleAnywhere)
+	class URecoilComponent* RecoilComponent;
+	UPROPERTY(VisibleAnywhere)
+	class UCrosshairComponent* CrosshairComponent;
+
+	UPROPERTY()
+	class ATeamDeadMatchMode* TeamDeadMatchMode;
+	UPROPERTY()
+	class AMutationMode* MutationMode;
+
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputMappingContext* HumanMappingContext;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* AimAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* FireAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* ReloadAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* DropAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* SwapPrimaryEquipmentAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* SwapSecondaryEquipmentAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* SwapMeleeEquipmentAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* SwapThrowingEquipmentAction;
+	UPROPERTY(EditAnywhere, Category = "Input | Human")
+	UInputAction* SwapLastEquipmentAction;
+
+	void AimButtonPressed(const FInputActionValue& Value);
+	void AimButtonReleased(const FInputActionValue& Value);
+	void FireButtonPressed(const FInputActionValue& Value);
+	void FireButtonReleased(const FInputActionValue& Value);
+	void ReloadButtonPressed(const FInputActionValue& Value);
+	void DropButtonPressed(const FInputActionValue& Value);
+	UFUNCTION(Server, Reliable)
+	void ServerDetectOverlappingEquipment();
+	void SwapLastEquipmentButtonPressed(const FInputActionValue& Value);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetDefaultEquipment(const FString& PrimaryEquipmentName,
@@ -56,83 +108,16 @@ protected:
 	UFUNCTION()
 	void OnRep_DefaultThrowingEquipment();
 
-	virtual void Landed(const FHitResult& Hit) override;
-
-	UPROPERTY()
-	class ATeamDeadMatchMode* TeamDeadMatchMode;
-	UPROPERTY()
-	class AHumanController* HumanController;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
-	class USpringArmComponent* CameraBoom;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
-	class UCameraComponent* Camera;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UWidgetComponent* OverheadWidget;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	class UCombatComponent* Combat;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputMappingContext* EquipmentMappingContext;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* AimAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* FireAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* ReloadAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* DropAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapPrimaryEquipmentAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapSecondaryEquipmentAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapMeleeEquipmentAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapThrowingEquipmentAction;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input | Equipment", meta = (AllowPrivateAccess = "true"))
-	UInputAction* SwapLastEquipmentAction;
-
-	void AimButtonPressed(const FInputActionValue& Value);
-	void AimButtonReleased(const FInputActionValue& Value);
-	void FireButtonPressed(const FInputActionValue& Value);
-	void FireButtonReleased(const FInputActionValue& Value);
-	void ReloadButtonPressed(const FInputActionValue& Value);
-	void DropButtonPressed(const FInputActionValue& Value);
-	void SwapLastEquipmentButtonPressed(const FInputActionValue& Value);
-
-	void DetectOverlappingEquipment();
-
-	UPROPERTY(EditAnywhere, Category = "Player")
-	float MaxHealth = 200.f;
-	UPROPERTY(ReplicatedUsing = OnRep_Health, VisibleAnywhere, Category = "Player")
-	float Health = MaxHealth;
-
+	bool bIsImmune = false;
 	UFUNCTION()
-	void ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser);
-	void UpdateHUDHealth();
-	UFUNCTION()
-	void OnRep_Health();
-
-	bool bIsKilled = false;
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastKill();
-	FTimerHandle KillTimer;
-	UPROPERTY(EditDefaultsOnly)
-	float KillDelay = 3.f;
-	void KillTimerFinished();
+	void HumanReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+		AController* AttackerController, AActor* DamageCauser);
 
 public:
-	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
-	FORCEINLINE UCombatComponent* GetCombat() const { return Combat; }
-	ECombatState GetCombatState() const;
-
-	bool IsAiming();
+	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; }
+	FORCEINLINE URecoilComponent* GetRecoilComponent() const { return RecoilComponent; }
+	FORCEINLINE UCrosshairComponent* GetCrosshairComponent() const { return CrosshairComponent; }
 	AEquipment* GetCurrentEquipment();
 	FVector GetHitTarget() const;
-
-	FORCEINLINE float GetHealth() const { return Health; }
-	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
-	FORCEINLINE bool IsKilled() const { return bIsKilled; }
 
 };

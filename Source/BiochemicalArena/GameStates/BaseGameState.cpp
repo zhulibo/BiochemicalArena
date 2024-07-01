@@ -1,11 +1,70 @@
 #include "BaseGameState.h"
-#include "BiochemicalArena/PlayerControllers/BaseController.h"
 
-void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState)
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "Net/UnrealNetwork.h"
+
+void ABaseGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetWorld()->GetFirstPlayerController()); // 获取本地玩家控制器
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, Team1);
+	DOREPLIFETIME(ThisClass, Team2);
+}
+
+void ABaseGameState::AddToTeam(ABasePlayerState* BasePlayerState, ETeam Team)
+{
+	switch (Team)
+	{
+	case ETeam::Team1:
+		Team1.AddUnique(BasePlayerState);
+		break;
+	case ETeam::Team2:
+		Team2.AddUnique(BasePlayerState);
+		break;
+	}
+}
+
+void ABaseGameState::RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam Team)
+{
+	switch (Team)
+	{
+		case ETeam::Team1:
+			Team1.Remove(BasePlayerState);
+			break;
+		case ETeam::Team2:
+			Team2.Remove(BasePlayerState);
+			break;
+	}
+}
+
+void ABaseGameState::OnRep_Team1()
+{
+}
+
+void ABaseGameState::OnRep_Team2()
+{
+}
+
+TArray<ABasePlayerState*> ABaseGameState::GetTeam(ETeam Team)
+{
+	switch (Team)
+	{
+	case ETeam::Team1:
+		return Team1;
+	case ETeam::Team2:
+		return Team2;
+	default:
+		return TArray<ABasePlayerState*>();
+	}
+}
+
+void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetWorld()->GetFirstPlayerController());
 	if (BaseController)
 	{
-		BaseController->AddKillLog(AttackerState, EquipmentName, KilledState);
+		BaseController->AddKillLog(AttackerState, CauserName, DamagedState);
 	}
 }

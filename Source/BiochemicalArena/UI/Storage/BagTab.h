@@ -12,13 +12,13 @@ class BIOCHEMICALARENA_API UBagTab : public UCommonTabListWidgetBase
 protected:
 	virtual void NativeConstruct() override;
 
-	UPROPERTY(EditInstanceOnly, Category = "UI")
+	UPROPERTY(EditInstanceOnly)
 	class UCommonActivatableWidgetSwitcher* BagSwitcher;
 	UPROPERTY(meta = (BindWidget))
 	class UHorizontalBox* TabButtonContainer;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UCommonButton> TabButtonClass;
-	UPROPERTY(EditInstanceOnly, Category = "UI")
+	UPROPERTY(EditInstanceOnly)
 	TArray<class UBagContent*> TabContent;
 	void LinkSwitcher();
 

@@ -10,23 +10,35 @@ class BIOCHEMICALARENA_API UOverheadWidget : public UCommonUserWidget
 	GENERATED_BODY()
 
 public:
-	friend class AHumanCharacter;
+	friend class ABaseCharacter;
+
+	void SetPlayerNameTeamColor();
 
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
 	UPROPERTY()
-	AHumanCharacter* HumanCharacter;
+	class ABaseGameState* BaseGameState;
+
+	// 拥有此OverheadWidget的角色
 	UPROPERTY()
-	AHumanCharacter* LocalHumanCharacter;
+	ABaseCharacter* BaseCharacter;
 	UPROPERTY()
-	class AHumanState* LocalHumanState;
+	class ABasePlayerState* BasePlayerState;
+
+	// 本地角色
+	UPROPERTY()
+	class ABaseController* LocalBaseController;
+	UPROPERTY()
+	ABasePlayerState* LocalBasePlayerState;
+	UPROPERTY()
+	ABaseCharacter* LocalBaseCharacter;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;
-
 	void SetPlayerName();
-	void RefreshPlayerName();
+	FTimerHandle TimerHandle;
+	void ShowPlayerName();
 
 };

@@ -13,11 +13,15 @@ void UTabControl::NativeOnInitialized()
 	MouseAimAssistSteeringComboBox->AddOption("off");
 	MouseAimAssistSlowdownComboBox->AddOption("on");
 	MouseAimAssistSlowdownComboBox->AddOption("off");
+	MouseAimAssistSteeringComboBox->SetIsEnabled(false); // TODO
+	MouseAimAssistSlowdownComboBox->SetIsEnabled(false);
 
 	ControllerAimAssistSteeringComboBox->AddOption("on");
 	ControllerAimAssistSteeringComboBox->AddOption("off");
 	ControllerAimAssistSlowdownComboBox->AddOption("on");
 	ControllerAimAssistSlowdownComboBox->AddOption("off");
+	ControllerAimAssistSteeringComboBox->SetIsEnabled(false); // TODO
+	ControllerAimAssistSlowdownComboBox->SetIsEnabled(false);
 
 	SetUIDefaultValue();
 

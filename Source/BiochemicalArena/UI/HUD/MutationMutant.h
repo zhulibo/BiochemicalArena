@@ -16,4 +16,9 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* SkillStatus;
 
+	UPROPERTY(meta = (BindWidget))
+	class UHorizontalBox* SelectCharacterBox;
+	UPROPERTY(meta = (BindWidget))
+	class UCommonButtonBase* SelectCharacterButton;
+
 };

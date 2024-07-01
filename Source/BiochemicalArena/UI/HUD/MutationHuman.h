@@ -21,4 +21,7 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* CarriedAmmo;
 
+	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* DamageIcon;
+
 };

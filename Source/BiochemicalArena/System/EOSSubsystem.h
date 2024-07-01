@@ -8,6 +8,7 @@
 #include "Online/Sessions.h"
 #include "Online/UserFile.h"
 #include "Online/Commerce.h"
+#include "Online/OnlineAsyncOpHandle.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "EOSSubsystem.generated.h"
 
@@ -31,6 +32,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyMemberLeft, const FLobbyMemberLeft& 
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnPromoteLobbyMemberComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyLeaderChanged, const FLobbyLeaderChanged& LobbyLeaderChanged);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnKickLobbyMemberComplete, bool bWasSuccessful);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnModifyLobbyAttributesComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyAttributesChanged, const FLobbyAttributesChanged& LobbyAttributesChanged);
@@ -42,6 +44,8 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveLobbyComplete, bool bWasSuccessful);
 
 // Session
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCreateSessionComplete, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAddSessionMemberComplete, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnFindSessionComplete, bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveSessionComplete, bool bWasSuccessful);
 
@@ -62,6 +66,9 @@ class BIOCHEMICALARENA_API UEOSSubsystem : public UGameInstanceSubsystem
 
 public:
 	UEOSSubsystem();
+	virtual void Deinitialize() override;
+
+	TArray<FOnlineEventDelegateHandle> OnlineEventDelegateHandles;
 
 	// Login
 	void Login(FPlatformUserId ID, int32 Type);
@@ -72,14 +79,14 @@ public:
 	void GetUserInfo();
 	FOnLoginStatusChanged OnLoginStatusChanged;
 	void BroadcastOnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
-	// TODO LoginStatus != ELoginStatus::LoggedIn 禁用一切操作
 
 	// Lobby
 	TSharedPtr<const FLobby> CurrentLobby;
 
+	FName LocalLobbyName = FName(TEXT("LocalLobbyName"));
 	void CreateLobby();
 	FOnCreateLobbyComplete OnCreateLobbyComplete;
-	void FindLobby();
+	void FindLobby(FString LobbyName, FString GameMode, FString MapName);
 	FOnFindLobbyComplete OnFindLobbyComplete;
 	void JoinLobby(TSharedRef<const FLobby> Lobby);
 	FOnJoinLobbyComplete OnJoinLobbyComplete;
@@ -100,6 +107,8 @@ public:
 	FOnPromoteLobbyMemberComplete OnPromoteLobbyMemberComplete;
 	FOnLobbyLeaderChanged OnLobbyLeaderChanged;
 	void BroadcastOnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged);
+	void KickLobbyMember(FAccountId TargetAccountId);
+	FOnKickLobbyMemberComplete OnKickLobbyMemberComplete;
 
 	void ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes = TMap<FSchemaAttributeId, FSchemaVariant>(),
 		TSet<FSchemaAttributeId> RemovedAttributes = TSet<FSchemaAttributeId>());
@@ -117,14 +126,23 @@ public:
 	void LeaveLobby();
 	FOnLeaveLobbyComplete OnLeaveLobbyComplete;
 
+	// TODO GetJoinedLobbies
+
 	// Session
+	FName LocalSessionName = FName(TEXT("LocalSessionName"));
 	void CreateSession();
 	FOnCreateSessionComplete OnCreateSessionComplete;
-	TSharedPtr<const ISession> GetPresenceSession();
+	void AddSessionMember();
+	FOnAddSessionMemberComplete OnAddSessionMemberComplete;
+	TSharedPtr<const ISession> GetSessionByName();
+	void FindSession();
+	FOnFindSessionComplete OnFindSessionComplete;
 	void JoinSession(FString SessionId);
 	FOnJoinSessionComplete OnJoinSessionComplete;
+	FOnlineSessionId ToOnlineSessionId(FString SessionId);
 	void LeaveSession();
 	FOnLeaveSessionComplete OnLeaveSessionComplete;
+	FString GetResolvedConnectString(FString SessionId);
 
 	// UserFile
 	void EnumerateFiles();

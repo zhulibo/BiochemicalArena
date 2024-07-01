@@ -19,8 +19,6 @@ AShell::AShell()
 	ShellMesh->SetSimulatePhysics(true);
 	ShellMesh->SetEnableGravity(true);
 	ShellMesh->SetNotifyRigidBodyCollision(true);
-
-	bIsFirstOnHit = true;
 }
 
 void AShell::BeginPlay()

@@ -16,7 +16,7 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UMenu> MenuClass;
 
 };

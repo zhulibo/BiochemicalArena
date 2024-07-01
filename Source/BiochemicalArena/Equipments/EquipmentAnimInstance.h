@@ -14,7 +14,7 @@ class BIOCHEMICALARENA_API UEquipmentAnimInstance : public UAnimInstance
 protected:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY()
 	class AEquipment* Equipment;
 
 };

@@ -14,10 +14,16 @@ public:
 	class UCommonTextBlock* Announcement;
 
 	UPROPERTY(meta = (BindWidget))
+	class UCrosshair* Crosshair;
+
+	UPROPERTY(meta = (BindWidget))
 	class UVerticalBox* KillLogContainer;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UKillLogLine> KillLogLineClass;
-	void AddKillLog(class ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState);
+	void AddKillLog(class ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState);
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* KillStreak;
 
 protected:
 	UPROPERTY()

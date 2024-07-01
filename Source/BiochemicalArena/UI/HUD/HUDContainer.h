@@ -1,17 +1,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonUserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "HUDContainer.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UHUDContainer : public UCommonUserWidget
+class BIOCHEMICALARENA_API UHUDContainer : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
 public:
 	virtual void NativeOnInitialized() override;
 
+	// HUD
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHUD* CommonHUD;
 
@@ -25,9 +26,11 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	class UMutationMutant* MutationMutant;
 
+	// 计分板
 	UPROPERTY(meta = (BindWidget))
 	class UScoreboard* Scoreboard;
 
+	// 轮盘选择器
 	UPROPERTY(meta = (BindWidget))
 	class URadialMenuContainer* RadialMenuContainer;
 
@@ -37,10 +40,7 @@ public:
 	void ShowPauseMenu();
 
 protected:
-	UPROPERTY()
-	class ABaseController* BaseController;
-
-	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UPauseMenu> PauseMenuClass;
 
 };

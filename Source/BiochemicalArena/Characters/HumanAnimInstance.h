@@ -12,38 +12,38 @@ class BIOCHEMICALARENA_API UHumanAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(BlueprintReadOnly)
 	EEquipmentName EquipmentName; // used for equipment idle animation
 
 protected:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Character")
+	UPROPERTY()
 	class AHumanCharacter* HumanCharacter;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
 	float Speed;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsInAir;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsAccelerating;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsCrouched;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
 	bool bIsAiming;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	bool bIsKilled;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsDead;
+	UPROPERTY(BlueprintReadOnly)
 	float AimYaw;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
+	UPROPERTY(BlueprintReadOnly)
 	float AimPitch;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	FRotator HeadRotator;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	FRotator NeckRotator;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	FRotator Arm_01_R_Rotator;
-	UPROPERTY(BlueprintReadOnly, Category = "Movement")
-	FRotator Arm_01_L_Rotator;
+	UPROPERTY(BlueprintReadOnly)
+	FRotator Head_Rotator;
+	UPROPERTY(BlueprintReadOnly)
+	FRotator Neck_Rotator;
+	UPROPERTY(BlueprintReadOnly)
+	FRotator UpperArm_R_Rotator;
+	UPROPERTY(BlueprintReadOnly)
+	FRotator UpperArm_L_Rotator;
 
 };

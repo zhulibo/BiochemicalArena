@@ -64,7 +64,7 @@ void UStorageSubsystem::SaveToDisk()
 		UGameplayStatics::AsyncSaveGameToSlot(StorageCache, SlotName, UserIndex);
 
 		// Throttle save to Cloud
-		// GetWorld()->GetTimerManager().SetTimer(SaveToCloudTimerHandle, this, &ThisClass::SaveToCloud, 5.f);
+		GetWorld()->GetTimerManager().SetTimer(SaveToCloudTimerHandle, this, &ThisClass::SaveToCloud, 5.f);
 	}
 }
 
@@ -72,20 +72,17 @@ void UStorageSubsystem::SaveToDisk()
 void UStorageSubsystem::SaveToCloud()
 {
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
+	if (EOSSubsystem && StorageCache)
 	{
-		if (StorageCache)
-		{
-			TArray<uint8> FileContents;
-			FMemoryWriter MemoryWriter(FileContents, true);
-			FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, false);
-			Ar.ArIsSaveGame = false; // 无论属性设否设置了UPROPERTY(SaveGame)，都将进行序列化
-			Ar.ArNoDelta = true;
-			StorageCache->Serialize(Ar);
+		TArray<uint8> FileContents;
+		FMemoryWriter MemoryWriter(FileContents, true);
+		FObjectAndNameAsStringProxyArchive Ar(MemoryWriter, false);
+		Ar.ArIsSaveGame = false; // 无论属性设否设置了UPROPERTY(SaveGame)，都将进行序列化
+		Ar.ArNoDelta = true;
+		StorageCache->Serialize(Ar);
 
-			// 将本地存档保存到云端
-			EOSSubsystem->WriteFile(SlotName, FileContents);
-		}
+		// 将本地存档保存到云端
+		EOSSubsystem->WriteFile(SlotName, FileContents);
 	}
 }
 

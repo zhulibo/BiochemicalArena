@@ -10,58 +10,56 @@ class BIOCHEMICALARENA_API ABaseController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	void OnMatchStateSet(FName State);
-
 	UPROPERTY()
 	class UHUDContainer* HUDContainer;
 
+	virtual void ManualReset();
+	virtual void SetHUDHealth(float Health) {}
+
+	virtual void SetHUDAmmo(int32 Ammo) {}
+	virtual void SetHUDCarriedAmmo(int32 Ammo) {}
+
 	void ShowScoreboard(bool bIsShow);
 	void ShowPauseMenu();
-	void AddKillLog(class ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState);
+	void AddKillLog(class ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState);
 	void ShowRadialMenu();
 	void SelectRadialMenu(double X, double Y);
 	void ChangeRadialMenu();
 	void CloseRadialMenu();
 
+	void SetHUDCrosshair(float CrosshairSpread);
+
+	void ShowKillStreak(int32 KillStreak);
+	void HiddenKillStreak();
+
 protected:
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	UPROPERTY()
 	class ABaseMode* BaseMode;
+	UPROPERTY()
+	class ABaseCharacter* BaseCharacter;
+	// UPROPERTY()
+	// TObjectPtr<class ABaseCharacter> BaseCharacter;
 
-	float ClientServerDelta = 0.f; // Difference between client and server time(not network delay)
-	UPROPERTY(EditAnywhere, Category = Time)
-	float RefreshFrequency = 5.f;
-	void HandleClientServerDelta();
+	float ServerClientDeltaTime = 0.f; // Difference between client and server time(not network delay)
+	void HandleServerClientDeltaTime();
 	UFUNCTION(Server, Reliable)
-	void RequestServerTime(float TimeClientRequest);
+	void RequestServerTime(float ClientTime);
 	UFUNCTION(Client, Reliable)
-	void ReturnServerTime(float TimeClientRequest, float TimeServerReceived);
+	void ReturnServerTime(float ClientTime, float ServerTime);
 	float GetServerTime();
 
-	// Client join midgame, get match state from server.
-	UFUNCTION(Server, Reliable)
-	void RequestServerMatchState();
-	UFUNCTION(Client, Reliable)
-	void ReturnServerMatchState(FName StateOfMatch, float Warmup, float Match, float Cooldown, float StartingTime);
-
-	float LevelStartTime = 0.f;
-	float MatchTime = 0.f;
-	float WarmupTime = 0.f;
-	float CooldownTime = 0.f;
-	int32 CountdownSeconds = 0;
-	UPROPERTY(ReplicatedUsing = OnRep_MatchState)
-	FName MatchState;
-	UFUNCTION()
-	void OnRep_MatchState();
-
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UHUDContainer> HUDContainerClass;
 	void AddHUDContainer();
-	void SetHUDTime();
 	void SetHUDWarmupCountdown(int32 CountdownTime);
-	void SetHUDMatchCountdown(int32 CountdownTime);
-	void HandleMatchHasStarted();
-	void HandleCooldown();
+	virtual void HandleMatchHasStarted();
+	virtual void HandleMatchHasEnded();
+
+	bool bNeedInitHUD = false;
+	virtual void InitHUD();
+	virtual void SetHUDTime() {}
 
 };

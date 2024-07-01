@@ -12,41 +12,45 @@ class BIOCHEMICALARENA_API AProjectile : public AActor
 public:
 	AProjectile();
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY()
 	float InitialSpeed = 60000.f;
 	UPROPERTY()
-	float Damage = 60.f;
+	float Damage;
 
 protected:
 	virtual void PostActorCreated() override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	class UBoxComponent* CollisionBox;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ProjectileMesh;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	class UProjectileMovementComponent* ProjectileMovement;
 
 	// 尾部效果
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UParticleSystem* Tracer;
 	UPROPERTY()
 	UParticleSystemComponent* TracerComponent;
 	void SpawnTracer();
 
 	// 在空中留下的轨迹
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	class UNiagaraSystem* Trail; // TODO 实现效果
 	UPROPERTY()
 	class UNiagaraComponent* TrailComponent;
 	void SpawnTrail();
 
 	// 击中效果
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UParticleSystem* ImpactParticle;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	class USoundCue* ImpactSound;
+
+	// 弹孔
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UMaterialInterface> ImpactDecal;
 
 public:
 	FORCEINLINE UBoxComponent* GetCollisionBox() const { return CollisionBox; }

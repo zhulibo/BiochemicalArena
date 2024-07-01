@@ -18,13 +18,13 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UCommonActionWidget* RightTabAction;
 
-	UPROPERTY(EditInstanceOnly, Category = "UI")
+	UPROPERTY(EditInstanceOnly)
 	class UCommonActivatableWidgetSwitcher* SettingSwitcher;
 	UPROPERTY(meta = (BindWidget))
 	class UHorizontalBox* TabButtonContainer;
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UCommonButton> TabButtonClass;
-	UPROPERTY(EditInstanceOnly, Category = "UI")
+	UPROPERTY(EditInstanceOnly)
 	TArray<class UCommonActivatableWidget*> TabContent;
 
 	void LinkSwitcher();

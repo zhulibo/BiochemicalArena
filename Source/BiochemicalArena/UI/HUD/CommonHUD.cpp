@@ -5,16 +5,19 @@
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "Components/VerticalBox.h"
 
-void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& EquipmentName, ABasePlayerState* KilledState)
+void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState)
 {
+	if (AttackerState == nullptr || DamagedState == nullptr) return;
+
 	if (KillLogContainer && KillLogLineClass)
 	{
 		UKillLogLine* KillLogLine = CreateWidget<UKillLogLine>(this, KillLogLineClass);
 		if (KillLogLine)
 		{
+			if (LocalPlayerState == nullptr) LocalPlayerState = GetOwningPlayerState<ABasePlayerState>();
 			KillLogContainer->AddChild(KillLogLine);
 
-			if (LocalPlayerState == nullptr) LocalPlayerState = GetOwningPlayerState<ABasePlayerState>();
+			// 攻击者
 			if (AttackerState)
 			{
 				KillLogLine->AttackerPlayer->SetText(FText::FromString(AttackerState->GetPlayerName()));
@@ -22,31 +25,36 @@ void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& Equi
 				{
 					if (LocalPlayerState->GetTeam() == AttackerState->GetTeam())
 					{
-						KillLogLine->AttackerPlayer->SetColorAndOpacity(ColorMutate);
+						KillLogLine->AttackerPlayer->SetColorAndOpacity(COLOR_MUTANT);
 					}
 					else
 					{
-						KillLogLine->AttackerPlayer->SetColorAndOpacity(ColorHuman);
-					}
-				}
-			}
-			KillLogLine->EquipmentName->SetText(FText::FromString(EquipmentName));
-			if (KilledState)
-			{
-				KillLogLine->KilledPlayer->SetText(FText::FromString(KilledState->GetPlayerName()));
-				if (LocalPlayerState)
-				{
-					if (LocalPlayerState->GetTeam() == KilledState->GetTeam())
-					{
-						KillLogLine->KilledPlayer->SetColorAndOpacity(ColorMutate);
-					}
-					else
-					{
-						KillLogLine->KilledPlayer->SetColorAndOpacity(ColorHuman);
+						KillLogLine->AttackerPlayer->SetColorAndOpacity(COLOR_HUMAN);
 					}
 				}
 			}
 
+			// 击杀原因
+			KillLogLine->CauserName->SetText(FText::FromString(CauserName));
+
+			// 死亡者
+			if (DamagedState)
+			{
+				KillLogLine->DamagedPlayer->SetText(FText::FromString(DamagedState->GetPlayerName()));
+				if (LocalPlayerState)
+				{
+					if (LocalPlayerState->GetTeam() == DamagedState->GetTeam())
+					{
+						KillLogLine->DamagedPlayer->SetColorAndOpacity(COLOR_MUTANT);
+					}
+					else
+					{
+						KillLogLine->DamagedPlayer->SetColorAndOpacity(COLOR_HUMAN);
+					}
+				}
+			}
+
+			// 限制击杀日志条数
 			if (KillLogContainer->GetChildrenCount() > 5)
 			{
 				KillLogContainer->RemoveChildAt(0);

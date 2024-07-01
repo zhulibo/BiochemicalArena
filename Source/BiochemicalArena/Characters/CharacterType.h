@@ -13,20 +13,30 @@ enum class EHumanCharacterName : uint8
 	MAX UMETA(Hidden)
 };
 
+UENUM(BlueprintType)
+enum class EMutantCharacterName : uint8
+{
+	Tank UMETA(DisplayName = "Tank"),
+	Ghost UMETA(DisplayName = "Ghost"),
+	Octopus UMETA(DisplayName = "Octopus"),
+
+	MAX UMETA(Hidden)
+};
+
 USTRUCT(BlueprintType)
 struct FHumanCharacterData : public FTableRowBase
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere)
 	EHumanCharacterName HumanCharacterName = EHumanCharacterName::SAS;
 
 	/**
 	 * Must be same as the audience item ID in dev portal,
 	 * Used to determine whether account own the product.
 	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere)
 	FString AudienceItemId = "-1";
 
 };

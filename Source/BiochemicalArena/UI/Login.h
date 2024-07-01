@@ -13,6 +13,7 @@ public:
 
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	class ALoginController* LoginController;

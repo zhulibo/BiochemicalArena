@@ -18,14 +18,14 @@ class BIOCHEMICALARENA_API AEquipment : public AActor
 public:
 	AEquipment();
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* SwapInMontage_C;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* SwapInMontage_E;
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* SwapOutMontage_C;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	UAnimMontage* SwapOutMontage_E;
 
 	class UEquipmentAnimInstance* GetEquipmentAnimInstance();
@@ -33,15 +33,18 @@ public:
 	virtual void EquipEquipment();
 	virtual void DropEquipment();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastHiddenMesh();
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	class USphereComponent* CollisionSphere;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	USkeletalMeshComponent* EquipmentMesh;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	USphereComponent* OverlapSphere;
 
 	UPROPERTY()
@@ -54,17 +57,17 @@ protected:
 	UPROPERTY()
 	EEquipmentState EquipmentState;
 
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	EEquipmentType EquipmentType;
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	EEquipmentCate EquipmentCate;
-	UPROPERTY(EditAnywhere, Category = "Equipment")
+	UPROPERTY(EditAnywhere)
 	EEquipmentName EquipmentName;
 
 	UPROPERTY()
 	class AHumanCharacter* HumanCharacter;
 	UPROPERTY()
-	class AHumanController* HumanController;
+	class ABaseController* BaseController;
 
 	UPROPERTY(replicated)
 	ETeam OwnerTeam;

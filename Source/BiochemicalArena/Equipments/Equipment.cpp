@@ -3,13 +3,13 @@
 #include "EquipmentAnimInstance.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Animation/AnimationAsset.h"
-#include "BiochemicalArena/PlayerControllers/HumanController.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "EquipmentType.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 
 AEquipment::AEquipment()
@@ -21,14 +21,15 @@ AEquipment::AEquipment()
 	SetRootComponent(CollisionSphere);
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	CollisionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore); // 忽略角色胶囊体
 	CollisionSphere->SetLinearDamping(1.f);
 	CollisionSphere->SetSphereRadius(20.f);
 
-	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
+	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("EquipmentMesh"));
 	EquipmentMesh->SetupAttachment(RootComponent);
 	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
+	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	OverlapSphere->SetupAttachment(RootComponent);
 	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -56,8 +57,9 @@ void AEquipment::BeginPlay()
 void AEquipment::OnAreaSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	AHumanCharacter* OverlapHumanCharacter = Cast<AHumanCharacter>(OtherActor);
-	if (OverlapHumanCharacter && OverlapHumanCharacter->IsLocallyControlled())
+	if (!HasAuthority()) return;
+
+	if (AHumanCharacter* OverlapHumanCharacter = Cast<AHumanCharacter>(OtherActor))
 	{
 		OverlapHumanCharacter->EquipOverlappingEquipment(this);
 	}
@@ -74,10 +76,7 @@ void AEquipment::EquipEquipment()
 	EquipmentState = EEquipmentState::Equipped;
 
 	// 取消销毁定时器
-	if (DestroyEquipmentTimerHandle.IsValid())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(DestroyEquipmentTimerHandle);
-	}
+	GetWorldTimerManager().ClearTimer(DestroyEquipmentTimerHandle);
 
 	CollisionSphere->SetSimulatePhysics(false);
 	CollisionSphere->SetEnableGravity(false);
@@ -87,8 +86,9 @@ void AEquipment::EquipEquipment()
 
 	SetOwnerTeam();
 
+	// 缓存BaseController
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
-	if (HumanCharacter) HumanController = Cast<AHumanController>(HumanCharacter->GetController()); // 缓存HumanController
+	if (HumanCharacter) BaseController = Cast<ABaseController>(HumanCharacter->GetController());
 }
 
 void AEquipment::SetOwnerTeam()
@@ -130,14 +130,14 @@ void AEquipment::DropEquipment()
 		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
 		if (CameraComponent)
 		{
-			float Impulse = HumanCharacter->IsKilled() ? 100.f : 300.f;
+			float Impulse = HumanCharacter->IsDead() ? 100.f : 300.f;
 			CollisionSphere->AddImpulse(CameraComponent->GetForwardVector() * Impulse, NAME_None, true);
 		}
 	}
 
 	SetOwner(nullptr);
 	HumanCharacter = nullptr;
-	HumanController = nullptr;
+	BaseController = nullptr;
 	OwnerTeam = ETeam::NoTeam;
 }
 
@@ -149,4 +149,9 @@ void AEquipment::SetAreaSphereCollision()
 void AEquipment::DestroyEquipment()
 {
 	Destroy();
+}
+
+void AEquipment::MulticastHiddenMesh_Implementation()
+{
+	EquipmentMesh->SetVisibility(false);
 }

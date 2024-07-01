@@ -10,20 +10,25 @@ class BIOCHEMICALARENA_API UScoreboard : public UCommonUserWidget
 	GENERATED_BODY()
 
 protected:
+	UFUNCTION()
 	virtual void NativeOnInitialized() override;
 
 	UPROPERTY()
-	class ATeamDeadMatchState* TeamDeadMatchState;
+	class ABaseGameState* BaseGameState;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* GameTitle;
 
-	UPROPERTY(EditDefaultsOnly, Category = "HUD")
+	FTimerHandle TimerHandle;
+	UFUNCTION()
+	void HandleTimer(ESlateVisibility InVisibility);
+
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UScoreBoardLineButton> ScoreBoardLineButtonClass;
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* ScoreBoardContainer;
 	UFUNCTION()
-	void RefreshScoreBoard(ESlateVisibility NewVisibility);
+	void RefreshScoreBoard();
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* FPS;

@@ -21,7 +21,7 @@ void ALoginController::AddContainer()
 		Login = CreateWidget<ULogin>(this, LoginClass);
 		if (Login)
 		{
-			Login->AddToViewport(999);
+			Login->AddToViewport();
 			Login->ActivateWidget();
 			FInputModeUIOnly InputModeData;
 			SetInputMode(InputModeData);

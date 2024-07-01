@@ -10,20 +10,47 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "CommonInputSubsystem.h"
+#include "BiochemicalArena/Equipments/DamageTypes/FallDamageType.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/System/StorageSaveGame.h"
+#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/OverheadWidget.h"
+#include "Components/WidgetComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Net/UnrealNetwork.h"
 
 ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	GetMesh()->SetGenerateOverlapEvents(true);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(GetMesh(), "Camera");
+	CameraBoom->TargetArmLength = 0.f;
+	CameraBoom->bUsePawnControlRotation = true;
+
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidget->SetupAttachment(RootComponent);
+
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
 	GetCharacterMovement()->SetCrouchedHalfHeight(50.f);
 	GetCharacterMovement()->AirControl = 0.4;
 	GetCharacterMovement()->AirControlBoostMultiplier = 1;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+}
+
+void ABaseCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
 }
 
 void ABaseCharacter::BeginPlay()
@@ -36,6 +63,15 @@ void ABaseCharacter::BeginPlay()
 	{
 		if (!CommonInputSubsystem->OnInputMethodChangedNative.IsBoundToObject(this)) CommonInputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::OnInputMethodChanged);
 	}
+
+	if (OverheadWidget)
+	{
+		UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+		if (OverheadWidgetClass)
+		{
+			OverheadWidgetClass->BaseCharacter = this;
+		}
+	}
 }
 
 // 增强输入
@@ -43,7 +79,6 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// Add Input Mapping Context
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
 	{
@@ -54,7 +89,6 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		}
 	}
 
-	// Set up action bindings
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
 	{
@@ -66,14 +100,14 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
 		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
 
-		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
+		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Started, this, &ThisClass::ScoreboardButtonPressed);
 		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
 		EnhancedInputComponent->BindAction(PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
 
 		EnhancedInputComponent->BindAction(RadialMenuAction, ETriggerEvent::Started, this, &ThisClass::RadialMenuButtonPressed);
 		EnhancedInputComponent->BindAction(RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
-		EnhancedInputComponent->BindAction(RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
 		EnhancedInputComponent->BindAction(RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChange);
+		EnhancedInputComponent->BindAction(RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
 	}
 }
 
@@ -85,9 +119,38 @@ void ABaseCharacter::Tick(float DeltaSeconds)
 
 	CalcAimPitch();
 
-	// if (!HasAuthority() && IsLocallyControlled())
+	PollInit();
+
+	// Don't know why Camera doesn't rotate with the CameraBoom,
+	// Manually copy the CameraBone's increased RelativeRotator(camera shake) to the Camera.
+	if (IsLocallyControlled())
+	{
+		FQuat PelvisBoneQuat = GetMesh()->GetBoneQuaternion("Pelvis", EBoneSpaces::WorldSpace); // Need EBoneSpace::LocalSpace pls!
+		FQuat CameraBoneQuat = GetMesh()->GetBoneQuaternion("Camera", EBoneSpaces::WorldSpace);
+		FQuat RelativeQuat = CameraBoneQuat.Inverse() * PelvisBoneQuat;
+
+		// HACK Use UE_LOG, Print the RelativeRotator when player is in idle pose, and hardcoded it.
+		// UE_LOG(LogTemp, Warning, TEXT("IdlePoseRelativeRotator: %s"), *RelativeQuat.Rotator().ToString());
+		FRotator IdlePoseRelativeRotator = FRotator(0.000005, -180.000000, 90.090436);
+
+		// IncreasedRotator = Current RelativeRotator - the RelativeRotator of idle pose
+		FRotator IncreasedRotator = RelativeQuat.Rotator() - IdlePoseRelativeRotator;
+
+		Camera->SetRelativeRotation(FRotator(IncreasedRotator.Roll, -IncreasedRotator.Yaw, -IncreasedRotator.Pitch));
+	}
+
+	// if (IsLocallyControlled())
 	// {
-	// 	AddMovementInput(GetActorForwardVector(), 1);
+	// 	UE_LOG(LogTemp, Warning, TEXT("--------------------- %d"), GetLocalRole());
+	//
+	// 	FRotator CameraSocketRotation = GetMesh()->GetSocketRotation("Camera");
+	// 	UE_LOG(LogTemp, Warning, TEXT("1: %s"), *CameraSocketRotation.ToString());
+	//
+	// 	FRotator CameraBoomRotation = CameraBoom->GetComponentRotation();
+	// 	UE_LOG(LogTemp, Warning, TEXT("2: %s"), *CameraBoomRotation.ToString());
+	//
+	// 	FRotator CameraRotation = Camera->GetComponentRotation();
+	// 	UE_LOG(LogTemp, Warning, TEXT("3: %s"), *CameraRotation.ToString());
 	// }
 }
 
@@ -96,10 +159,7 @@ void ABaseCharacter::PollInitMeshCollision()
 {
 	if (!HasInitMeshCollision)
 	{
-		if (BasePlayerState == nullptr)
-		{
-			BasePlayerState = GetPlayerState<ABasePlayerState>();
-		}
+		if (BasePlayerState == nullptr) BasePlayerState = GetPlayerState<ABasePlayerState>();
 		if (BasePlayerState && BasePlayerState->GetTeam() != ETeam::NoTeam)
 		{
 			switch (BasePlayerState->GetTeam())
@@ -120,7 +180,6 @@ void ABaseCharacter::PollInitMeshCollision()
 void ABaseCharacter::CalcAimPitch()
 {
 	AimPitch = GetBaseAimRotation().Pitch;
-
 	// Remote character need map pitch from [360, 270) to [0, -90)
 	if (AimPitch > 90.f && !IsLocallyControlled())
 	{
@@ -130,10 +189,25 @@ void ABaseCharacter::CalcAimPitch()
 	}
 }
 
+void ABaseCharacter::PollInit()
+{
+	if (IsLocallyControlled() && BaseController == nullptr) // WARNING 依赖BaseController为空，需要保证BaseController之前未被赋值
+	{
+		BaseController = Cast<ABaseController>(Controller);
+		if (BaseController)
+		{
+			OnLocallyControllerReady();
+
+			BaseController->ManualReset();
+		}
+	}
+}
+
 // 输入设备变化
 void ABaseCharacter::OnInputMethodChanged(ECommonInputType TempCommonInputType)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnInputMethodChanged: %d"), TempCommonInputType);
+
 	CommonInputType = TempCommonInputType;
 }
 
@@ -174,6 +248,18 @@ void ABaseCharacter::PlayFootstepSound()
 	}
 }
 
+void ABaseCharacter::FellOutOfWorld(const UDamageType& DmgType)
+{
+	UGameplayStatics::ApplyDamage(this, Health, BaseController, this, UFallDamageType::StaticClass());
+}
+
+void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, Health);
+}
+
 void ABaseCharacter::Move(const FInputActionValue& Value)
 {
 	FVector2D AxisVector = Value.Get<FVector2D>();
@@ -181,10 +267,9 @@ void ABaseCharacter::Move(const FInputActionValue& Value)
 	AddMovementInput(GetActorRightVector(), AxisVector.X);
 }
 
-// 分开处理Look输入，支持同时使用键鼠和手柄控制一个角色
+// 分开处理Look，无需根据输入设备类型区分灵敏度，支持同时使用键鼠和手柄控制一个角色
 void ABaseCharacter::LookMouse(const FInputActionValue& Value)
 {
-	if (bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	AddControllerYawInput(AxisVector.X * StorageSubsystem->StorageCache->MouseSensitivity);
@@ -193,7 +278,6 @@ void ABaseCharacter::LookMouse(const FInputActionValue& Value)
 
 void ABaseCharacter::LookStick(const FInputActionValue& Value)
 {
-	if (bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	AddControllerYawInput(AxisVector.X * StorageSubsystem->StorageCache->ControllerSensitivity);
@@ -202,7 +286,6 @@ void ABaseCharacter::LookStick(const FInputActionValue& Value)
 
 void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
 {
-	if (bIsRadialMenuOpened) return;
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -216,17 +299,23 @@ void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
 // 键鼠为长按蹲
 void ABaseCharacter::CrouchButtonPressed(const FInputActionValue& Value)
 {
+	if (GetCharacterMovement()->IsFalling()) return;
+
 	Crouch();
 }
 
 void ABaseCharacter::CrouchButtonReleased(const FInputActionValue& Value)
 {
+	if (GetCharacterMovement()->IsFalling()) return;
+
 	UnCrouch();
 }
 
 // 手柄为切换蹲
 void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Value)
 {
+	if (GetCharacterMovement()->IsFalling()) return;
+
 	if (bIsCrouched)
 	{
 		UnCrouch();
@@ -270,7 +359,6 @@ void ABaseCharacter::RadialMenuButtonPressed(const FInputActionValue& Value)
 	if (BaseController)
 	{
 		BaseController->ShowRadialMenu();
-		bIsRadialMenuOpened = true;
 	}
 }
 
@@ -280,13 +368,11 @@ void ABaseCharacter::RadialMenuButtonReleased(const FInputActionValue& Value)
 	if (BaseController)
 	{
 		BaseController->CloseRadialMenu();
-		bIsRadialMenuOpened = false;
 	}
 }
 
 void ABaseCharacter::RadialMenuChange(const FInputActionValue& Value)
 {
-	if (!bIsRadialMenuOpened) return;
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
@@ -296,7 +382,6 @@ void ABaseCharacter::RadialMenuChange(const FInputActionValue& Value)
 
 void ABaseCharacter::RadialMenuSelect(const FInputActionValue& Value)
 {
-	if (!bIsRadialMenuOpened) return;
 	FVector2D AxisVector = Value.Get<FVector2D>();
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
@@ -305,10 +390,30 @@ void ABaseCharacter::RadialMenuSelect(const FInputActionValue& Value)
 	}
 }
 
+// 落地事件（只在本地和服务端执行）
+void ABaseCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (HasAuthority())
+	{
+		// 计算扣血倍率
+		float DamageRate = CalcFallDamageRate();
+		if (DamageRate == 0.f) return;
+
+		// 播放叫声
+		MulticastPlayOuchSound(DamageRate);
+
+		// 应用伤害
+		float TakenDamage = FMath::Clamp(MaxHealth * DamageRate, 0.f, Health);
+		UGameplayStatics::ApplyDamage(this, TakenDamage, Controller, this, UFallDamageType::StaticClass());
+	}
+}
+
 // 计算跌落伤害比例
 float ABaseCharacter::CalcFallDamageRate()
 {
-	FVector Velocity = GetCharacterMovement()->Velocity; // 用当前帧的速度即可，Landed判定的时机是即将落地时，此时速度达到最大
+	FVector Velocity = GetCharacterMovement()->Velocity; // Landed判定的时机是即将落地时，此时速度达到最大
 	float Gravity = GetCharacterMovement()->GetGravityZ();
 	float DiffHighMeter = Velocity.Z / Gravity;
 
@@ -334,8 +439,7 @@ float ABaseCharacter::CalcFallDamageRate()
 	return DamageRate;
 }
 
-// 播放跌落受伤声音
-void ABaseCharacter::PlayOuchSound(float DamageRate)
+void ABaseCharacter::MulticastPlayOuchSound_Implementation(float DamageRate)
 {
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 	if (AssetSubsystem == nullptr) return;
@@ -354,10 +458,23 @@ void ABaseCharacter::PlayOuchSound(float DamageRate)
 	}
 }
 
-void ABaseCharacter::MulticastPlayOuchSound_Implementation(float DamageRate)
+void ABaseCharacter::SetHealth(float TempHealth)
 {
-	if (!IsLocallyControlled())
+	Health = TempHealth;
+
+	if (IsLocallyControlled()) SetHUDHealth();
+}
+
+void ABaseCharacter::OnRep_Health()
+{
+	if (IsLocallyControlled()) SetHUDHealth();
+}
+
+void ABaseCharacter::SetHUDHealth()
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
 	{
-		PlayOuchSound(DamageRate);
+		BaseController->SetHUDHealth(Health);
 	}
 }

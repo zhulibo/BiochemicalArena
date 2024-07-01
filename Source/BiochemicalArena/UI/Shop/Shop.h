@@ -17,11 +17,11 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UWrapBox* GoodsButtonContainer;
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UGoodsButton> EquipmentButtonClass;
 	void AddEquipmentButton(FOffer Offer);
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<UGoodsButton> CharacterButtonClass;
 	void AddCharacterButton(FOffer Offer);
 

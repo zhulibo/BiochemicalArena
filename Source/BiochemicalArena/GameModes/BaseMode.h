@@ -4,10 +4,7 @@
 #include "GameFramework/GameMode.h"
 #include "BaseMode.generated.h"
 
-namespace MatchState
-{
-	extern BIOCHEMICALARENA_API const FName Cooldown;
-}
+enum class ETeam : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API ABaseMode : public AGameMode
@@ -17,27 +14,29 @@ class BIOCHEMICALARENA_API ABaseMode : public AGameMode
 public:
 	ABaseMode();
 
+	float LevelStartTime = 0.f;
+
+	virtual void HumanReceiveDamage(class AHumanCharacter* DamagedCharacter, class ABaseController* DamagedController,
+		float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser) {}
+	virtual void MutantReceiveDamage(class AMutantCharacter* DamagedCharacter, ABaseController* DamagedController,
+	float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser) {}
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
-	virtual void OnMatchStateSet() override;
 
-	float LevelStartTime = 0.f;
-	UPROPERTY(EditDefaultsOnly)
-	float WarmupTime = 5.f;
-	UPROPERTY(EditDefaultsOnly)
-	float MatchTime = 600.f;
-	UPROPERTY(EditDefaultsOnly)
-	float CooldownTime = 5.f;
+	UPROPERTY()
+	class ABaseGameState* BaseGameState;
 
-	float CountdownTime = 0.f;
+	void SpawnHumanCharacter(AController* Controller);
+	void SpawnMutantCharacter(AController* Controller, FVector Location = FVector::ZeroVector,
+		FRotator ActorRotation = FRotator::ZeroRotator, FRotator ViewRotation = FRotator::ZeroRotator);
 
-	AActor* FindRandomPlayerStart(const FName& PlayerStartTag);
+	TArray<APlayerStart*> Team1PlayerStarts;
+	TArray<APlayerStart*> Team2PlayerStarts;
+	AActor* FindCharacterPlayerStart(ETeam Team);
+	void AssignTeam(AController* Controller, ETeam Team);
 
-public:
-	FORCEINLINE float GetLevelStartTime() const { return LevelStartTime; }
-	FORCEINLINE float GetWarmupTime() const { return WarmupTime; }
-	FORCEINLINE float GetMatchTime() const { return MatchTime; }
-	FORCEINLINE float GetCooldownTime() const { return CooldownTime; }
+	void AddKillLog(class ABasePlayerState* AttackerState, AActor* DamageCauser, const UDamageType* DamageType, ABasePlayerState* DamagedState);
 
 };

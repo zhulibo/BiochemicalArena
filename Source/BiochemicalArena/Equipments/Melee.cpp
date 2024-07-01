@@ -4,87 +4,86 @@
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "..\Characters\Components\CombatStateType.h"
-#include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "Components/CapsuleComponent.h"
+#include "DamageTypes/EquipmentDamageType.h"
 #include "Kismet/GameplayStatics.h"
 
 AMelee::AMelee()
 {
 	EquipmentCate = EEquipmentCate::Melee;
 
-	EquipmentMesh->SetGenerateOverlapEvents(true);
-	EquipmentMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	EquipmentMesh->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnMeshOverlap);
+	AttackCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("AttackCapsule"));
+	AttackCapsule->SetupAttachment(RootComponent);
+	AttackCapsule->SetGenerateOverlapEvents(true);
+	AttackCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttackCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	AttackCapsule->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnAttackCapsuleOverlap);
 }
 
 void AMelee::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetMeshCollision();
+	SetAttackCapsuleCollision();
 }
 
 void AMelee::EquipEquipment()
 {
 	Super::EquipEquipment();
 
-	SetMeshCollision();
+	SetAttackCapsuleCollision();
 }
 
-void AMelee::SetMeshCollision()
+void AMelee::SetAttackCapsuleCollision()
 {
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
-	if (HumanCharacter && HumanCharacter->IsLocallyControlled())
+	if (HumanCharacter)
 	{
 		switch (OwnerTeam)
 		{
 		case ETeam::Team1:
-			EquipmentMesh->SetCollisionResponseToChannel(ECC_Team2SkeletalMesh, ECollisionResponse::ECR_Overlap);
+			AttackCapsule->SetCollisionResponseToChannel(ECC_Team2SkeletalMesh, ECollisionResponse::ECR_Overlap);
 			break;
 		case ETeam::Team2:
-			EquipmentMesh->SetCollisionResponseToChannel(ECC_Team1SkeletalMesh, ECollisionResponse::ECR_Overlap);
+			AttackCapsule->SetCollisionResponseToChannel(ECC_Team1SkeletalMesh, ECollisionResponse::ECR_Overlap);
 			break;
 		}
 	}
 }
 
-void AMelee::EnableMeshCollision(bool bIsEnabled)
+void AMelee::SetAttackCollisionEnabled(bool bIsEnabled)
 {
 	if (bIsEnabled)
 	{
-		EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		AttackCapsule->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	}
 	else
 	{
-		EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		AttackCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		HitEnemies.Empty();
 	}
 }
 
-void AMelee::OnMeshOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+void AMelee::OnAttackCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	AHumanCharacter* InstigatorHumanCharacter = Cast<AHumanCharacter>(GetOwner());
-	if (InstigatorHumanCharacter && InstigatorHumanCharacter->IsLocallyControlled() && !HitEnemies.Contains(OtherActor))
+	if (!HasAuthority()) return;
+
+	AHumanCharacter* InstigatorCharacter = Cast<AHumanCharacter>(GetOwner());
+	if (InstigatorCharacter && !HitEnemies.Contains(OtherActor))
 	{
 		HitEnemies.Add(OtherActor);
 
-		// 近战武器对Overlap的精度要求较高，所以在本地做伤害判定，再把结果传给服务器
-		float DamageToApply;
-		if (InstigatorHumanCharacter->GetCombat() && InstigatorHumanCharacter->GetCombat()->GetCombatState() == ECombatState::LightAttacking)
+		float Damage;
+		if (InstigatorCharacter->GetCombatComponent() && InstigatorCharacter->GetCombatComponent()->GetCombatState() == ECombatState::LightAttacking)
 		{
-			DamageToApply = LightAttackDamage;
+			Damage = LightAttackDamage;
 		}
 		else
 		{
-			DamageToApply = HeavyAttackDamage;
+			Damage = HeavyAttackDamage;
 		}
-		ServerApplyDamage(OtherActor, InstigatorHumanCharacter, DamageToApply);
+		UGameplayStatics::ApplyDamage(OtherActor, Damage, InstigatorCharacter->Controller, this, UEquipmentDamageType::StaticClass());
 	}
-}
-
-
-void AMelee::ServerApplyDamage_Implementation(AActor* OtherActor, AHumanCharacter* InstigatorHumanCharacter, float DamageToApply)
-{
-	UGameplayStatics::ApplyDamage(OtherActor, DamageToApply, InstigatorHumanCharacter->Controller, this, UDamageType::StaticClass());
 }

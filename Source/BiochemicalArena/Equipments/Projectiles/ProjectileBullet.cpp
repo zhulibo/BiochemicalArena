@@ -1,5 +1,8 @@
 #include "ProjectileBullet.h"
+
+#include "BiochemicalArena/Equipments/DamageTypes/EquipmentDamageType.h"
 #include "Components/BoxComponent.h"
+#include "Components/DecalComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -22,32 +25,34 @@ void AProjectileBullet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (HasAuthority())
-	{
-		CollisionBox->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
-	}
+	CollisionBox->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 
+	// 设置生命周期
 	SetLifeSpan(1.f);
 }
 
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-                              FVector NormalImpulse, const FHitResult& Hit)
+	FVector NormalImpulse, const FHitResult& Hit)
 {
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetInstigator());
-	if (OwnerCharacter)
+	// FVector_NetQuantize ImpactPoint = Hit.ImpactPoint;
+	// UE_LOG(LogTemp, Warning, TEXT("ImpactPoint: %s"), *ImpactPoint.ToString());
+
+	if (HasAuthority())
 	{
-		AController* OwnerController = OwnerCharacter->Controller;
-		if (OwnerController)
+		ACharacter* OwnerCharacter = Cast<ACharacter>(GetInstigator());
+		if (OwnerCharacter)
 		{
-			UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, this, UDamageType::StaticClass());
+			AController* OwnerController = OwnerCharacter->Controller;
+			if (OwnerController)
+			{
+				UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, this, UEquipmentDamageType::StaticClass());
+			}
 		}
 	}
 
-	MulticastOnHit();
-}
+	// 发生碰撞延长生命周期，以便特效有足够时间展示
+	SetLifeSpan(11.f);
 
-void AProjectileBullet::MulticastOnHit_Implementation()
-{
 	if (TracerComponent)
 	{
 		TracerComponent->DestroyComponent();
@@ -57,8 +62,25 @@ void AProjectileBullet::MulticastOnHit_Implementation()
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle, GetActorTransform());
 	}
+
 	if (ImpactSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+	}
+
+	if (ImpactDecal)
+	{
+		auto DecalComponent = UGameplayStatics::SpawnDecalAttached(
+			ImpactDecal,
+			FVector(10.f),
+			HitComp,
+			NAME_None,
+			Hit.ImpactPoint,
+			Hit.ImpactNormal.Rotation(),
+			EAttachLocation::KeepWorldPosition,
+			10.f
+		);
+
+		DecalComponent->SetFadeScreenSize(0.004f);
 	}
 }

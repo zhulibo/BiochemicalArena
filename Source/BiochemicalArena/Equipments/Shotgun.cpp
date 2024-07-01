@@ -15,9 +15,9 @@ AShotgun::AShotgun()
 	EquipmentCate = EEquipmentCate::Shotgun;
 }
 
-void AShotgun::Fire(const FVector& HitTarget)
+void AShotgun::Fire(const FVector& HitTarget, float RecoilVert, float RecoilHor)
 {
-	Super::Fire(HitTarget);
+	Super::Fire(HitTarget, RecoilVert, RecoilHor);
 
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (OwnerTeam == ETeam::NoTeam) SetOwnerTeam();
@@ -26,7 +26,12 @@ void AShotgun::Fire(const FVector& HitTarget)
 	if (ProjectileClass && HumanCharacter && OwnerTeam != ETeam::NoTeam && MuzzleSocket)
 	{
 		FTransform SocketTransform = MuzzleSocket->GetSocketTransform(GetEquipmentMesh());
-		FVector ToTarget = HitTarget - SocketTransform.GetLocation();
+		FRotator TargetRotation = (HitTarget - SocketTransform.GetLocation()).Rotation();
+
+		// 应用后坐力（gun kick）
+		TargetRotation.Pitch += RecoilVert;
+		TargetRotation.Yaw += RecoilHor;
+
 		if (ProjectileClass)
 		{
 			FActorSpawnParameters SpawnParams;
@@ -35,15 +40,18 @@ void AShotgun::Fire(const FVector& HitTarget)
 
 			for (int32 i = 0; i < PelletNum; ++i)
 			{
-				FVector ToTargetRandom = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(ToTarget, SpreadDegrees);
+				// 添加散布
+				FVector ToTargetWithSpread = UKismetMathLibrary::RandomUnitVectorInConeInDegrees(TargetRotation.Vector(), CenterSpread);
+
 				AProjectileBullet* Projectile = GetWorld()->SpawnActor<AProjectileBullet>(
 					ProjectileClass,
 					SocketTransform.GetLocation(),
-					ToTargetRandom.Rotation(),
+					ToTargetWithSpread.Rotation(),
 					SpawnParams
 				);
 
-				Projectile->Damage = Damage;
+				Projectile->Damage = Damage / PelletNum;
+				Projectile->Impulse = Impulse;
 
 				switch (OwnerTeam)
 				{

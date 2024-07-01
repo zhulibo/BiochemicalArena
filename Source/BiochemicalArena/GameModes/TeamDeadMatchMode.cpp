@@ -1,21 +1,73 @@
 #include "TeamDeadMatchMode.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/PlayerControllers/HumanController.h"
-#include "BiochemicalArena/PlayerStates/HumanState.h"
-#include "BiochemicalArena/GameStates/TeamDeadMatchState.h"
-#include "BiochemicalArena/Equipments/Equipment.h"
+#include "BiochemicalArena/PlayerControllers/TeamDeadMatchController.h"
+#include "BiochemicalArena/PlayerStates/TeamDeadMatchPlayerState.h"
+#include "BiochemicalArena/GameStates/TeamDeadMatchGameState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 
 void ATeamDeadMatchMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	TeamDeadMatchState = GetGameState<ATeamDeadMatchState>();
+	TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
 }
 
 void ATeamDeadMatchMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	// 比赛前
+	if (MatchState == MatchState::WaitingToStart)
+	{
+		CountdownTime = LevelStartTime + WarmupTime - GetWorld()->GetTimeSeconds();
+		if (CountdownTime <= 0.f)
+		{
+			StartMatch();
+		}
+	}
+	// 比赛中
+	else if (MatchState == MatchState::InProgress)
+	{
+		CountdownTime = LevelStartTime + WarmupTime + MatchTime - GetWorld()->GetTimeSeconds();
+		if (CountdownTime <= 0.f)
+		{
+			EndMatch();
+		}
+	}
+	// 比赛后
+	else if (MatchState == MatchState::WaitingPostMatch)
+	{
+		CountdownTime = LevelStartTime + CooldownTime + WarmupTime + MatchTime - GetWorld()->GetTimeSeconds();
+		if (CountdownTime <= 0.f)
+		{
+		}
+	}
+}
+
+void ATeamDeadMatchMode::EndMatch()
+{
+	if (bIsEndingMatch) return;
+	bIsEndingMatch = true;
+
+	// 比赛时间结束时结束监视比赛状态
+	bWatchMatchState = false;
+
+	Super::EndMatch();
+}
+
+// MatchState变化时通知所有Controller
+void ATeamDeadMatchMode::OnMatchStateSet()
+{
+	Super::OnMatchStateSet();
+
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		ATeamDeadMatchController* TeamDeadMatchController = Cast<ATeamDeadMatchController>(*It);
+		if (TeamDeadMatchController)
+		{
+			TeamDeadMatchController->OnMatchStateSet(MatchState);
+		}
+	}
 }
 
 // 游戏开始
@@ -23,159 +75,99 @@ void ATeamDeadMatchMode::HandleMatchHasStarted()
 {
 	Super::HandleMatchHasStarted();
 
+	// 生成角色
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		AHumanController* HumanController = Cast<AHumanController>(*It);
-		if (HumanController)
+		AController* Controller = Cast<AController>(*It);
+		if (Controller)
 		{
-			AssignPlayerTeam(HumanController);
-
-			AHumanCharacter* HumanCharacter = SpawnHumanCharacter(HumanController);
-			if (HumanCharacter)
+			if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
+			if (TeamDeadMatchGameState)
 			{
-				HumanController->Possess(HumanCharacter);
-				HumanController->ClientSetRotation(HumanCharacter->GetActorRotation());
+				ETeam Team = TeamDeadMatchGameState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchGameState->GetTeam(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
+				AssignTeam(Controller, Team);
 			}
+			SpawnHumanCharacter(Controller);
 		}
 	}
+
+	// 角色生成后开始监视比赛状态
+	bWatchMatchState = true;
 }
 
 // 中途加入
-void ATeamDeadMatchMode::OnPostLogin(AController* NewPlayerController)
+void ATeamDeadMatchMode::OnPostLogin(AController* Controller)
 {
-	Super::OnPostLogin(NewPlayerController);
-
-	if (MatchState == MatchState::InProgress)
-	{
-		AHumanController* HumanController = Cast<AHumanController>(NewPlayerController);
-		if (HumanController)
-		{
-			AssignPlayerTeam(HumanController);
-
-			AHumanCharacter* HumanCharacter = SpawnHumanCharacter(HumanController);
-			if (HumanCharacter)
-			{
-				HumanController->Possess(HumanCharacter);
-				HumanController->ClientSetRotation(HumanCharacter->GetActorRotation());
-			}
-		}
-	}
-}
-
-// 重生
-void ATeamDeadMatchMode::Respawn(ACharacter* KilledCharacter, AController* KilledController)
-{
-	if (KilledCharacter)
-	{
-		KilledCharacter->Reset();
-		KilledCharacter->Destroy();
-	}
-	if (KilledController)
-	{
-		AHumanCharacter* HumanCharacter = SpawnHumanCharacter(KilledController);
-		if (HumanCharacter)
-		{
-			KilledController->Possess(HumanCharacter);
-		}
-	}
-}
-
-// 分配队伍
-void ATeamDeadMatchMode::AssignPlayerTeam(AHumanController* HumanController)
-{
-	if (TeamDeadMatchState == nullptr) TeamDeadMatchState = GetGameState<ATeamDeadMatchState>();
-	if (TeamDeadMatchState == nullptr || HumanController == nullptr) return;
-
-	AHumanState* HumanState = HumanController->GetPlayerState<AHumanState>();
-	if (HumanState)
-	{
-		if (TeamDeadMatchState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchState->GetTeam(ETeam::Team2).Num())
-		{
-			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team2);
-			HumanState->SetTeam(ETeam::Team2);
-		}
-		else
-		{
-			TeamDeadMatchState->AddToTeam(HumanState, ETeam::Team1);
-			HumanState->SetTeam(ETeam::Team1);
-		}
-	}
-}
-
-// 生成角色
-AHumanCharacter* ATeamDeadMatchMode::SpawnHumanCharacter(AController* NewPlayerController)
-{
-	if (NewPlayerController == nullptr) return nullptr;
-
-	// 获取角色类
-	AHumanState* HumanState = Cast<AHumanState>(NewPlayerController->PlayerState);
-	FString SpawnCharacterName = "SAS";
-	if (HumanState && !HumanState->GetSpawnCharacterName().IsEmpty())
-	{
-		SpawnCharacterName = HumanState->GetSpawnCharacterName();
-	}
-
-	// double StartTime = FPlatformTime::Seconds();
-
-	FString ClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Humans/%s/BP_%s.BP_%s_C'"), *SpawnCharacterName, *SpawnCharacterName, *SpawnCharacterName);
-	UClass* HumanCharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, *ClassPath);
-
-	// double EndTime = FPlatformTime::Seconds();
-	// UE_LOG(LogTemp, Warning, TEXT("Load HumanCharacterClass time: %f seconds"), EndTime - StartTime);
-
-	if (HumanCharacterClass == nullptr) return nullptr;
+	Super::OnPostLogin(Controller);
 
 	// 生成角色
-	FName PlayerStartTag = HumanState->GetTeam() == ETeam::Team1 ? "Team1" : "Team2";
-	AActor* StartSpot = FindRandomPlayerStart(PlayerStartTag);
-	if (StartSpot == nullptr) return nullptr;
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	return GetWorld()->SpawnActor<AHumanCharacter>(
-		HumanCharacterClass,
-		StartSpot->GetActorLocation(),
-		StartSpot->GetActorRotation(),
-		SpawnParams
-	);
+	if (MatchState == MatchState::InProgress)
+	{
+		if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
+		if (TeamDeadMatchGameState)
+		{
+			ETeam Team = TeamDeadMatchGameState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchGameState->GetTeam(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
+			AssignTeam(Controller, Team);
+		}
+		SpawnHumanCharacter(Controller);
+	}
 }
 
-// 击杀
-void ATeamDeadMatchMode::KillPlayer(AHumanCharacter* KilledCharacter, AHumanController* KilledController,
-	AHumanController* AttackerController, AActor* DamageCauser)
+// 角色受到伤害
+void ATeamDeadMatchMode::HumanReceiveDamage(AHumanCharacter* DamagedCharacter, ABaseController* DamagedController,
+	float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser)
 {
-	if (TeamDeadMatchState == nullptr) TeamDeadMatchState = GetGameState<ATeamDeadMatchState>();
+	if (DamagedCharacter == nullptr || DamagedController == nullptr || AttackerController == nullptr || DamageCauser == nullptr) return;
 
-	AHumanState* AttackerState = AttackerController ? Cast<AHumanState>(AttackerController->PlayerState) : nullptr;
-	AHumanState* KilledState = KilledController ? Cast<AHumanState>(KilledController->PlayerState) : nullptr;
+	ATeamDeadMatchPlayerState* DamagedState = Cast<ATeamDeadMatchPlayerState>(DamagedController->PlayerState);
+	ATeamDeadMatchPlayerState* AttackerState = Cast<ATeamDeadMatchPlayerState>(AttackerController->PlayerState);
 
-	if (KilledState) KilledState->AddDefeat(1);
-	if (AttackerState) AttackerState->AddScore(1.f);
+	if (DamagedState == nullptr || AttackerState == nullptr) return;
 
-	if (TeamDeadMatchState && AttackerState)
+	// 设置受伤者血量
+	float TakenDamage = FMath::Clamp(Damage, 0.f, DamagedCharacter->GetHealth());
+	DamagedCharacter->SetHealth(DamagedCharacter->GetHealth() - TakenDamage);
+
+	// 增加攻击者伤害分数
+	if (AttackerState != DamagedState) // 受到跌落伤害时，AttackerController和DamageCauser传的是自己
 	{
-		TeamDeadMatchState->AddTeamScore(AttackerState->GetTeam());
+		AttackerState->AddDamage(TakenDamage);
 	}
 
-	if (TeamDeadMatchState && AttackerState && DamageCauser && KilledState)
+	// 角色死亡
+	if (DamagedCharacter->GetHealth() <= 0.f)
 	{
-		EEquipmentName TempEquipmentName;
-		if (AEquipment* DamageCauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner())) // Projectile's owner is Equipment
+		if (AttackerState != DamagedState)
 		{
-			TempEquipmentName = DamageCauserEquipment->GetEquipmentName();
-		}
-		else // Melee's owner is Character
-		{
-			TempEquipmentName = Cast<AEquipment>(DamageCauser)->GetEquipmentName();
-		}
-		FString EquipmentName = UEnum::GetValueAsString(TempEquipmentName);
-		EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2);
-		TeamDeadMatchState->MulticastAddKillLog(AttackerState, EquipmentName, KilledState);
-	}
+			// 增加攻击者所在队伍的分数
+			if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
+			if (TeamDeadMatchGameState)
+			{
+				TeamDeadMatchGameState->AddTeamScore(AttackerState->GetTeam());
+			}
 
-	if (KilledCharacter)
+			// 增加攻击者连杀
+			AttackerState->AddKillStreak();
+		}
+
+		// 击杀日志
+		AddKillLog(AttackerState, DamageCauser, DamageType, DamagedState);
+
+		// 增加受伤者死亡次数
+		DamagedState->AddDefeat();
+
+		// 处理受伤者死亡流程
+		DamagedCharacter->MulticastTeamDeadMatchDead();
+	}
+}
+
+// 角色重生
+void ATeamDeadMatchMode::HumanRespawn(ACharacter* Character, AController* Controller)
+{
+	if (Character && Controller)
 	{
-		KilledCharacter->Kill();
+		Character->Destroy();
+
+		SpawnHumanCharacter(Controller);
 	}
 }

@@ -1,9 +1,13 @@
 #include "BasePlayerState.h"
 #include "Net/UnrealNetwork.h"
 #include "TeamType.h"
+#include "BiochemicalArena/Characters/BaseCharacter.h"
+#include "BiochemicalArena/Characters/Components/OverheadWidget.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/System/StorageSaveGame.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
+#include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ABasePlayerState::ABasePlayerState()
 {
@@ -15,7 +19,9 @@ void ABasePlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, Team);
+	DOREPLIFETIME(ThisClass, Damage);
 	DOREPLIFETIME(ThisClass, Defeat);
+	DOREPLIFETIME(ThisClass, KillStreak);
 }
 
 void ABasePlayerState::BeginPlay()
@@ -28,41 +34,148 @@ void ABasePlayerState::BeginPlay()
 		UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 		if (StorageSubsystem && StorageSubsystem->StorageCache)
 		{
-			SpawnCharacterName = StorageSubsystem->StorageCache->Character;
-			ServerSetSpawnCharacterName(StorageSubsystem->StorageCache->Character);
+			ServerSetHumanCharacterName(StorageSubsystem->StorageCache->Character);
 		}
 	}
 }
 
 void ABasePlayerState::SetTeam(ETeam TempTeam)
 {
+	// UE_LOG(LogTemp, Warning, TEXT("SetTeam -----------------------"));
+
 	Team = TempTeam;
+	BaseCharacter = nullptr; // TODO 被销毁时自动置为nullptr
 }
 
 void ABasePlayerState::OnRep_Team()
 {
+	// UE_LOG(LogTemp, Warning, TEXT("OnRep_Team ----------------------"));
+
+	BaseCharacter = nullptr; // TODO 被销毁时自动置为nullptr
+
+	BaseCharacter = Cast<ABaseCharacter>(GetPawn());
+	if (BaseCharacter)
+	{
+		BaseCharacter->HasInitMeshCollision = false;
+	}
+
+	SetPlayerNameTeamColor();
 }
 
-void ABasePlayerState::ServerSetSpawnCharacterName_Implementation(const FString& TempSpawnCharacterName)
+// 设置PlayerName队伍颜色
+void ABasePlayerState::SetPlayerNameTeamColor()
 {
-	SpawnCharacterName = TempSpawnCharacterName;
+	if (BaseCharacter == nullptr) BaseCharacter = Cast<ABaseCharacter>(GetPawn());
+	if (BaseCharacter)
+	{
+		if (!BaseCharacter->IsLocallyControlled())
+		{
+			if (UWidgetComponent* OverheadWidget = BaseCharacter->GetOverheadWidget())
+			{
+				if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
+				{
+					OverheadWidgetClass->SetPlayerNameTeamColor();
+					return;
+				}
+			}
+		}
+		// 本地玩家队伍改变时，更新所有玩家的队伍颜色
+		else
+		{
+			// double Time1 = FPlatformTime::Seconds();
+
+			TArray<AActor*> AllPlayers;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABaseCharacter::StaticClass(), AllPlayers);
+			for (AActor* Player : AllPlayers)
+			{
+				if (ABaseCharacter* IgnoreBaseCharacter = Cast<ABaseCharacter>(Player))
+				{
+					if (UWidgetComponent* OverheadWidget = IgnoreBaseCharacter->GetOverheadWidget())
+					{
+						if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
+						{
+							OverheadWidgetClass->SetPlayerNameTeamColor();
+						}
+					}
+				}
+			}
+
+			// double Time2 = FPlatformTime::Seconds();
+			// UE_LOG(LogTemp, Warning, TEXT("SetPlayerNameTeamColor %f"), Time2 - Time1);
+
+			return;
+		}
+	}
+
+	GetWorldTimerManager().SetTimerForNextTick([this]() {
+		SetPlayerNameTeamColor();
+	});
 }
 
-void ABasePlayerState::AddScore(float ScoreAmount)
+void ABasePlayerState::ServerSetHumanCharacterName_Implementation(const FString& TempHumanCharacterName)
 {
-	SetScore(GetScore() + ScoreAmount);
+	HumanCharacterName = TempHumanCharacterName;
 }
 
-void ABasePlayerState::OnRep_Score()
+void ABasePlayerState::SetMutantCharacterName(const FString& TempMutantCharacterName)
 {
-	Super::OnRep_Score();
+	MutantCharacterName = TempMutantCharacterName;
 }
 
-void ABasePlayerState::AddDefeat(int32 DefeatAmount)
+void ABasePlayerState::AddDamage(float TempDamage)
 {
-	Defeat += DefeatAmount;
+	Damage += TempDamage;
+}
+
+void ABasePlayerState::OnRep_Damage()
+{
+}
+
+void ABasePlayerState::AddDefeat()
+{
+	Defeat++;
 }
 
 void ABasePlayerState::OnRep_Defeat()
 {
+}
+
+void ABasePlayerState::AddKillStreak()
+{
+	KillStreak++;
+	GetWorldTimerManager().SetTimer(ResetKillStreakTimerHandle, this, &ThisClass::ResetKillStreak, 5.f);
+
+	ShowKillStreak();
+}
+
+void ABasePlayerState::ResetKillStreak()
+{
+	KillStreak = 0;
+}
+
+void ABasePlayerState::OnRep_KillStreak()
+{
+	ShowKillStreak();
+}
+
+void ABasePlayerState::ShowKillStreak()
+{
+	if (KillStreak > 1)
+	{
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwner());
+		if (BaseController && BaseController->IsLocalController())
+		{
+			BaseController->ShowKillStreak(KillStreak);
+			GetWorldTimerManager().SetTimer(ClearKillStreakTimerHandle, this, &ThisClass::HiddenKillStreak, 10.f);
+		}
+	}
+}
+
+void ABasePlayerState::HiddenKillStreak()
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwner());
+	if (BaseController && BaseController->IsLocalController())
+	{
+		BaseController->HiddenKillStreak();
+	}
 }

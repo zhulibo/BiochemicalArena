@@ -2,7 +2,7 @@
 
 #include "EquipmentAnimInstance.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/PlayerControllers/HumanController.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "Components/SphereComponent.h"
 #include "Shells/Shell.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -21,11 +21,11 @@ void AWeapon::BeginPlay()
 
 	MuzzleSocket = EquipmentMesh->GetSocketByName(FName("Muzzle"));
 
-	Ammo = MagCapacity;
 	CarriedAmmo = MaxCarriedAmmo;
+	Ammo = MagCapacity;
 }
 
-void AWeapon::Fire(const FVector& HitTarget)
+void AWeapon::Fire(const FVector& HitTarget, float RecoilVert, float RecoilHor)
 {
 	if (GetEquipmentAnimInstance())
 	{
@@ -65,6 +65,7 @@ void AWeapon::Fire(const FVector& HitTarget)
 void AWeapon::SpendRound()
 {
 	Ammo = FMath::Clamp(Ammo - 1, 0, MagCapacity);
+
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter && HumanCharacter->IsLocallyControlled())
 	{
@@ -75,6 +76,7 @@ void AWeapon::SpendRound()
 void AWeapon::SetAmmo(int32 AmmoNum)
 {
 	Ammo = AmmoNum;
+
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter && HumanCharacter->IsLocallyControlled())
 	{
@@ -85,6 +87,7 @@ void AWeapon::SetAmmo(int32 AmmoNum)
 void AWeapon::SetCarriedAmmo(int32 AmmoNum)
 {
 	CarriedAmmo = AmmoNum;
+
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter && HumanCharacter->IsLocallyControlled())
 	{
@@ -97,10 +100,10 @@ void AWeapon::SetHUDAmmo()
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter)
 	{
-		if (HumanController == nullptr) HumanController = Cast<AHumanController>(HumanCharacter->Controller);
-		if (HumanController)
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(HumanCharacter->Controller);
+		if (BaseController)
 		{
-			HumanController->SetHUDAmmo(Ammo);
+			BaseController->SetHUDAmmo(Ammo);
 		}
 	}
 }
@@ -110,10 +113,16 @@ void AWeapon::SetHUDCarriedAmmo()
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter)
 	{
-		if (HumanController == nullptr) HumanController = Cast<AHumanController>(HumanCharacter->Controller);
-		if (HumanController)
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(HumanCharacter->Controller);
+		if (BaseController)
 		{
-			HumanController->SetHUDCarriedAmmo(CarriedAmmo);
+			BaseController->SetHUDCarriedAmmo(CarriedAmmo);
 		}
 	}
+}
+
+void AWeapon::MulticastFullAmmo_Implementation()
+{
+	SetAmmo(MagCapacity);
+	SetCarriedAmmo(MaxCarriedAmmo);
 }

@@ -1,19 +1,19 @@
 #include "Pickup.h"
+
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "Components/SphereComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
 
 APickup::APickup()
 {
-	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	SetRootComponent(OverlapSphere);
-	OverlapSphere->SetSphereRadius(100.f);
+	OverlapSphere->SetSphereRadius(150.f);
 	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	OverlapSphere->SetCollisionResponseToChannel(ECC_Team1SkeletalMesh, ECollisionResponse::ECR_Overlap);
 	OverlapSphere->OnComponentBeginOverlap.AddUniqueDynamic(this, &APickup::OnSphereOverlap);
 
 	PickupMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PickupMesh"));
@@ -24,27 +24,14 @@ APickup::APickup()
 void APickup::BeginPlay()
 {
 	Super::BeginPlay();
-}
 
-void APickup::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-}
-
-void APickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-}
-
-void APickup::Destroyed()
-{
-	Super::Destroyed();
-
-	if (PickupSound)
+	if (AMutationController* MutationController = Cast<AMutationController>(GetWorld()->GetFirstPlayerController()))
 	{
-		UGameplayStatics::PlaySoundAtLocation(
-			this,
-			PickupSound,
-			GetActorLocation()
-		);
+		MutationController->OnRoundStarted.AddUObject(this, &ThisClass::OnRoundStarted);
 	}
+}
+
+void APickup::OnRoundStarted()
+{
+	Destroy();
 }

@@ -7,25 +7,16 @@
 #include "RadialMenuContainer.h"
 #include "Scoreboard.h"
 #include "TeamDeadMatch.h"
-#include "BiochemicalArena/PlayerControllers/BaseController.h"
 
 void UHUDContainer::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
-	if (BaseController)
-	{
-		FInputModeGameOnly InputModeData;
-		BaseController->SetInputMode(InputModeData);
-		BaseController->SetShowMouseCursor(false);
-	}
+	TeamDeadMatch->SetVisibility(ESlateVisibility::Collapsed);
 
-	TeamDeadMatch->SetVisibility(ESlateVisibility::Hidden);
-
-	Mutation->SetVisibility(ESlateVisibility::Hidden);
-	MutationHuman->SetVisibility(ESlateVisibility::Hidden);
-	MutationMutant->SetVisibility(ESlateVisibility::Hidden);
+	Mutation->SetVisibility(ESlateVisibility::Collapsed);
+	MutationHuman->SetVisibility(ESlateVisibility::Collapsed);
+	MutationMutant->SetVisibility(ESlateVisibility::Collapsed);
 
 	Scoreboard->SetVisibility(ESlateVisibility::Hidden);
 	RadialMenuContainer->SetVisibility(ESlateVisibility::Hidden);

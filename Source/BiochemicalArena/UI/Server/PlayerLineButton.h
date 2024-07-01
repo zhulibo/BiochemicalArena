@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Online/Lobbies.h"
 #include "PlayerLineButton.generated.h"
 
@@ -14,6 +15,9 @@ class BIOCHEMICALARENA_API UPlayerLineButton : public UCommonButtonBase
 
 public:
 	TSharedPtr<const FLobbyMember> Member;
+
+	UPROPERTY()
+	UEOSSubsystem* EOSSubsystem;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;
@@ -35,5 +39,6 @@ protected:
 	UCommonButton* KickPlayerButton;
 	UFUNCTION()
 	void OnKickPlayerButtonClicked();
+	void OnKickLobbyMemberComplete(bool bWasSuccessful);
 
 };

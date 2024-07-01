@@ -18,11 +18,11 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Equipment")
+	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* ShellMesh;
 
 	UPROPERTY()
-	bool bIsFirstOnHit;
+	bool bIsFirstOnHit = true;
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 

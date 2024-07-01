@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 UENUM(BlueprintType)
-enum class EGameMode : uint8
+enum class EGameMode2 : uint8
 {
 	Mutation UMETA(DisplayName = "Mutation"),
-	TeamDeadMatchMatch UMETA(DisplayName = "TeamDeadMatchMatch"),
+	TeamDeadMatch UMETA(DisplayName = "TeamDeadMatch"),
 
 	MAX UMETA(Hidden)
 };
@@ -12,17 +12,17 @@ enum class EGameMode : uint8
 UENUM(BlueprintType)
 enum class EMutationMap : uint8
 {
-	Dev UMETA(DisplayName = "Dev"),
-	Dev2 UMETA(DisplayName = "Dev2"),
+	DevMutation UMETA(DisplayName = "Dev_Mutation"),
+	DevMutation2 UMETA(DisplayName = "Dev_Mutation2"),
 
 	MAX UMETA(Hidden)
 };
 
 UENUM(BlueprintType)
-enum class ETeamDeadMatchMatchMap : uint8
+enum class ETeamDeadMatchMap : uint8
 {
-	Dev3 UMETA(DisplayName = "Dev3"),
-	Dev4 UMETA(DisplayName = "Dev4"),
+	DevTeamDeadMatch UMETA(DisplayName = "Dev_TeamDeadMatch"),
+	DevTeamDeadMatch2 UMETA(DisplayName = "Dev_TeamDeadMatch2"),
 
 	MAX UMETA(Hidden)
 };

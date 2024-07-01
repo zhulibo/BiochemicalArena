@@ -19,7 +19,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(EditAnywhere, Category = "UI")
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<ULogin> LoginClass;
 	void AddContainer();
 
