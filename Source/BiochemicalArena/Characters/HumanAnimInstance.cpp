@@ -21,7 +21,6 @@ void UHumanAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bIsAccelerating = HumanCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f;
 	bIsCrouched = HumanCharacter->bIsCrouched;
 	bIsAiming = HumanCharacter->GetCombatComponent()->IsAiming();
-	bIsDead = HumanCharacter->IsDead();
 
 	// 计算瞄准方向与移动方向的偏移量，用于控制脚步朝向
 	FRotator AimRotation = HumanCharacter->GetBaseAimRotation();

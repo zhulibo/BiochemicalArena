@@ -2,6 +2,8 @@
 #include "Net/UnrealNetwork.h"
 #include "TeamType.h"
 #include "BiochemicalArena/Characters/BaseCharacter.h"
+#include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
+#include "BiochemicalArena/Abilities/AttributeSetBase.h"
 #include "BiochemicalArena/Characters/Components/OverheadWidget.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/System/StorageSaveGame.h"
@@ -11,6 +13,11 @@
 
 ABasePlayerState::ABasePlayerState()
 {
+	AbilitySystemComponent = CreateDefaultSubobject<UBAAbilitySystemComponent>(TEXT("BaseAbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+	AttributeSetBase = CreateDefaultSubobject<UAttributeSetBase>(TEXT("BaseAttributeSet"));
+
 	Team = ETeam::NoTeam;
 }
 
@@ -34,9 +41,63 @@ void ABasePlayerState::BeginPlay()
 		UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 		if (StorageSubsystem && StorageSubsystem->StorageCache)
 		{
-			ServerSetHumanCharacterName(StorageSubsystem->StorageCache->Character);
+			ServerSetHumanCharacterName(StorageSubsystem->StorageCache->HumanCharacter);
+			ServerSetMutantCharacterName(StorageSubsystem->StorageCache->MutantCharacterName);
 		}
 	}
+
+	InitData();
+}
+
+void ABasePlayerState::Reset()
+{
+	Super::Reset();
+
+	InitData();
+}
+
+// 初始化数据
+void ABasePlayerState::InitData()
+{
+	if (AttributeSetBase && GetCharacterLevel() != 2.f)
+	{
+		AttributeSetBase->SetCharacterLevel(2.f);
+	}
+}
+
+UAbilitySystemComponent* ABasePlayerState::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+UAttributeSetBase* ABasePlayerState::GetAttributeSetBase()
+{
+	return AttributeSetBase;
+}
+
+float ABasePlayerState::GetMaxHealth()
+{
+	return AttributeSetBase ? AttributeSetBase->GetMaxHealth() : 0.f;
+}
+
+float ABasePlayerState::GetHealth()
+{
+	return AttributeSetBase ? AttributeSetBase->GetHealth() : 0.f;
+}
+
+float ABasePlayerState::GetDamageReceivedMul()
+{
+	return AttributeSetBase ? AttributeSetBase->GetDamageReceivedMul() : 0.f;
+}
+
+float ABasePlayerState::GetRepelReceivedMul()
+{
+	return AttributeSetBase ? AttributeSetBase->GetRepelReceivedMul() : 0.f;
+}
+
+float ABasePlayerState::GetCharacterLevel()
+{
+	return AttributeSetBase ? AttributeSetBase->GetCharacterLevel() : 0.f;
 }
 
 void ABasePlayerState::SetTeam(ETeam TempTeam)
@@ -44,6 +105,7 @@ void ABasePlayerState::SetTeam(ETeam TempTeam)
 	// UE_LOG(LogTemp, Warning, TEXT("SetTeam -----------------------"));
 
 	Team = TempTeam;
+
 	BaseCharacter = nullptr; // TODO 被销毁时自动置为nullptr
 }
 
@@ -59,11 +121,10 @@ void ABasePlayerState::OnRep_Team()
 		BaseCharacter->HasInitMeshCollision = false;
 	}
 
-	SetPlayerNameTeamColor();
+	InitOverheadWidget();
 }
 
-// 设置PlayerName队伍颜色
-void ABasePlayerState::SetPlayerNameTeamColor()
+void ABasePlayerState::InitOverheadWidget()
 {
 	if (BaseCharacter == nullptr) BaseCharacter = Cast<ABaseCharacter>(GetPawn());
 	if (BaseCharacter)
@@ -74,12 +135,12 @@ void ABasePlayerState::SetPlayerNameTeamColor()
 			{
 				if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
 				{
-					OverheadWidgetClass->SetPlayerNameTeamColor();
+					OverheadWidgetClass->InitOverheadWidget();
 					return;
 				}
 			}
 		}
-		// 本地玩家队伍改变时，更新所有玩家的队伍颜色
+		// 本地玩家队伍改变时，初始化本机所有玩家的OverheadWidget
 		else
 		{
 			// double Time1 = FPlatformTime::Seconds();
@@ -94,7 +155,7 @@ void ABasePlayerState::SetPlayerNameTeamColor()
 					{
 						if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
 						{
-							OverheadWidgetClass->SetPlayerNameTeamColor();
+							OverheadWidgetClass->InitOverheadWidget();
 						}
 					}
 				}
@@ -108,7 +169,7 @@ void ABasePlayerState::SetPlayerNameTeamColor()
 	}
 
 	GetWorldTimerManager().SetTimerForNextTick([this]() {
-		SetPlayerNameTeamColor();
+		InitOverheadWidget();
 	});
 }
 
@@ -117,7 +178,12 @@ void ABasePlayerState::ServerSetHumanCharacterName_Implementation(const FString&
 	HumanCharacterName = TempHumanCharacterName;
 }
 
-void ABasePlayerState::SetMutantCharacterName(const FString& TempMutantCharacterName)
+void ABasePlayerState::ServerSetMutantCharacterName_Implementation(EMutantCharacterName TempMutantCharacterName)
+{
+	MutantCharacterName = TempMutantCharacterName;
+}
+
+void ABasePlayerState::SetMutantCharacterName(EMutantCharacterName TempMutantCharacterName)
 {
 	MutantCharacterName = TempMutantCharacterName;
 }

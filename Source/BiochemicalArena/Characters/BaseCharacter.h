@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayEffectTypes.h"
 #include "GameFramework/Character.h"
 #include "Interfaces/CrosshairInterface.h"
 #include "BaseCharacter.generated.h"
@@ -9,30 +11,66 @@ enum class ECommonInputType : uint8;
 struct FBag;
 
 UCLASS()
-class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter, public ICrosshairInterface
+class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter, public ICrosshairInterface, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
 	ABaseCharacter();
 
-	virtual void OnLocallyControllerReady() {}
+	bool bIsLocalControllerReady = false;
+	virtual void OnLocalControllerReady() {}
 
 	bool HasInitMeshCollision = false;
+
+	virtual void PossessedBy(AController* NewController) override;
+	void InitAbilityActorInfo();
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	class UAttributeSetBase* GetAttributeSetBase();
+	float GetMaxHealth();
+	float GetHealth();
+	float GetDamageReceivedMul();
+	float GetRepelReceivedMul();
+	float GetCharacterLevel();
 
 	void PlayFootstepSound();
 
 	virtual void FellOutOfWorld(const UDamageType& DmgType) override;
-
 	void SetHealth(float TempHealth);
-	void SetHUDHealth();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetHealth(float TempHealth, AController* AttackerController);
+
+	bool bIsImmune = false;
+
+	UPROPERTY()
+	FColor BloodColor;
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* BloodEffect_Projectile;
+	UPROPERTY(EditAnywhere)
+	UNiagaraSystem* BloodEffect_Melee;
 
 protected:
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void OnRep_PlayerState() override;
+
+	UFUNCTION()
+	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+		FVector NormalImpulse, const FHitResult& Hit);
+
+	UPROPERTY()
+	class UBAAbilitySystemComponent* AbilitySystemComponent;
+	UPROPERTY()
+	UAttributeSetBase* AttributeSetBase;
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<class UGameplayAbilityBase>> StartupAbilities;
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<class UGameplayEffect>> StartupEffects;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
+
+	virtual void OnAbilitySystemComponentInit();
 
 	UPROPERTY(VisibleAnywhere)
 	class USpringArmComponent* CameraBoom;
@@ -40,6 +78,8 @@ protected:
 	class UCameraComponent* Camera;
 	UPROPERTY(VisibleAnywhere)
 	class UWidgetComponent* OverheadWidget;
+	UPROPERTY()
+	class UOverheadWidget* OverheadWidgetClass;
 
 	UPROPERTY()
 	class UAssetSubsystem* AssetSubsystem;
@@ -66,33 +106,8 @@ protected:
 	UFUNCTION()
 	void OnInputMethodChanged(ECommonInputType TempCommonInputType);
 
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	class UInputMappingContext* BaseMappingContext;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	class UInputAction* MoveAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* LookMouseAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* LookStickAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* JumpAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* CrouchAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* CrouchControllerAction;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* ScoreboardAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* PauseMenuAction;
-
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* RadialMenuAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* RadialMenuChangeAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Base")
-	UInputAction* RadialMenuSelectAction;
-
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class UInputBase> InputBase;
 	void Move(const struct FInputActionValue& Value);
 	void LookMouse(const FInputActionValue& Value);
 	void LookStick(const FInputActionValue& Value);
@@ -110,15 +125,13 @@ protected:
 	void RadialMenuChange(const FInputActionValue& Value);
 	void RadialMenuSelect(const FInputActionValue& Value);
 
-	UPROPERTY()
-	float MaxHealth;
-	UPROPERTY(ReplicatedUsing = OnRep_Health)
-	float Health;
-	UFUNCTION()
-	void OnRep_Health();
+	void OnMaxHealthChanged(const FOnAttributeChangeData& Data);
+	void OnHealthChanged(const FOnAttributeChangeData& Data);
 
 	virtual void Landed(const FHitResult& Hit) override;
 	float CalcFallDamageRate();
+	UPROPERTY(EditAnywhere)
+	USoundCue* OuchSound;
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastPlayOuchSound(float DamageRate);
 
@@ -128,8 +141,6 @@ public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
 	FORCEINLINE UWidgetComponent* GetOverheadWidget() const { return OverheadWidget; }
 	FORCEINLINE float GetAimPitch() const { return AimPitch; }
-	FORCEINLINE float GetHealth() const { return Health; }
-	FORCEINLINE float GetMaxHealth() const { return MaxHealth; }
 	FORCEINLINE bool IsDead() const { return bIsDead; }
 
 };

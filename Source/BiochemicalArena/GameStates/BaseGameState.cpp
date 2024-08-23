@@ -1,5 +1,6 @@
 #include "BaseGameState.h"
 
+#include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
@@ -11,6 +12,28 @@ void ABaseGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 	DOREPLIFETIME(ThisClass, Team1);
 	DOREPLIFETIME(ThisClass, Team2);
+}
+
+void ABaseGameState::OnRep_MatchState()
+{
+	Super::OnRep_MatchState();
+
+	if (MatchState == MatchState::PostRound)
+	{
+		HandleRoundHasEnded();
+	}
+}
+
+void ABaseGameState::HandleMatchHasStarted()
+{
+	Super::HandleMatchHasStarted();
+
+	OnRoundStarted.Broadcast();
+}
+
+void ABaseGameState::HandleRoundHasEnded()
+{
+	OnRoundEnded.Broadcast();
 }
 
 void ABaseGameState::AddToTeam(ABasePlayerState* BasePlayerState, ETeam Team)
@@ -30,21 +53,13 @@ void ABaseGameState::RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam Tea
 {
 	switch (Team)
 	{
-		case ETeam::Team1:
-			Team1.Remove(BasePlayerState);
-			break;
-		case ETeam::Team2:
-			Team2.Remove(BasePlayerState);
-			break;
+	case ETeam::Team1:
+		Team1.Remove(BasePlayerState);
+		break;
+	case ETeam::Team2:
+		Team2.Remove(BasePlayerState);
+		break;
 	}
-}
-
-void ABaseGameState::OnRep_Team1()
-{
-}
-
-void ABaseGameState::OnRep_Team2()
-{
 }
 
 TArray<ABasePlayerState*> ABaseGameState::GetTeam(ETeam Team)

@@ -12,9 +12,6 @@ class BIOCHEMICALARENA_API AProjectileBullet : public AProjectile
 public:
 	AProjectileBullet();
 
-	UPROPERTY()
-	float Impulse;
-
 protected:
 	virtual void BeginPlay() override;
 

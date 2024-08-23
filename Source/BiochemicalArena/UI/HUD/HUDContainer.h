@@ -39,8 +39,18 @@ public:
 
 	void ShowPauseMenu();
 
+	void ShowBagMenu();
+
+	void ShowCharacterMenu();
+
 protected:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UPauseMenu> PauseMenuClass;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UBagMenu> BagMenuClass;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UCharacterMenu> CharacterMenuClass;
 
 };

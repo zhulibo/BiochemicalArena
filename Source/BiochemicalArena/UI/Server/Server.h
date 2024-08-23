@@ -49,7 +49,7 @@ protected:
 	class UCommonHierarchicalScrollBox* ServerLineButtonContainer;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UServerLineButton> ServerLineButtonClass;
-	void OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
+	void OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* ServerResetButton;

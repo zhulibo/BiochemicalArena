@@ -1,22 +1,16 @@
 #include "MutantGhost.h"
 
-#include "BiochemicalArena/Characters/CharacterType.h"
+#include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "BiochemicalArena/Characters/MutantAnimInstance.h"
 
 AMutantGhost::AMutantGhost()
 {
-	MaxHealth = 2000.f;
-	Health = MaxHealth;
-
-	LightAttackDamage = 60.f;
-	HeavyAttackDamage = 70.f;
+	MutantCharacterName = EMutantCharacterName::Ghost;
 }
 
 void AMutantGhost::BeginPlay()
 {
 	Super::BeginPlay();
-
-	MutantCharacterName = EMutantCharacterName::Ghost;
 
 	if (MutantAnimInstance == nullptr) MutantAnimInstance = Cast<UMutantAnimInstance>(GetMesh()->GetAnimInstance());
 	if (MutantAnimInstance)

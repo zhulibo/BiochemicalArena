@@ -4,9 +4,6 @@
 #include "BaseController.h"
 #include "MutationController.generated.h"
 
-DECLARE_MULTICAST_DELEGATE(FOnRoundStarted);
-DECLARE_MULTICAST_DELEGATE(FOnRoundEnded);
-
 enum class ETeam : uint8;
 
 UCLASS()
@@ -15,10 +12,7 @@ class BIOCHEMICALARENA_API AMutationController : public ABaseController
 	GENERATED_BODY()
 
 public:
-	FOnRoundStarted OnRoundStarted;
-	FOnRoundEnded OnRoundEnded;
-
-	void OnTeamChange();
+	void OnTeamChange(ETeam TempTeam);
 
 	void OnMatchStateSet(FName TempMatchState, int32 TempCurrentRound);
 
@@ -26,10 +20,18 @@ public:
 	virtual void SetHUDAmmo(int32 Ammo) override;
 	virtual void SetHUDCarriedAmmo(int32 Ammo) override;
 	void SetHUDTeamNum(int32 TeamNum, ETeam Team);
-	void Show1000DamageIcon();
 
-	void EnableSelectCharacter();
+	void Show1000DamageUI();
+
+	bool bCanSelectCharacter = true;
+	void ShowCharacterMenu();
 	void DisableSelectCharacter();
+
+	void ShowSkillUI(bool bIsShow);
+
+	void UpdateRageUI(float UpdateRageUI);
+
+	void SetHUDDamageMul(float DamageMul);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -85,19 +87,23 @@ protected:
 	void SetHUDMatchCountdown(int32 CountdownTime);
 
 	virtual void InitHUD() override;
+	void InitHumanHUD();
+	void InitMutantHUD();
 
 	float HUDHealth;
 	float HUDMaxHealth;
 	float HUDScore;
 	int32 HUDDefeat;
 
-	virtual void HandleMatchHasStarted() override;
 	void HandleRoundHasEnded();
 
 	void SetHUDCurrentRound();
 	void SetHUDTotalRound();
 
 	FTimerHandle DamageIconTimerHandle;
-	void Clear1000DamageIcon();
+	void Clear1000DamageUI();
+
+	FTimerHandle DisableSelectTimerHandle;
+	void ShowSelectCharacterTip(bool bIsShow);
 
 };

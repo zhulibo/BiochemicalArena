@@ -1,6 +1,8 @@
 #include "MutationController.h"
 
+#include "AbilitySystemComponent.h"
 #include "CommonTextBlock.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/GameStates/MutationGameState.h"
@@ -11,7 +13,7 @@
 #include "BiochemicalArena/UI/HUD/Mutation.h"
 #include "BiochemicalArena/UI/HUD/MutationHuman.h"
 #include "BiochemicalArena/UI/HUD/MutationMutant.h"
-#include "BiochemicalArena/UI/HUD/RadialMenuContainer.h"
+#include "BiochemicalArena/UI/HUD/RadialMenu/RadialMenuContainer.h"
 #include "Components/HorizontalBox.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
@@ -40,27 +42,27 @@ void AMutationController::BeginPlay()
 	}
 }
 
-void AMutationController::OnTeamChange()
+void AMutationController::OnTeamChange(ETeam TempTeam)
 {
 	if (HUDContainer)
 	{
-		if (MutationPlayerState == nullptr) MutationPlayerState = GetPlayerState<AMutationPlayerState>();
-		if (MutationPlayerState)
+		if (TempTeam == ETeam::Team1)
 		{
-			if (MutationPlayerState->GetTeam() == ETeam::Team1)
-			{
-				HUDContainer->MutationHuman->SetVisibility(ESlateVisibility::Visible);
-				HUDContainer->MutationMutant->SetVisibility(ESlateVisibility::Collapsed);
+			HUDContainer->MutationHuman->SetVisibility(ESlateVisibility::Visible);
+			HUDContainer->MutationMutant->SetVisibility(ESlateVisibility::Collapsed);
 
-				HUDContainer->RadialMenuContainer->OnTeamChange(ETeam::Team1);
-			}
-			else if (MutationPlayerState->GetTeam() == ETeam::Team2)
-			{
-				HUDContainer->MutationHuman->SetVisibility(ESlateVisibility::Collapsed);
-				HUDContainer->MutationMutant->SetVisibility(ESlateVisibility::Visible);
+			HUDContainer->RadialMenuContainer->OnTeamChange(ETeam::Team1);
+		}
+		else if (TempTeam == ETeam::Team2)
+		{
+			HUDContainer->MutationHuman->SetVisibility(ESlateVisibility::Collapsed);
+			HUDContainer->MutationMutant->SetVisibility(ESlateVisibility::Visible);
 
-				HUDContainer->RadialMenuContainer->OnTeamChange(ETeam::Team2);
-			}
+			HUDContainer->RadialMenuContainer->OnTeamChange(ETeam::Team2);
+
+			bCanSelectCharacter = true;
+			ShowSelectCharacterTip(true);
+			GetWorld()->GetTimerManager().SetTimer(DisableSelectTimerHandle, this, &ThisClass::DisableSelectCharacter, 10.f);
 		}
 	}
 }
@@ -144,21 +146,12 @@ void AMutationController::HandleMatchStateChange()
 	}
 }
 
-void AMutationController::HandleMatchHasStarted()
-{
-	Super::HandleMatchHasStarted();
-
-	if (IsLocalController())
-	{
-		OnRoundStarted.Broadcast();
-	}
-}
-
 void AMutationController::HandleRoundHasEnded()
 {
 	if (IsLocalController())
 	{
-		OnRoundEnded.Broadcast();
+		GetWorld()->GetTimerManager().ClearTimer(DisableSelectTimerHandle);
+		DisableSelectCharacter();
 	}
 
 	if (HUDContainer)
@@ -248,6 +241,22 @@ void AMutationController::InitHUD()
 {
 	Super::InitHUD();
 
+	if (MutationPlayerState == nullptr) MutationPlayerState = Cast<AMutationPlayerState>(PlayerState);
+	if (MutationPlayerState)
+	{
+		if (MutationPlayerState->GetTeam() == ETeam::Team1)
+		{
+			InitHumanHUD();
+		}
+		else if(MutationPlayerState->GetTeam() == ETeam::Team2)
+		{
+			InitMutantHUD();
+		}
+	}
+}
+
+void AMutationController::InitHumanHUD()
+{
 	if (MutationGameState == nullptr) MutationGameState = Cast<AMutationGameState>(UGameplayStatics::GetGameState(GetWorld()));
 	if (BaseCharacter == nullptr) BaseCharacter = Cast<ABaseCharacter>(GetPawn());
 
@@ -258,23 +267,52 @@ void AMutationController::InitHUD()
 		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team1).Num(), ETeam::Team1);
 		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team2).Num(), ETeam::Team2);
 
+		SetHUDDamageMul(MutationGameState->GetDamageMul());
+
+		bNeedInitHUD = false;
+	}
+}
+
+void AMutationController::InitMutantHUD()
+{
+	if (MutationGameState == nullptr) MutationGameState = Cast<AMutationGameState>(UGameplayStatics::GetGameState(GetWorld()));
+	if (BaseCharacter == nullptr) BaseCharacter = Cast<ABaseCharacter>(GetPawn());
+	if (MutationPlayerState == nullptr) MutationPlayerState = Cast<AMutationPlayerState>(PlayerState);
+
+	if (MutationGameState && BaseCharacter && MutationPlayerState)
+	{
+		SetHUDHealth(BaseCharacter->GetMaxHealth());
+		SetHUDCurrentRound();
+		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team1).Num(), ETeam::Team1);
+		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team2).Num(), ETeam::Team2);
+
+		UpdateRageUI(MutationPlayerState->GetRage());
+
+		if (MutationPlayerState->GetAbilitySystemComponent())
+		{
+			FGameplayTag SkillCooldownTag = FGameplayTag::RequestGameplayTag(TAG_SKILL_CD);
+			int32 TagCount = MutationPlayerState->GetAbilitySystemComponent()->GetTagCount(SkillCooldownTag);
+			ShowSkillUI(TagCount == 0.f && MutationPlayerState->GetCharacterLevel() >= 2.f);
+		}
+
 		bNeedInitHUD = false;
 	}
 }
 
 void AMutationController::SetHUDHealth(float Health)
 {
-	if (HUDContainer)
+	if (MutationPlayerState == nullptr) MutationPlayerState = Cast<AMutationPlayerState>(PlayerState);
+	if (HUDContainer && MutationPlayerState)
 	{
 		FNumberFormattingOptions Opts;
 		Opts.RoundingMode = ERoundingMode::ToPositiveInfinity; // 向上取整
 		Opts.SetUseGrouping(false); // 不使用千位分隔符
 
-		if (Cast<AHumanCharacter>(GetPawn()))
+		if (MutationPlayerState->GetTeam() == ETeam::Team1)
 		{
 			HUDContainer->MutationHuman->Health->SetText(FText::AsNumber(Health, &Opts));
 		}
-		else
+		else if(MutationPlayerState->GetTeam() == ETeam::Team2)
 		{
 			HUDContainer->MutationMutant->Health->SetText(FText::AsNumber(Health, &Opts));
 		}
@@ -329,17 +367,17 @@ void AMutationController::SetHUDTotalRound()
 	}
 }
 
-void AMutationController::Show1000DamageIcon()
+void AMutationController::Show1000DamageUI()
 {
 	if (HUDContainer)
 	{
 		HUDContainer->MutationHuman->DamageIcon->SetText(FText::FromString("1000 DAMAGE"));
 
-		GetWorldTimerManager().SetTimer(DamageIconTimerHandle, this, &ThisClass::Clear1000DamageIcon, 5.f);
+		GetWorldTimerManager().SetTimer(DamageIconTimerHandle, this, &ThisClass::Clear1000DamageUI, 5.f);
 	}
 }
 
-void AMutationController::Clear1000DamageIcon()
+void AMutationController::Clear1000DamageUI()
 {
 	if (HUDContainer)
 	{
@@ -347,18 +385,53 @@ void AMutationController::Clear1000DamageIcon()
 	}
 }
 
-void AMutationController::EnableSelectCharacter()
+void AMutationController::ShowCharacterMenu()
 {
-	if (HUDContainer)
+	if (HUDContainer && bCanSelectCharacter)
 	{
-		HUDContainer->MutationMutant->SelectCharacterBox->SetVisibility(ESlateVisibility::Visible);
+		HUDContainer->ActivateWidget();
+		FInputModeUIOnly InputModeData;
+		SetInputMode(InputModeData);
+		SetShowMouseCursor(true);
+
+		HUDContainer->ShowCharacterMenu();
 	}
 }
 
 void AMutationController::DisableSelectCharacter()
 {
+	bCanSelectCharacter = false;
+	ShowSelectCharacterTip(false);
+}
+
+void AMutationController::ShowSelectCharacterTip(bool bIsShow)
+{
 	if (HUDContainer)
 	{
-		HUDContainer->MutationMutant->SelectCharacterBox->SetVisibility(ESlateVisibility::Collapsed);
+		HUDContainer->MutationMutant->ShowSelectCharacterTip(bIsShow);
+	}
+}
+
+void AMutationController::ShowSkillUI(bool bIsShow)
+{
+	if (HUDContainer)
+	{
+		HUDContainer->MutationMutant->ShowSkillUI(bIsShow);
+	}
+}
+
+void AMutationController::UpdateRageUI(float Rage)
+{
+	if (HUDContainer)
+	{
+		HUDContainer->MutationMutant->UpdateRageUI(Rage);
+	}
+}
+
+void AMutationController::SetHUDDamageMul(float DamageMul)
+{
+	if (HUDContainer)
+	{
+		HUDContainer->MutationHuman->DamageMul->SetText(FText::Format(FText::FromString("{0}%"), FMath::FloorToInt(DamageMul * 100)));
 	}
 }

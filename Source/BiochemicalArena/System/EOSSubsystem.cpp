@@ -58,7 +58,7 @@ void UEOSSubsystem::Login(FPlatformUserId TempPlatformUserId, int32 Type)
 	PlatformUserId = TempPlatformUserId;
 	AccountInfo = GetAccountInfo(PlatformUserId);
 
-	// 是否已登录
+	// 已登录退出
 	if (AccountInfo && AuthPtr->IsLoggedIn(AccountInfo->AccountId))
 	{
 		GetUserInfo();
@@ -202,11 +202,11 @@ void UEOSSubsystem::CreateLobby()
 }
 
 // 查找大厅
-void UEOSSubsystem::FindLobby(FString LobbyName, FString GameMode, FString MapName)
+void UEOSSubsystem::FindLobbies(FString LobbyName, FString GameMode, FString MapName)
 {
 	if (AuthPtr == nullptr || AccountInfo == nullptr || !AuthPtr->IsLoggedIn(AccountInfo->AccountId) || LobbyPtr == nullptr)
 	{
-		OnFindLobbyComplete.Broadcast(false, TArray<TSharedRef<const FLobby>>());
+		OnFindLobbiesComplete.Broadcast(false, TArray<TSharedRef<const FLobby>>());
 		return;
 	}
 
@@ -243,12 +243,12 @@ void UEOSSubsystem::FindLobby(FString LobbyName, FString GameMode, FString MapNa
 	{
 		if (Result.IsOk())
 		{
-			OnFindLobbyComplete.Broadcast(true, Result.GetOkValue().Lobbies);
+			OnFindLobbiesComplete.Broadcast(true, Result.GetOkValue().Lobbies);
 		}
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
-			OnFindLobbyComplete.Broadcast(false, TArray<TSharedRef<const FLobby>>());
+			OnFindLobbiesComplete.Broadcast(false, TArray<TSharedRef<const FLobby>>());
 		}
 	});
 }
@@ -274,7 +274,7 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 		{
 			for (auto& Item : Result.GetOkValue().Lobby->Members)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Member->Attributes.Num(): %d"), Item.Value->Attributes.Num());
+				UE_LOG(LogTemp, Warning, TEXT("OnJoinLobbyComplete Member->Attributes.Num(): %d"), Item.Value->Attributes.Num());
 			}
 
 			CurrentLobby = Result.GetOkValue().Lobby;
@@ -495,12 +495,12 @@ void UEOSSubsystem::CreateSession()
 	});
 }
 
-void UEOSSubsystem::AddSessionMember()
+void UEOSSubsystem::AddSessionMember(FAccountId AccountId)
 {
-	if (SessionPtr == nullptr || AccountInfo == nullptr) return;
+	if (SessionPtr == nullptr) return;
 
 	FAddSessionMember::Params Params;
-	Params.LocalAccountId = AccountInfo->AccountId;
+	Params.LocalAccountId = AccountId;
 	Params.SessionName = LocalSessionName;
 
 	SessionPtr->AddSessionMember(MoveTemp(Params))
@@ -539,7 +539,7 @@ TSharedPtr<const ISession> UEOSSubsystem::GetSessionByName()
 }
 
 // 查找会话
-void UEOSSubsystem::FindSession()
+void UEOSSubsystem::FindSessions()
 {
 	if (AuthPtr == nullptr || AccountInfo == nullptr || !AuthPtr->IsLoggedIn(AccountInfo->AccountId)) return;
 	if (SessionPtr == nullptr) return;
@@ -547,31 +547,32 @@ void UEOSSubsystem::FindSession()
 	FFindSessions::Params Params;
 	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.MaxResults = 100;
+	Params.TargetUser = CurrentLobby->OwnerAccountId;
 
 	SessionPtr->FindSessions(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FFindSessions>& Result)
 	{
 		if (Result.IsOk())
 		{
-			OnFindSessionComplete.Broadcast(true, Result.GetOkValue().FoundSessionIds);
+			OnFindSessionsComplete.Broadcast(true, Result.GetOkValue().FoundSessionIds);
 		}
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
-			OnFindSessionComplete.Broadcast(false, TArray<FOnlineSessionId>());
+			OnFindSessionsComplete.Broadcast(false, TArray<FOnlineSessionId>());
 		}
 	});
 }
 
 // 加入会话
-void UEOSSubsystem::JoinSession(FString SessionId)
+void UEOSSubsystem::JoinSession(FOnlineSessionId OnlineSessionId)
 {
 	if (SessionPtr == nullptr || AccountInfo == nullptr) return;
 
 	FJoinSession::Params Params;
 	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.SessionName = LocalSessionName;
-	Params.SessionId = ToOnlineSessionId(SessionId);
+	Params.SessionId = OnlineSessionId;
 
 	SessionPtr->JoinSession(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FJoinSession>& Result)
@@ -588,13 +589,28 @@ void UEOSSubsystem::JoinSession(FString SessionId)
 	});
 }
 
-FOnlineSessionId UEOSSubsystem::ToOnlineSessionId(FString SessionId)
+FString UEOSSubsystem::GetResolvedConnectString(FOnlineSessionId OnlineSessionId)
 {
-	TArray<uint8> SessionIdData;
-	SessionIdData.SetNum(SessionId.Len());
-	memcpy(SessionIdData.GetData(), TCHAR_TO_ANSI(*SessionId), SessionId.Len());
-	FOnlineIdRegistryRegistry& Registry = FOnlineIdRegistryRegistry::Get();
-	return Registry.ToSessionId(EOnlineServices::Epic, SessionIdData);
+	FString URL = FString(TEXT(""));
+	if (OnlineServicesPtr == nullptr || AccountInfo == nullptr || CurrentLobby == nullptr) return URL;
+
+	FGetResolvedConnectString::Params Params;
+	Params.LocalAccountId = AccountInfo->AccountId;
+	Params.LobbyId = CurrentLobby->LobbyId;
+	Params.SessionId = OnlineSessionId;
+	Params.PortType = NAME_GamePort;
+
+	TOnlineResult<FGetResolvedConnectString> Result = OnlineServicesPtr->GetResolvedConnectString(MoveTemp(Params));
+	if (Result.IsOk())
+	{
+		URL = Result.GetOkValue().ResolvedConnectString;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
+	}
+
+	return URL;
 }
 
 // 离开会话
@@ -605,7 +621,7 @@ void UEOSSubsystem::LeaveSession()
 	FLeaveSession::Params Params;
 	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.SessionName = LocalSessionName;
-	Params.bDestroySession = CurrentLobby->OwnerAccountId == AccountInfo->AccountId; // TODO
+	Params.bDestroySession = CurrentLobby->OwnerAccountId == AccountInfo->AccountId;
 
 	SessionPtr->LeaveSession(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FLeaveSession>& Result)
@@ -620,30 +636,6 @@ void UEOSSubsystem::LeaveSession()
 			OnLeaveSessionComplete.Broadcast(false);
 		}
 	});
-}
-
-FString UEOSSubsystem::GetResolvedConnectString(FString SessionId)
-{
-	FString URL = FString(TEXT(""));
-	if (OnlineServicesPtr == nullptr || AccountInfo == nullptr || CurrentLobby == nullptr) return URL;
-
-	FGetResolvedConnectString::Params Params;
-	Params.LocalAccountId = AccountInfo->AccountId;
-	Params.LobbyId = CurrentLobby->LobbyId;
-	Params.SessionId = ToOnlineSessionId(SessionId);
-	Params.PortType = FName(TEXT("")); // TODO
-
-	TOnlineResult<FGetResolvedConnectString> Result = OnlineServicesPtr->GetResolvedConnectString(MoveTemp(Params));
-	if (Result.IsOk())
-	{
-		URL = Result.GetOkValue().ResolvedConnectString;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Error.GetLogString(): %s"), *Result.GetErrorValue().GetLogString());
-	}
-
-	return URL;
 }
 
 // 缓存用户文件

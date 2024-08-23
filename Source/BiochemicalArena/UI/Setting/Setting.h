@@ -24,7 +24,5 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	class USettingTab* SettingTab;
-	UPROPERTY(meta = (BindWidget))
-	class UTabControl* TabControl;
 
 };

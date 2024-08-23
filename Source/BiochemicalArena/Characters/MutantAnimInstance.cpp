@@ -12,13 +12,13 @@ void UMutantAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	if (MutantCharacter == nullptr) return;
 
 	FVector Velocity = MutantCharacter->GetVelocity();
+
 	Velocity.Z = 0.f;
 	Speed = Velocity.Size();
 
 	bIsInAir = MutantCharacter->GetCharacterMovement()->IsFalling();
 	bIsAccelerating = MutantCharacter->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0.f;
 	bIsCrouched = MutantCharacter->bIsCrouched;
-	bIsDead = MutantCharacter->IsDead();
 
 	// 计算瞄准方向与移动方向的偏移量，用于控制脚步朝向
 	FRotator AimRotation = MutantCharacter->GetBaseAimRotation();

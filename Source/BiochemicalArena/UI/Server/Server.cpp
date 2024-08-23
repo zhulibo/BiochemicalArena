@@ -50,7 +50,7 @@ void UServer::NativeOnInitialized()
 	if (EOSSubsystem)
 	{
 		EOSSubsystem->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
-		EOSSubsystem->OnFindLobbyComplete.AddUObject(this, &ThisClass::OnFindLobbyComplete);
+		EOSSubsystem->OnFindLobbiesComplete.AddUObject(this, &ThisClass::OnFindLobbiesComplete);
 		EOSSubsystem->OnJoinLobbyComplete.AddUObject(this, &ThisClass::OnJoinLobbyComplete);
 
 		EOSSubsystem->OnLobbyInvitationAdded.AddUObject(this, &ThisClass::OnLobbyInvitationAdded);
@@ -148,7 +148,7 @@ void UServer::OnServerReFreshButtonClicked()
 		ServerReFreshButton->ButtonText->SetText(FText::FromString("Refreshing..."));
 		ServerReFreshButton->SetIsEnabled(false);
 
-		EOSSubsystem->FindLobby(
+		EOSSubsystem->FindLobbies(
 			ServerNameEditableTextBox->GetText().ToString(),
 			ModeComboBox->GetSelectedOption(),
 			MapComboBox->GetSelectedOption()
@@ -157,7 +157,7 @@ void UServer::OnServerReFreshButtonClicked()
 }
 
 // 查找大厅完成事件
-void UServer::OnFindLobbyComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies)
+void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies)
 {
 	ServerReFreshButton->ButtonText->SetText(FText::FromString("Refresh"));
 	ServerReFreshButton->SetIsEnabled(true);

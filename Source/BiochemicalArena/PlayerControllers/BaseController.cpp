@@ -3,8 +3,8 @@
 #include "BiochemicalArena/UI/HUD/CommonHUD.h"
 #include "BiochemicalArena/UI/HUD/Crosshair.h"
 #include "BiochemicalArena/UI/HUD/HUDContainer.h"
-#include "BiochemicalArena/UI/HUD/RadialMenuContainer.h"
-#include "BiochemicalArena/UI/HUD/Scoreboard.h"
+#include "BiochemicalArena/UI/HUD/RadialMenu/RadialMenuContainer.h"
+#include "BiochemicalArena/UI/HUD/Scoreboard/Scoreboard.h"
 
 void ABaseController::BeginPlay()
 {
@@ -110,10 +110,6 @@ void ABaseController::HandleMatchHasEnded()
 	}
 }
 
-void ABaseController::InitHUD()
-{
-}
-
 void ABaseController::ShowScoreboard(bool bIsShow)
 {
 	if (HUDContainer && HUDContainer->Scoreboard)
@@ -133,6 +129,11 @@ void ABaseController::ShowPauseMenu()
 {
 	if (HUDContainer)
 	{
+		HUDContainer->ActivateWidget();
+		FInputModeUIOnly InputModeData;
+		SetInputMode(InputModeData);
+		SetShowMouseCursor(true);
+
 		HUDContainer->ShowPauseMenu();
 	}
 }
@@ -174,6 +175,19 @@ void ABaseController::CloseRadialMenu()
 	if (HUDContainer)
 	{
 		HUDContainer->RadialMenuContainer->CloseRadialMenu();
+	}
+}
+
+void ABaseController::ShowBagMenu()
+{
+	if (HUDContainer)
+	{
+		HUDContainer->ActivateWidget();
+		FInputModeUIOnly InputModeData;
+		SetInputMode(InputModeData);
+		SetShowMouseCursor(true);
+
+		HUDContainer->ShowBagMenu();
 	}
 }
 

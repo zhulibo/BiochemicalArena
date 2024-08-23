@@ -16,6 +16,8 @@ public:
 	float InitialSpeed = 60000.f;
 	UPROPERTY()
 	float Damage;
+	UPROPERTY()
+	float Impulse;
 
 protected:
 	virtual void PostActorCreated() override;
@@ -30,21 +32,21 @@ protected:
 
 	// 尾部效果
 	UPROPERTY(EditAnywhere)
-	UParticleSystem* Tracer;
+	class UNiagaraSystem* TracerEffect;
 	UPROPERTY()
-	UParticleSystemComponent* TracerComponent;
-	void SpawnTracer();
+	class UNiagaraComponent* TracerEffectComponent;
+	void SpawnTracerEffect();
 
 	// 在空中留下的轨迹
 	UPROPERTY(EditAnywhere)
-	class UNiagaraSystem* Trail; // TODO 实现效果
+	UNiagaraSystem* TrailEffect;
 	UPROPERTY()
-	class UNiagaraComponent* TrailComponent;
-	void SpawnTrail();
+	UNiagaraComponent* TrailEffectComponent;
+	void SpawnTrailEffect();
 
 	// 击中效果
 	UPROPERTY(EditAnywhere)
-	UParticleSystem* ImpactParticle;
+	UNiagaraSystem* ImpactEffect;
 	UPROPERTY(EditAnywhere)
 	class USoundCue* ImpactSound;
 

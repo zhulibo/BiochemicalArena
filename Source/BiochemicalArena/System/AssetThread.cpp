@@ -17,7 +17,7 @@ uint32 AssetThread::Run()
 {
 	if (AssetSubsystem)
 	{
-		AssetSubsystem->LoadCommonAsset();
+		AssetSubsystem->Test();
 	}
 	else
 	{

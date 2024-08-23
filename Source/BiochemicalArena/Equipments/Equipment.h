@@ -36,6 +36,8 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastHiddenMesh();
 
+	virtual void OnStartSwapOut() {};
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
@@ -57,9 +59,9 @@ protected:
 	UPROPERTY()
 	EEquipmentState EquipmentState;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	EEquipmentType EquipmentType;
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 	EEquipmentCate EquipmentCate;
 	UPROPERTY(EditAnywhere)
 	EEquipmentName EquipmentName;

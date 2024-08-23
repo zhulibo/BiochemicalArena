@@ -41,7 +41,7 @@ UWidget* UTabControl::NativeGetDesiredFocusTarget() const
 void UTabControl::SetUIDefaultValue()
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		MouseSensitivityAnalogSlider->SetValue(InverseMapSensitivity(StorageSubsystem->StorageCache->MouseSensitivity));
 		MouseSensitivity->SetText(FText::AsNumber(InverseMapSensitivity(StorageSubsystem->StorageCache->MouseSensitivity)));
@@ -103,29 +103,29 @@ void UTabControl::OnMouseSensitivityChanged(float Value)
 {
 	MouseSensitivity->SetText(FText::AsNumber(FMath::RoundToFloat(Value)));
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		StorageSubsystem->StorageCache->MouseSensitivity = MapSensitivity(Value);
-		StorageSubsystem->SaveToDisk();
+		StorageSubsystem->Save();
 	}
 }
 
 void UTabControl::OnMouseAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		StorageSubsystem->StorageCache->MouseAimAssistSteering = SelectedItem == "on";
-		StorageSubsystem->SaveToDisk();
+		StorageSubsystem->Save();
 	}
 }
 void UTabControl::OnMouseAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		StorageSubsystem->StorageCache->MouseAimAssistSlowdown = SelectedItem == "on";
-		StorageSubsystem->SaveToDisk();
+		StorageSubsystem->Save();
 	}
 }
 
@@ -133,28 +133,28 @@ void UTabControl::OnControllerSensitivityChanged(float Value)
 {
 	ControllerSensitivity->SetText(FText::AsNumber(FMath::RoundToFloat(Value)));
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		StorageSubsystem->StorageCache->ControllerSensitivity = MapSensitivity(Value);
-		StorageSubsystem->SaveToDisk();
+		StorageSubsystem->Save();
 	}
 }
 
 void UTabControl::OnControllerAimAssistSteeringChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		StorageSubsystem->StorageCache->ControllerAimAssistSteering = SelectedItem == "on";
-		StorageSubsystem->SaveToDisk();
+		StorageSubsystem->Save();
 	}
 }
 void UTabControl::OnControllerAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		StorageSubsystem->StorageCache->ControllerAimAssistSlowdown = SelectedItem == "on";
-		StorageSubsystem->SaveToDisk();
+		StorageSubsystem->Save();
 	}
 }

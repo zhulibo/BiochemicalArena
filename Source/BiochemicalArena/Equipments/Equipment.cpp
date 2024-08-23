@@ -1,14 +1,16 @@
 #include "Equipment.h"
 
+#include "DataRegistrySubsystem.h"
 #include "EquipmentAnimInstance.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "Animation/AnimationAsset.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SphereComponent.h"
 #include "Net/UnrealNetwork.h"
-#include "EquipmentType.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 
@@ -52,6 +54,19 @@ void AEquipment::BeginPlay()
 	Super::BeginPlay();
 
 	SetReplicateMovement(true);
+
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FString EnumValue = UEnum::GetValueAsString(EquipmentName);
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+
+		FDataRegistryId DataRegistryId(DR_EquipmentMain, FName(EnumValue));
+		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
+		{
+			EquipmentType = EquipmentMain->EquipmentType;
+			EquipmentCate = EquipmentMain->EquipmentCate;
+		}
+	}
 }
 
 void AEquipment::OnAreaSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -75,7 +90,7 @@ void AEquipment::EquipEquipment()
 {
 	EquipmentState = EEquipmentState::Equipped;
 
-	// 取消销毁定时器
+	// 清除销毁定时器
 	GetWorldTimerManager().ClearTimer(DestroyEquipmentTimerHandle);
 
 	CollisionSphere->SetSimulatePhysics(false);

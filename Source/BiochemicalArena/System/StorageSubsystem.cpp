@@ -3,6 +3,7 @@
 #include "AssetSubsystem.h"
 #include "AudioDevice.h"
 #include "StorageSaveGame.h"
+#include "Data/SystemSound.h"
 #include "Kismet/GameplayStatics.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
@@ -55,8 +56,8 @@ void UStorageSubsystem::CreateStorageSaveGame()
 	}
 }
 
-// 保存到硬盘
-void UStorageSubsystem::SaveToDisk()
+// 保存
+void UStorageSubsystem::Save()
 {
 	if (StorageCache)
 	{
@@ -101,9 +102,10 @@ void UStorageSubsystem::ApplySetting()
 	// 设置音量
 	AudioDevice = GEngine->GetActiveAudioDevice();
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AudioDevice && AssetSubsystem && AssetSubsystem->GetSoundMix())
+	if (AudioDevice && AssetSubsystem && AssetSubsystem->SystemSound)
 	{
-		AudioDevice->PushSoundMixModifier(AssetSubsystem->GetSoundMix());
+		AudioDevice->PushSoundMixModifier(AssetSubsystem->SystemSound->SoundMix);
+
 		SetAudio(StorageCache->Volume);
 	}
 }
@@ -112,9 +114,16 @@ void UStorageSubsystem::ApplySetting()
 void UStorageSubsystem::SetAudio(float Value)
 {
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AudioDevice && AssetSubsystem && AssetSubsystem->GetSoundMix() && AssetSubsystem->GetMasterSound())
+	if (AudioDevice && AssetSubsystem && AssetSubsystem->SystemSound)
 	{
 		// UE_LOG(LogTemp, Warning, TEXT("SetAudio: %f"), Value); // TODO test
-		AudioDevice->SetSoundMixClassOverride(AssetSubsystem->GetSoundMix(), AssetSubsystem->GetMasterSound(), Value, 1.f, 0.2f, true);
+		AudioDevice->SetSoundMixClassOverride(
+			AssetSubsystem->SystemSound->SoundMix,
+			AssetSubsystem->SystemSound->MasterSound,
+			Value,
+			1.f,
+			0.2f,
+			true
+		);
 	}
 }

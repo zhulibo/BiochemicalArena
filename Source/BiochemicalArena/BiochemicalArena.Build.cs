@@ -17,6 +17,10 @@ public class BiochemicalArena : ModuleRules
 				"OnlineServicesInterface",
 				"CoreOnline",
 				"Niagara",
+				"GameplayAbilities",
+				"GameplayTags",
+				"GameplayTasks",
+				"DataRegistry",
 			}
 		);
 

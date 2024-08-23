@@ -16,7 +16,7 @@ UWidget* UTabOther::NativeGetDesiredFocusTarget() const
 void UTabOther::SetUIDefaultValue()
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 	}
 }

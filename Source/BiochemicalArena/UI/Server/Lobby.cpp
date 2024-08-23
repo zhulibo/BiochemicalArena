@@ -27,7 +27,7 @@ void ULobby::NativeOnInitialized()
 	SendMsgButton->ButtonText->SetText(FText::FromString("Send"));
 	SendMsgButton->OnClicked().AddUObject(this, &ThisClass::OnSendMsgButtonClicked);
 	MsgEditableTextBox->SetIsEnabled(false); // TODO
-	SendMsgButton->SetIsEnabled(false);
+	// SendMsgButton->SetIsEnabled(false);
 
 	ReadyButton->ButtonText->SetText(FText::FromString("Ready"));
 	ReadyButton->OnClicked().AddUObject(this, &ThisClass::OnReadyButtonClicked);
@@ -59,11 +59,19 @@ void ULobby::NativeOnInitialized()
 
 		EOSSubsystem->OnCreateSessionComplete.AddUObject(this, &ThisClass::OnCreateSessionComplete);
 		EOSSubsystem->OnAddSessionMemberComplete.AddUObject(this, &ThisClass::OnAddSessionMemberComplete);
-		EOSSubsystem->OnFindSessionComplete.AddUObject(this, &ThisClass::OnFindSessionComplete);
+		EOSSubsystem->OnFindSessionsComplete.AddUObject(this, &ThisClass::OnFindSessionsComplete);
 		EOSSubsystem->OnJoinSessionComplete.AddUObject(this, &ThisClass::OnJoinSessionComplete);
 
 		EOSSubsystem->OnPromoteLobbyMemberComplete.AddUObject(this, &ThisClass::OnPromoteLobbyMemberComplete);
 	}
+
+	AddClientMemberButton->ButtonText->SetText(FText::FromString("AddClientMember"));
+	ServerTravelButton->ButtonText->SetText(FText::FromString("ServerTravel"));
+	ClientTravelButton->ButtonText->SetText(FText::FromString("ClientTravel"));
+
+	AddClientMemberButton->OnClicked().AddUObject(this, &ThisClass::OnAddClientMemberButtonClicked);
+	ServerTravelButton->OnClicked().AddUObject(this, &ThisClass::OnServerTravelButtonClicked);
+	ClientTravelButton->OnClicked().AddUObject(this, &ThisClass::OnClientTravelButtonClicked);
 }
 
 UWidget* ULobby::NativeGetDesiredFocusTarget() const
@@ -351,14 +359,6 @@ void ULobby::OnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttrib
 
 void ULobby::OnSwitchTeamButtonClicked()
 {
-	// TODO 待删除
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
-	{
-		EOSSubsystem->FindSession();
-	}
-	return;
-
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
@@ -497,7 +497,6 @@ void ULobby::OnStartServerButtonClicked()
 	{
 		EOSSubsystem->CreateSession();
 		return;
-		// TODO
 
 		if (ModeComboBox->GetSelectedOption() == "Mutation")
 		{
@@ -564,7 +563,7 @@ void ULobby::OnCreateSessionComplete(bool bWasSuccessful)
 		if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 		if (EOSSubsystem)
 		{
-			EOSSubsystem->AddSessionMember();
+			EOSSubsystem->AddSessionMember(EOSSubsystem->AccountInfo->AccountId);
 		}
 	}
 	else
@@ -575,34 +574,36 @@ void ULobby::OnCreateSessionComplete(bool bWasSuccessful)
 
 void ULobby::OnAddSessionMemberComplete(bool bWasSuccessful)
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnAddSessionMemberComplete-----------------------------------"));
 	if (bWasSuccessful)
 	{
 		if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-		if (EOSSubsystem)
-		{
-			TSharedPtr<const ISession> Session = EOSSubsystem->GetSessionByName();
-			if (Session)
-			{
-				if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-				if (EOSSubsystem)
-				{
-					EOSSubsystem->ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant>{
-						{ LOBBY_SESSIONID, ToString(Session->GetSessionId()) },
-					});
+		if (EOSSubsystem == nullptr) return;
 
-					GetWorld()->ServerTravel("/Game/Maps/DevTeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
-				}
-			}
-			else
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("GetSessionByName failed!"), false);
-			}
+		if (bIsAddingClientMember)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("bIsAddingClientMember-----------------------------------"));
+			return;
+		}
+
+		if (TSharedPtr<const ISession> Session = EOSSubsystem->GetSessionByName())
+		{
+			EOSSubsystem->ModifyLobbyAttributes(TMap<FSchemaAttributeId, FSchemaVariant>{
+				{ LOBBY_SESSIONID, ToString(Session->GetSessionId()) },
+			});
+
+			// GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("GetSessionByName failed!"), false);
 		}
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("AddSessionMember failed!"), false);
 	}
+
 }
 
 void ULobby::OnJoinServerButtonClicked()
@@ -610,47 +611,68 @@ void ULobby::OnJoinServerButtonClicked()
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		EOSSubsystem->JoinSession(EOSSubsystem->CurrentLobby->Attributes.Find(LOBBY_SESSIONID)->GetString());
+		// TODO Don't know why JoinSession may fail sometimes, maybe there is a problem with ToOnlineSessionId
+		// OnlineSessionId = ToOnlineSessionId(EOSSubsystem->CurrentLobby->Attributes.Find(LOBBY_SESSIONID)->GetString());
+		// EOSSubsystem->JoinSession(OnlineSessionId);
+
+		EOSSubsystem->FindSessions();
 	}
 }
 
-void ULobby::OnJoinSessionComplete(bool bWasSuccessful)
+FOnlineSessionId ULobby::ToOnlineSessionId(FString SessionId)
 {
+	TArray<uint8> SessionIdData;
+	SessionIdData.SetNum(SessionId.Len());
+	memcpy(SessionIdData.GetData(), TCHAR_TO_ANSI(*SessionId), SessionId.Len());
+	FOnlineIdRegistryRegistry& Registry = FOnlineIdRegistryRegistry::Get();
+	return Registry.ToSessionId(EOnlineServices::Epic, SessionIdData);
+}
+
+void ULobby::OnFindSessionsComplete(bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnFindSessionComplete-------------------------------------------------------"));
 	if (bWasSuccessful)
 	{
+		if (FoundSessionIds.Num() != 1)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("FoundSessionIds != 1"));
+			return;
+		}
+
 		if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 		if (EOSSubsystem)
 		{
-			if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
-			if (MenuController)
-			{
-				FString SessionId = EOSSubsystem->CurrentLobby->Attributes.Find(LOBBY_SESSIONID)->GetString();
-				FString URL = EOSSubsystem->GetResolvedConnectString(SessionId);
-				UE_LOG(LogTemp, Warning, TEXT("URL: %s"), *URL);
-
-				MenuController->ClientTravel(URL, ETravelType::TRAVEL_Absolute);
-			}
-		}
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Join session failed!"), false);
-	}
-}
-
-void ULobby::OnFindSessionComplete(bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds)
-{
-	UE_LOG(LogTemp, Warning, TEXT("OnFindSessionComplete"));
-	if (bWasSuccessful)
-	{
-		for (auto& FoundSessionId : FoundSessionIds)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("FoundSessionId %s"), *ToString(FoundSessionId));
+			OnlineSessionId = FoundSessionIds[0];
+			EOSSubsystem->JoinSession(OnlineSessionId);
 		}
 	}
 	else
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Find session failed!"), false);
+	}
+}
+
+// TODO AddSessionMember
+void ULobby::OnJoinSessionComplete(bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnJoinSessionComplete-------------------------------------------------------"));
+	if (bWasSuccessful)
+	{
+		// if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+		// if (EOSSubsystem)
+		// {
+		// 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
+		// 	if (MenuController)
+		// 	{
+		// 		FString URL = EOSSubsystem->GetResolvedConnectString(OnlineSessionId);
+		// 		UE_LOG(LogTemp, Warning, TEXT("GetResolvedConnectString: %s"), *URL);
+		// 		MenuController->ClientTravel(URL, ETravelType::TRAVEL_Absolute);
+		// 	}
+		// }
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Join session failed!"), false);
 	}
 }
 
@@ -728,6 +750,7 @@ void ULobby::OnBackButtonClicked()
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
+		EOSSubsystem->LeaveSession();
 		bIsExitingLobby = true;
 
 		if (EOSSubsystem->AccountInfo->AccountId == EOSSubsystem->CurrentLobby->OwnerAccountId
@@ -836,4 +859,46 @@ void ULobby::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
 void ULobby::OnSendMsgButtonClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnSendMsgButtonClicked"));
+
+}
+
+void ULobby::OnAddClientMemberButtonClicked()
+{
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem)
+	{
+		for (auto& Member : EOSSubsystem->CurrentLobby->Members)
+		{
+			if (Member.Value->AccountId != EOSSubsystem->AccountInfo->AccountId)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("AddSessionMember---------------------------------------------"));
+				bIsAddingClientMember = true;
+				EOSSubsystem->AddSessionMember(Member.Value->AccountId);
+
+				break;
+			}
+		}
+	}
+}
+
+void ULobby::OnServerTravelButtonClicked()
+{
+	UE_LOG(LogTemp, Warning, TEXT("ServerTravel---------------------------------------------------------"));
+	GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
+}
+
+void ULobby::OnClientTravelButtonClicked()
+{
+	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem)
+	{
+		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
+		if (MenuController)
+		{
+			FString URL = EOSSubsystem->GetResolvedConnectString(OnlineSessionId);
+			UE_LOG(LogTemp, Warning, TEXT("ClientTravel---------------------------------------------------------"));
+			UE_LOG(LogTemp, Warning, TEXT("GetResolvedConnectString: %s"), *URL);
+			MenuController->ClientTravel(URL, ETravelType::TRAVEL_Absolute);
+		}
+	}
 }

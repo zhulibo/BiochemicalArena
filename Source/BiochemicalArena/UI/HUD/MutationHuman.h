@@ -14,7 +14,7 @@ public:
 	class UCommonTextBlock* Health;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* DamagePercent;
+	UCommonTextBlock* DamageMul;
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Ammo;

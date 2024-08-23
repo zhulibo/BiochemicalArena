@@ -1,13 +1,11 @@
 #include "Throwing.h"
 
-#include "EquipmentType.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 AThrowing::AThrowing()
 {
-	EquipmentCate = EEquipmentCate::Throwing;
-
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 	ProjectileMovement->bRotationFollowsVelocity = true;

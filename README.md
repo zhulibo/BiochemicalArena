@@ -1,13 +1,13 @@
 ## BiochemicalArena
 
-This is a first-person shooting game, which mainly has an mutation mode. It is planned to be released on epic and xbox platforms and supports cross-platform.
+Biochemical Arena is a multiplayer online first-person shooter, the main mode is mutation mode.
 
 ## github
 
-Not include "/content" folder.
+Not include "/Content" folder for now.
 
 ### How to checkout file automatically in rider?
 setting > version control > perforce  
-fill in config setting.  
+fill in config setting
 setting > version control > directory mappings  
-add directory and vcs type.
+add directory and VCS type

@@ -12,7 +12,10 @@ class BIOCHEMICALARENA_API UOverheadWidget : public UCommonUserWidget
 public:
 	friend class ABaseCharacter;
 
-	void SetPlayerNameTeamColor();
+	void InitOverheadWidget();
+
+	void OnMaxHealthChange(float MaxHealth);
+	void OnHealthChange(float OldHealth, float NewHealth);
 
 protected:
 	virtual void NativeConstruct() override;
@@ -38,7 +41,18 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;
 	void SetPlayerName();
-	FTimerHandle TimerHandle;
-	void ShowPlayerName();
+	FTimerHandle TraceTimerHandle;
+	void TraceOverheadWidget();
+
+	UPROPERTY(meta = (BindWidget))
+	class UCommonLazyImage* HealthBar;
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* HealthDec;
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* HealthInc;
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonLazyImage* HealthBarLine;
+	int32 GetHealthBarLineNum();
 
 };

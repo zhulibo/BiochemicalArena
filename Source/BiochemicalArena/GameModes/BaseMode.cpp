@@ -1,10 +1,13 @@
 #include "BaseMode.h"
 
+#include "DataRegistryId.h"
+#include "DataRegistrySubsystem.h"
 #include "EngineUtils.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/MutantCharacter.h"
 #include "BiochemicalArena/Equipments/Equipment.h"
-#include "BiochemicalArena/Equipments/DamageTypes/FallDamageType.h"
+#include "BiochemicalArena/Equipments/Data/DamageTypeFall.h"
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
@@ -41,8 +44,15 @@ void ABaseMode::SpawnHumanCharacter(AController* Controller)
 	}
 
 	// 获取角色类
-	FString CharacterClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Humans/%s/BP_%s.BP_%s_C'"), *CharacterName, *CharacterName, *CharacterName);
-	UClass* CharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, *CharacterClassPath);
+	TObjectPtr<UClass> CharacterClass;
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FDataRegistryId DataRegistryId(DR_HumanCharacterMain, FName(CharacterName));
+		if (const FHumanCharacterMain* HumanCharacterMain = DRSubsystem->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
+		{
+			CharacterClass = HumanCharacterMain->HumanCharacterClass;
+		}
+	}
 	if (CharacterClass == nullptr) return;
 
 	// 获取出生点
@@ -72,15 +82,22 @@ void ABaseMode::SpawnMutantCharacter(AController* Controller, FVector Location, 
 
 	// 获取角色名字
 	FString CharacterName;
-	ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Controller->PlayerState);
-	if (BasePlayerState)
+	if (ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Controller->PlayerState))
 	{
-		CharacterName = BasePlayerState->GetMutantCharacterName();
+		FString EnumValue = UEnum::GetValueAsString(BasePlayerState->GetMutantCharacterName());
+		CharacterName = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 	}
 
 	// 获取角色类
-	FString CharacterClassPath = FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Characters/Mutants/%s/BP_%s.BP_%s_C'"), *CharacterName, *CharacterName, *CharacterName);
-	UClass* CharacterClass = StaticLoadClass(UObject::StaticClass(), nullptr, *CharacterClassPath);
+	TObjectPtr<UClass> CharacterClass;
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FDataRegistryId DataRegistryId(DR_MutantCharacterMain, FName(CharacterName));
+		if (const FMutantCharacterMain* MutantCharacterMain = DRSubsystem->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
+		{
+			CharacterClass = MutantCharacterMain->MutantCharacterClass;
+		}
+	}
 	if (CharacterClass == nullptr) return;
 
 	// 未传入位置和旋转，使用出生点的位置和旋转
@@ -125,7 +142,7 @@ AActor* ABaseMode::FindCharacterPlayerStart(ETeam Team)
 
 	if (Team == ETeam::Team1)
 	{
-		if (Team1PlayerStarts.Num() == 0)
+		if (Team1PlayerStarts.IsEmpty())
 		{
 			for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
 			{
@@ -140,7 +157,7 @@ AActor* ABaseMode::FindCharacterPlayerStart(ETeam Team)
 	}
 	else if (Team == ETeam::Team2)
 	{
-		if (Team2PlayerStarts.Num() == 0)
+		if (Team2PlayerStarts.IsEmpty())
 		{
 			for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
 			{
@@ -178,10 +195,10 @@ void ABaseMode::AssignTeam(AController* Controller, ETeam Team)
 void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser, const UDamageType* DamageType, ABasePlayerState* DamagedState)
 {
 	FString CauserName = "-1";
-	const UBaseDamageType* BaseDamageType = Cast<UBaseDamageType>(DamageType);
+	const UDamageTypeBase* DamageTypeBase = Cast<UDamageTypeBase>(DamageType);
 
 	// Equipment击杀
-	if (BaseDamageType->DamageType == EDamageType2::Equipment)
+	if (DamageTypeBase->DamageType == EDamageCauserType::Equipment)
 	{
 		// DamageCauser is Projectile, Projectile's owner is Equipment
 		if (AEquipment* CauserEquipment1 = Cast<AEquipment>(DamageCauser->GetOwner()))
@@ -199,7 +216,7 @@ void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser
 	// 感染 摔死 掉出地图
 	else
 	{
-		CauserName = BaseDamageType->CauserName;
+		CauserName = DamageTypeBase->CauserName;
 	}
 
 	if (BaseGameState == nullptr) BaseGameState = GetGameState<ABaseGameState>();

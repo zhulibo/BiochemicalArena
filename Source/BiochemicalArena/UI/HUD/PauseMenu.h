@@ -11,7 +11,6 @@ class BIOCHEMICALARENA_API UPauseMenu : public UCommonActivatableWidget
 
 protected:
 	virtual void NativeOnInitialized() override;
-	virtual void NativeConstruct() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()

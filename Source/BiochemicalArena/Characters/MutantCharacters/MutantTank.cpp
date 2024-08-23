@@ -1,22 +1,16 @@
 #include "MutantTank.h"
 
-#include "BiochemicalArena/Characters/CharacterType.h"
+#include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "BiochemicalArena/Characters/MutantAnimInstance.h"
 
 AMutantTank::AMutantTank()
 {
-	MaxHealth = 3000.f;
-	Health = MaxHealth;
-
-	LightAttackDamage = 60.f;
-	HeavyAttackDamage = 70.f;
+	MutantCharacterName = EMutantCharacterName::Tank;
 }
 
 void AMutantTank::BeginPlay()
 {
 	Super::BeginPlay();
-
-	MutantCharacterName = EMutantCharacterName::Tank;
 
 	if (MutantAnimInstance == nullptr) MutantAnimInstance = Cast<UMutantAnimInstance>(GetMesh()->GetAnimInstance());
 	if (MutantAnimInstance)

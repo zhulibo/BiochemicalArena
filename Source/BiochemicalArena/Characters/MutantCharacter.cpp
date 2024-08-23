@@ -3,19 +3,31 @@
 #include "EnhancedInputSubsystems.h"
 #include "HumanCharacter.h"
 #include "MutantAnimInstance.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "BiochemicalArena/Abilities/AttributeSetBase.h"
+#include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
+#include "BiochemicalArena/Abilities/GameplayAbilityBase.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/Equipments/DamageTypes/MutantDamageType.h"
+#include "BiochemicalArena/Equipments/Data/DamageTypeMutant.h"
 #include "BiochemicalArena/GameModes/BaseMode.h"
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Data/InputBase.h"
+#include "Data/InputMutant.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AMutantCharacter::AMutantCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	BloodColor = COLOR_MUTANT;
 
 	MutantState = EMutantState::Ready;
 
@@ -60,23 +72,27 @@ void AMutantCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	if (InputMutant == nullptr) return;
+
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
 	{
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 		if (Subsystem)
 		{
-			Subsystem->AddMappingContext(MutantMappingContext, 1);
+			Subsystem->AddMappingContext(InputMutant->MutantMappingContext, 1);
 		}
 	}
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
 	{
-		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Started, this, &ThisClass::LightAttackButtonPressed);
-		EnhancedInputComponent->BindAction(LightAttackAction, ETriggerEvent::Completed, this, &ThisClass::LightAttackButtonReleased);
-		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Started, this, &ThisClass::HeavyAttackButtonPressed);
-		EnhancedInputComponent->BindAction(HeavyAttackAction, ETriggerEvent::Completed, this, &ThisClass::HeavyAttackButtonReleased);
+		EnhancedInputComponent->BindAction(InputMutant->LightAttackAction, ETriggerEvent::Started, this, &ThisClass::LightAttackButtonPressed);
+		EnhancedInputComponent->BindAction(InputMutant->LightAttackAction, ETriggerEvent::Completed, this, &ThisClass::LightAttackButtonReleased);
+		EnhancedInputComponent->BindAction(InputMutant->HeavyAttackAction, ETriggerEvent::Started, this, &ThisClass::HeavyAttackButtonPressed);
+		EnhancedInputComponent->BindAction(InputMutant->HeavyAttackAction, ETriggerEvent::Completed, this, &ThisClass::HeavyAttackButtonReleased);
+		EnhancedInputComponent->BindAction(InputMutant->CharacterMenuAction, ETriggerEvent::Triggered, this, &ThisClass::CharacterMenuButtonPressed);
+		EnhancedInputComponent->BindAction(InputMutant->SkillAction, ETriggerEvent::Triggered, this, &ThisClass::SkillButtonPressed);
 	}
 }
 
@@ -91,6 +107,54 @@ void AMutantCharacter::Tick(float DeltaSeconds)
 	// }
 }
 
+void AMutantCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(SkillAbility));
+	}
+}
+
+void AMutantCharacter::OnAbilitySystemComponentInit()
+{
+	Super::OnAbilitySystemComponentInit();
+
+	if (AbilitySystemComponent && AttributeSetBase && IsLocallyControlled())
+	{
+		FGameplayTag SkillCooldownTag = FGameplayTag::RequestGameplayTag(TAG_SKILL_CD);
+		AbilitySystemComponent->RegisterGameplayTagEvent(
+			SkillCooldownTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnLocalSkillCooldownTagChanged);
+
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSetBase->GetCharacterLevelAttribute()).AddUObject(this, &ThisClass::OnLocalCharacterLevelChanged);
+	}
+}
+
+void AMutantCharacter::OnLocalSkillCooldownTagChanged(FGameplayTag GameplayTag, int32 TagCount)
+{
+	if (MutationController == nullptr) MutationController = Cast<AMutationController>(Controller);
+	if (MutationController && GetCharacterLevel() >= 2.f)
+	{
+		MutationController->ShowSkillUI(TagCount == 0);
+	}
+}
+
+void AMutantCharacter::OnLocalCharacterLevelChanged(const FOnAttributeChangeData& Data)
+{
+	if (Data.NewValue < 2.f) return;
+
+	if (MutationController == nullptr) MutationController = Cast<AMutationController>(Controller);
+	if (AbilitySystemComponent && MutationController)
+	{
+		FGameplayTag SkillCooldownTag = FGameplayTag::RequestGameplayTag(TAG_SKILL_CD);
+		int32 TagCount = AbilitySystemComponent->GetTagCount(SkillCooldownTag);
+
+		MutationController->ShowSkillUI(TagCount == 0);
+	}
+}
+
 void AMutantCharacter::UnPossessed()
 {
 	Super::UnPossessed();
@@ -101,8 +165,39 @@ void AMutantCharacter::UnPossessed()
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer());
 		if (Subsystem)
 		{
-			Subsystem->RemoveMappingContext(MutantMappingContext);
+			if (InputBase) Subsystem->RemoveMappingContext(InputBase->BaseMappingContext);
+			if (InputMutant) Subsystem->RemoveMappingContext(InputMutant->MutantMappingContext);
 		}
+	}
+}
+
+void AMutantCharacter::Destroyed()
+{
+	if (AbilitySystemComponent)
+	{
+		if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(SkillAbility))
+		{
+			AbilitySystemComponent->CancelAbility(Spec->Ability);
+		}
+	}
+
+	Super::Destroyed();
+}
+
+void AMutantCharacter::CharacterMenuButtonPressed(const FInputActionValue& Value)
+{
+	if (MutationController == nullptr) MutationController = Cast<AMutationController>(Controller);
+	if (MutationController)
+	{
+		MutationController->ShowCharacterMenu();
+	}
+}
+
+void AMutantCharacter::SkillButtonPressed(const FInputActionValue& Value)
+{
+	if (AbilitySystemComponent && GetCharacterLevel() >= 2.f)
+	{
+		AbilitySystemComponent->TryActivateAbilityByClass(SkillAbility);
 	}
 }
 
@@ -216,23 +311,39 @@ void AMutantCharacter::LeftHandAttackEnd()
 	LeftHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
+// TODO 不在服务端视线内有时没有碰撞
 void AMutantCharacter::OnRightHandCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (HasAuthority() && !RightHandHitEnemies.Contains(OtherActor))
+	// if (HasAuthority())
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("OnLeftHandCapsuleOverlap 3"));
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("OnLeftHandCapsuleOverlap 2"));
+	// }
+
+	if (!RightHandHitEnemies.Contains(OtherActor))
 	{
 		RightHandHitEnemies.Add(OtherActor);
 
-		// 造成伤害
 		float Damage = MutantState == EMutantState::LightAttacking ? LightAttackDamage : HeavyAttackDamage;
-		UGameplayStatics::ApplyDamage(OtherActor, Damage, Controller, this, UMutantDamageType::StaticClass());
 
-		// 造成感染
-		AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
-		if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-		if (HumanCharacter && BaseController)
+		DropBlood(OverlappedComponent, OtherActor, OtherComp, Damage);
+
+		if (HasAuthority())
 		{
-			HumanCharacter->GetInfect(this, BaseController, MutantState);
+			// 造成伤害
+			UGameplayStatics::ApplyDamage(OtherActor, Damage, Controller, this, UDamageTypeMutant::StaticClass());
+
+			// 造成感染
+			AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
+			if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+			if (HumanCharacter && BaseController)
+			{
+				HumanCharacter->GetInfect(this, BaseController, MutantState);
+			}
 		}
 	}
 }
@@ -240,20 +351,71 @@ void AMutantCharacter::OnRightHandCapsuleOverlap(UPrimitiveComponent* Overlapped
 void AMutantCharacter::OnLeftHandCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (HasAuthority() && !LeftHandHitEnemies.Contains(OtherActor))
+	if (!LeftHandHitEnemies.Contains(OtherActor))
 	{
 		LeftHandHitEnemies.Add(OtherActor);
 
-		// 造成伤害
 		float Damage = MutantState == EMutantState::LightAttacking ? LightAttackDamage : HeavyAttackDamage;
-		UGameplayStatics::ApplyDamage(OtherActor, Damage, Controller, this, UMutantDamageType::StaticClass());
 
-		// 造成感染
-		AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
-		if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-		if (HumanCharacter && BaseController)
+		DropBlood(OverlappedComponent, OtherActor, OtherComp, Damage);
+
+		if (HasAuthority())
 		{
-			HumanCharacter->GetInfect(this, BaseController, MutantState);
+			// 造成伤害
+			UGameplayStatics::ApplyDamage(OtherActor, Damage, Controller, this, UDamageTypeMutant::StaticClass());
+
+			// 造成感染
+			AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
+			if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+			if (HumanCharacter && BaseController)
+			{
+				HumanCharacter->GetInfect(this, BaseController, MutantState);
+			}
+		}
+	}
+}
+
+void AMutantCharacter::DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, float Damage)
+{
+	ABaseCharacter* OverlappedCharacter = Cast<ABaseCharacter>(OtherActor);
+
+	if (OverlappedCharacter == nullptr || OverlappedCharacter->BloodEffect_Melee == nullptr) return;
+
+	TArray<FHitResult> TraceResults;
+
+	auto Start = OverlappedComponent->GetComponentLocation();
+	auto End = OverlappedCharacter->GetActorLocation();
+
+	FCollisionQueryParams CollisionQueryParams;
+
+	GetWorld()->SweepMultiByObjectType(
+		TraceResults,
+		Start,
+		End,
+		FQuat::Identity,
+		FCollisionObjectQueryParams(OverlappedCharacter->GetMesh()->GetCollisionObjectType()),
+		FCollisionShape::MakeSphere(10.f),
+		CollisionQueryParams
+	);
+
+	// DrawDebugLine(GetWorld(), Start, End, COLOR_MAIN, true);
+
+	for (auto TraceResult : TraceResults)
+	{
+		if (TraceResult.GetComponent()->GetUniqueID() == OtherComp->GetUniqueID())
+		{
+			auto BloodEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				OverlappedCharacter->BloodEffect_Melee,
+				TraceResult.ImpactPoint,
+				TraceResult.ImpactNormal.Rotation()
+			);
+
+			BloodEffectComponent->SetVariableInt("ParticleCount", ULibraryCommon::GetBloodParticleCount(Damage));
+			BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
+
+			break;
 		}
 	}
 }
@@ -285,7 +447,9 @@ void AMutantCharacter::MulticastDead_Implementation()
 	if (BaseController) DisableInput(BaseController);
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetEnableGravity(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	RightHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	LeftHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -305,12 +469,12 @@ void AMutantCharacter::MulticastDead_Implementation()
 	}
 }
 
-void AMutantCharacter::ServerSelectCharacter_Implementation(const FString& CharacterName)
+void AMutantCharacter::ServerSelectCharacter_Implementation(EMutantCharacterName TempMutantCharacterName)
 {
 	if (BasePlayerState == nullptr) BasePlayerState = GetPlayerState<ABasePlayerState>();
 	if (BasePlayerState)
 	{
-		BasePlayerState->SetMutantCharacterName(CharacterName);
+		BasePlayerState->SetMutantCharacterName(TempMutantCharacterName);
 	}
 
 	if (MutationMode == nullptr) MutationMode = GetWorld()->GetAuthGameMode<AMutationMode>();
@@ -318,4 +482,13 @@ void AMutantCharacter::ServerSelectCharacter_Implementation(const FString& Chara
 	{
 		MutationMode->SelectCharacter(this, Controller);
 	}
+}
+
+void AMutantCharacter::MulticastRepel_Implementation(FVector ImpulseVector)
+{
+	TSharedPtr<FRootMotionSource_ConstantForce> RootMotionSource = MakeShared<FRootMotionSource_ConstantForce>();
+	RootMotionSource->Force = ImpulseVector;
+	RootMotionSource->Duration = 0.1f;
+	RootMotionSource->AccumulateMode = ERootMotionAccumulateMode::Additive;
+	GetCharacterMovement()->ApplyRootMotionSource(RootMotionSource);
 }

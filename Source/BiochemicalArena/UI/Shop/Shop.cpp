@@ -2,9 +2,9 @@
 #include "CommonTextBlock.h"
 #include "GoodsButton.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/Characters/CharacterType.h"
+#include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "Components/WrapBox.h"
-#include "BiochemicalArena/Equipments/EquipmentType.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "Components/WrapBoxSlot.h"
 
 void UShop::NativeOnInitialized()
@@ -38,7 +38,7 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 
 			for (int32 i = 0; i < Offers.Num(); ++i)
 			{
-				for (int32 j = 0; j < static_cast<int32>(EEquipmentName::MAX); ++j)
+				for (int32 j = 0; j < static_cast<int32>(EEquipmentName::NONE); ++j)
 				{
 					FString EnumValue = UEnum::GetValueAsString(static_cast<EEquipmentName>(j));
 					EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
@@ -51,7 +51,7 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 
 				// TODO continue
 
-				for (int32 j = 0; j < static_cast<int32>(EHumanCharacterName::MAX); ++j)
+				for (int32 j = 0; j < static_cast<int32>(EHumanCharacterName::NONE); ++j)
 				{
 					FString EnumValue = UEnum::GetValueAsString(static_cast<EHumanCharacterName>(j));
 					EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);

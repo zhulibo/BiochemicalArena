@@ -23,19 +23,6 @@ void UPauseMenu::NativeOnInitialized()
 	QuitButton->OnClicked().AddUObject(this, &ThisClass::OnQuitButtonClicked);
 }
 
-void UPauseMenu::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
-	if (BaseController)
-	{
-		FInputModeUIOnly InputModeData;
-		BaseController->SetInputMode(InputModeData);
-		BaseController->SetShowMouseCursor(true);
-	}
-}
-
 UWidget* UPauseMenu::NativeGetDesiredFocusTarget() const
 {
 	return SettingButton;

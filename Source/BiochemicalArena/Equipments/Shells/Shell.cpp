@@ -1,6 +1,5 @@
 #include "Shell.h"
 
-#include "BiochemicalArena/System/AssetSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -40,10 +39,9 @@ void AShell::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveC
 	{
 		bIsFirstOnHit = false;
 
-		UAssetSubsystem* AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-		if (AssetSubsystem && AssetSubsystem->ShellSound)
+		if (ShellSound)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->ShellSound, GetActorLocation());
+			UGameplayStatics::PlaySoundAtLocation(this, ShellSound, GetActorLocation());
 		}
 	}
 }

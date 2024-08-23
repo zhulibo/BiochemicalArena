@@ -75,12 +75,13 @@ protected:
 	void OnCreateSessionComplete(bool bWasSuccessful);
 	void OnAddSessionMemberComplete(bool bWasSuccessful);
 
-	void OnFindSessionComplete(bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds);
-
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* JoinServerButton;
 	UFUNCTION()
 	void OnJoinServerButtonClicked();
+	FOnlineSessionId ToOnlineSessionId(FString SessionId);
+	FOnlineSessionId OnlineSessionId;
+	void OnFindSessionsComplete(bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds);
 	void OnJoinSessionComplete(bool bWasSuccessful);
 
 	// 房主变更事件
@@ -105,5 +106,22 @@ protected:
 	UCommonButton* SendMsgButton;
 	UFUNCTION()
 	void OnSendMsgButtonClicked();
+
+	bool bIsAddingClientMember = false;
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* AddClientMemberButton;
+	UFUNCTION()
+	void OnAddClientMemberButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* ServerTravelButton;
+	UFUNCTION()
+	void OnServerTravelButtonClicked();
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* ClientTravelButton;
+	UFUNCTION()
+	void OnClientTravelButtonClicked();
 
 };

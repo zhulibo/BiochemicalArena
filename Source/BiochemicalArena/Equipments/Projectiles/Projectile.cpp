@@ -1,7 +1,5 @@
 #include "Projectile.h"
 #include "Components/BoxComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "Particles/ParticleSystem.h"
 #include "NiagaraFunctionLibrary.h"
 
 AProjectile::AProjectile()
@@ -26,8 +24,8 @@ void AProjectile::PostActorCreated()
 	Super::PostActorCreated();
 
 	// 尽早生成，避免OnHit时Component还未生成
-	SpawnTracer();
-	SpawnTrail();
+	SpawnTracerEffect();
+	SpawnTrailEffect();
 }
 
 void AProjectile::BeginPlay()
@@ -35,33 +33,34 @@ void AProjectile::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AProjectile::SpawnTracer()
+void AProjectile::SpawnTracerEffect()
 {
-	if (Tracer)
+	if (TracerEffect)
 	{
-		TracerComponent = UGameplayStatics::SpawnEmitterAttached(
-			Tracer,
-			CollisionBox,
+		TracerEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			TracerEffect,
+			GetRootComponent(),
 			FName(),
-			GetActorLocation(),
-			GetActorRotation(),
-			EAttachLocation::KeepWorldPosition
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
 		);
 	}
 }
 
-void AProjectile::SpawnTrail()
+void AProjectile::SpawnTrailEffect()
 {
-	if (Trail)
+	if (TrailEffect)
 	{
-		TrailComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
-			Trail,
+		TrailEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			TrailEffect,
 			GetRootComponent(),
 			FName(),
-			GetActorLocation(),
-			GetActorRotation(),
-			EAttachLocation::KeepWorldPosition,
-			false
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
 		);
 	}
 }

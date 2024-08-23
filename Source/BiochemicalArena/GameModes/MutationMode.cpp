@@ -7,11 +7,10 @@
 #include "BiochemicalArena/PlayerStates/MutationPlayerState.h"
 #include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "BiochemicalArena/Equipments/Equipment.h"
-#include "BiochemicalArena/Equipments/DamageTypes/MutantDamageType.h"
+#include "BiochemicalArena/Equipments/Data/DamageTypeMutant.h"
 #include "BiochemicalArena/Equipments/Pickups/Pickup.h"
 #include "BiochemicalArena/Equipments/Projectiles/ProjectileBullet.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerStart.h"
 
 namespace MatchState
@@ -98,7 +97,7 @@ void AMutationMode::EndRound()
 	// 对局时间结束时结束监视对局状态
 	bWatchRoundState = false;
 
-	// 取消生成补给箱定时器
+	// 清除生成补给箱定时器
 	GetWorldTimerManager().ClearTimer(SpawnPickupTimerHandle);
 
 	RoundEndTime = GetWorld()->GetTimeSeconds();
@@ -122,7 +121,7 @@ void AMutationMode::EndMatch()
 	// 比赛时间结束时结束监视比赛状态
 	bWatchMatchState = false;
 
-	// 取消生成补给箱定时器
+	// 清除生成补给箱定时器
 	GetWorldTimerManager().ClearTimer(SpawnPickupTimerHandle);
 
 	Super::EndMatch();
@@ -172,6 +171,7 @@ void AMutationMode::HandleMatchHasStarted()
 		if (Controller)
 		{
 			AssignTeam(Controller, ETeam::Team1);
+
 			SpawnHumanCharacter(Controller);
 		}
 	}
@@ -196,6 +196,7 @@ void AMutationMode::OnPostLogin(AController* Controller)
 	if (MatchState == MatchState::InProgress)
 	{
 		AssignTeam(Controller, ETeam::Team1);
+
 		SpawnHumanCharacter(Controller);
 	}
 }
@@ -221,16 +222,21 @@ void AMutationMode::RandomMutate()
 	for (int i = 0; i < MutateHumanNum; ++i)
 	{
 		int32 RandomIndex = FMath::RandRange(0, Team1.Num() - 1);
+
 		// 调试用 固定角色突变
 		// RandomIndex = 0; // 服务端
-		// RandomIndex = 1; // 客户端
-		AController* Controller = Cast<AController>(Team1[RandomIndex]->GetOwner());
-		if (Controller)
+		RandomIndex = 1; // 客户端
+		// RandomIndex = 2; // 客户端
+
+		ABasePlayerState* BasePlayerState = Team1[RandomIndex];
+		if (BasePlayerState)
 		{
-			ACharacter* Character = Cast<ACharacter>(Controller->GetCharacter());
-			if (Character)
+			if (AController* Controller = Cast<AController>(BasePlayerState->GetOwner()))
 			{
-				Mutate(Character, Controller);
+				if (ACharacter* Character = Cast<ACharacter>(Controller->GetCharacter()))
+				{
+					Mutate(Character, Controller);
+				}
 			}
 		}
 	}
@@ -295,12 +301,20 @@ void AMutationMode::HumanReceiveDamage(AHumanCharacter* DamagedCharacter, ABaseC
 
 	// 设置受伤者血量
 	float TakenDamage = FMath::Clamp(Damage, 0.f, DamagedCharacter->GetHealth());
-	DamagedCharacter->SetHealth(DamagedCharacter->GetHealth() - TakenDamage);
+	float Health = DamagedCharacter->GetHealth() - TakenDamage;
+	DamagedCharacter->SetHealth(Health);
+	DamagedCharacter->MulticastSetHealth(Health, AttackerController);
+
+	if (AttackerState != DamagedState) // 受到跌落伤害时，AttackerController和DamageCauser传的是自己
+	{
+		// 增加攻击者怒气值
+		AttackerState->SetRage(AttackerState->GetRage() + Damage * 10);
+	}
 
 	// 人类死亡
 	if (DamagedCharacter->GetHealth() <= 0.f)
 	{
-		if (AttackerState != DamagedState) // 受到跌落伤害时，AttackerController和DamageCauser传的是自己
+		if (AttackerState != DamagedState)
 		{
 			// 增加攻击者连杀
 			AttackerState->AddKillStreak();
@@ -328,8 +342,11 @@ void AMutationMode::GetInfect(AHumanCharacter* DamagedCharacter, ABaseController
 	// 增加攻击者连杀
 	AttackerState->AddKillStreak();
 
+	// 增加攻击者怒气值
+	AttackerState->SetRage(AttackerState->GetRage() + 2000.f);
+
 	// 击杀日志
-	AddKillLog(AttackerState, AttackerCharacter, GetDefault<UMutantDamageType>(), DamagedState);
+	AddKillLog(AttackerState, AttackerCharacter, GetDefault<UDamageTypeMutant>(), DamagedState);
 
 	// 人类感染后突变
 	Mutate(DamagedCharacter, DamagedController);
@@ -339,6 +356,9 @@ void AMutationMode::GetInfect(AHumanCharacter* DamagedCharacter, ABaseController
 void AMutationMode::MutantReceiveDamage(AMutantCharacter* DamagedCharacter, ABaseController* DamagedController,
 	float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser)
 {
+	if (MutationGameState == nullptr) MutationGameState = GetGameState<AMutationGameState>();
+	if (MutationGameState == nullptr) return;
+
 	if (DamagedCharacter == nullptr || DamagedController == nullptr || AttackerController == nullptr || DamageCauser == nullptr) return;
 
 	AMutationPlayerState* DamagedState = Cast<AMutationPlayerState>(DamagedController->PlayerState);
@@ -349,12 +369,21 @@ void AMutationMode::MutantReceiveDamage(AMutantCharacter* DamagedCharacter, ABas
 	// 击退受伤者
 	if (AProjectileBullet* ProjectileBullet = Cast<AProjectileBullet>(DamageCauser))
 	{
-		DamagedCharacter->GetCharacterMovement()->AddImpulse(ProjectileBullet->GetActorForwardVector() * ProjectileBullet->Impulse);
+		FVector ImpulseVector = ProjectileBullet->GetActorForwardVector();
+		ImpulseVector.Z = 0.f;
+
+		DamagedCharacter->MulticastRepel(ImpulseVector * ProjectileBullet->Impulse);
 	}
 
 	// 设置受伤者血量
-	float TakenDamage = FMath::Clamp(Damage, 0.f, DamagedCharacter->GetHealth());
-	DamagedCharacter->SetHealth(DamagedCharacter->GetHealth() - TakenDamage);
+	float TakenDamage = Damage * MutationGameState->GetDamageMul() * DamagedState->GetDamageReceivedMul();
+	TakenDamage = FMath::Clamp(TakenDamage, 0.f, DamagedCharacter->GetHealth());
+	float Health = DamagedCharacter->GetHealth() - TakenDamage;
+	DamagedCharacter->SetHealth(Health);
+	DamagedCharacter->MulticastSetHealth(Health, AttackerController);
+
+	// 增加怒气值
+	DamagedState->SetRage(DamagedState->GetRage() + TakenDamage);
 
 	// 增加攻击者伤害分数
 	if (AttackerState != DamagedState) // 受到跌落伤害时，AttackerController和DamageCauser传的是自己
@@ -394,7 +423,7 @@ void AMutationMode::MutantRespawn(ACharacter* Character, AController* Controller
 void AMutationMode::SpawnPickups()
 {
 	// 寻找补给箱重生点
-	if (PickupStartPoints.Num() == 0)
+	if (PickupStartPoints.IsEmpty())
 	{
 		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
 		{

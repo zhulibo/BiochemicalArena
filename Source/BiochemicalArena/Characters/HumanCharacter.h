@@ -16,7 +16,7 @@ class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter
 public:
 	AHumanCharacter();
 
-	virtual void OnLocallyControllerReady() override;
+	virtual void OnLocalControllerReady() override;
 
 	void EquipOverlappingEquipment(class AEquipment* Equipment);
 
@@ -55,42 +55,25 @@ protected:
 	UPROPERTY()
 	class AMutationMode* MutationMode;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputMappingContext* HumanMappingContext;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* AimAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* FireAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* ReloadAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* DropAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* SwapPrimaryEquipmentAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* SwapSecondaryEquipmentAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* SwapMeleeEquipmentAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* SwapThrowingEquipmentAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Human")
-	UInputAction* SwapLastEquipmentAction;
-
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class UInputHuman> InputHuman;
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimButtonReleased(const FInputActionValue& Value);
 	void FireButtonPressed(const FInputActionValue& Value);
 	void FireButtonReleased(const FInputActionValue& Value);
 	void ReloadButtonPressed(const FInputActionValue& Value);
 	void DropButtonPressed(const FInputActionValue& Value);
-	UFUNCTION(Server, Reliable)
-	void ServerDetectOverlappingEquipment();
 	void SwapLastEquipmentButtonPressed(const FInputActionValue& Value);
+	void BagMenuButtonPressed(const FInputActionValue& Value);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetDefaultEquipment(const FString& PrimaryEquipmentName,
-		const FString& SecondaryEquipmentName, const FString& MeleeEquipmentName, const FString& ThrowingEquipmentName);
-	FString GetEquipmentName(int32 BagIndex, EEquipmentType EquipmentType);
-	FString GetEquipmentClassPath(FString EquipmentName);
+	void ServerDetectOverlappingEquipment();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetDefaultEquipment(const FString& PrimaryName,
+		const FString& SecondaryName, const FString& MeleeName, const FString& ThrowingName);
+	FString GetEquipmentName(int32 CurBagIndex, EEquipmentType EquipmentType);
+
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimaryEquipment)
 	class AWeapon* DefaultPrimaryEquipment;
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultSecondaryEquipment)
@@ -108,7 +91,6 @@ protected:
 	UFUNCTION()
 	void OnRep_DefaultThrowingEquipment();
 
-	bool bIsImmune = false;
 	UFUNCTION()
 	void HumanReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 		AController* AttackerController, AActor* DamageCauser);

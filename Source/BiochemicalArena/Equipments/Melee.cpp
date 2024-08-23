@@ -1,18 +1,19 @@
 #include "Melee.h"
-#include "EquipmentType.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "..\Characters\Components\CombatStateType.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Components/CapsuleComponent.h"
-#include "DamageTypes/EquipmentDamageType.h"
+#include "BiochemicalArena/Equipments/Data/DamageTypeEquipment.h"
 #include "Kismet/GameplayStatics.h"
 
 AMelee::AMelee()
 {
-	EquipmentCate = EEquipmentCate::Melee;
-
 	AttackCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("AttackCapsule"));
 	AttackCapsule->SetupAttachment(RootComponent);
 	AttackCapsule->SetGenerateOverlapEvents(true);
@@ -52,6 +53,13 @@ void AMelee::SetAttackCapsuleCollision()
 	}
 }
 
+void AMelee::OnStartSwapOut()
+{
+	Super::OnStartSwapOut();
+
+	SetAttackCollisionEnabled(false);
+}
+
 void AMelee::SetAttackCollisionEnabled(bool bIsEnabled)
 {
 	if (bIsEnabled)
@@ -61,14 +69,23 @@ void AMelee::SetAttackCollisionEnabled(bool bIsEnabled)
 	else
 	{
 		AttackCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 		HitEnemies.Empty();
 	}
 }
 
+// TODO 不在服务端视线内有时没有碰撞
 void AMelee::OnAttackCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!HasAuthority()) return;
+	// if (HasAuthority())
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("OnAttackCapsuleOverlap 3"));
+	// }
+	// else
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("OnAttackCapsuleOverlap 2"));
+	// }
 
 	AHumanCharacter* InstigatorCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (InstigatorCharacter && !HitEnemies.Contains(OtherActor))
@@ -84,6 +101,57 @@ void AMelee::OnAttackCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AA
 		{
 			Damage = HeavyAttackDamage;
 		}
-		UGameplayStatics::ApplyDamage(OtherActor, Damage, InstigatorCharacter->Controller, this, UEquipmentDamageType::StaticClass());
+
+		DropBlood(OverlappedComponent, OtherActor, OtherComp, Damage);
+
+		if (HasAuthority())
+		{
+			UGameplayStatics::ApplyDamage(OtherActor, Damage, InstigatorCharacter->Controller, this, UDamageTypeEquipment::StaticClass());
+		}
+	}
+}
+
+void AMelee::DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, float Damage)
+{
+	ABaseCharacter* OverlappedCharacter = Cast<ABaseCharacter>(OtherActor);
+
+	if (OverlappedCharacter == nullptr || OverlappedCharacter->BloodEffect_Melee == nullptr) return;
+
+	TArray<FHitResult> TraceResults;
+
+	auto Start = OverlappedComponent->GetComponentLocation();
+	auto End = OverlappedCharacter->GetActorLocation();
+
+	FCollisionQueryParams CollisionQueryParams;
+
+	GetWorld()->SweepMultiByObjectType(
+		TraceResults,
+		Start,
+		End,
+		FQuat::Identity,
+		FCollisionObjectQueryParams(OverlappedCharacter->GetMesh()->GetCollisionObjectType()),
+		FCollisionShape::MakeSphere(10.f),
+		CollisionQueryParams
+	);
+
+	// DrawDebugLine(GetWorld(), Start, End, COLOR_MAIN, true);
+
+	for (auto TraceResult : TraceResults)
+	{
+		if (TraceResult.GetComponent()->GetUniqueID() == OtherComp->GetUniqueID())
+		{
+			auto BloodEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				OverlappedCharacter->BloodEffect_Melee,
+				TraceResult.ImpactPoint,
+				TraceResult.ImpactNormal.Rotation()
+			);
+
+			BloodEffectComponent->SetVariableInt("ParticleCount", ULibraryCommon::GetBloodParticleCount(Damage));
+			BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
+
+			break;
+		}
 	}
 }

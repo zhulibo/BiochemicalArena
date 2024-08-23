@@ -1,12 +1,13 @@
 #include "ProjectileBullet.h"
 
-#include "BiochemicalArena/Equipments/DamageTypes/EquipmentDamageType.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "BiochemicalArena/Characters/BaseCharacter.h"
+#include "BiochemicalArena/Equipments/Data/DamageTypeEquipment.h"
 #include "Components/BoxComponent.h"
 #include "Components/DecalComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Particles/ParticleSystemComponent.h"
 #include "Sound/SoundCue.h"
 
 AProjectileBullet::AProjectileBullet()
@@ -25,62 +26,62 @@ void AProjectileBullet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CollisionBox->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
+	SetLifeSpan(2.f);
 
-	// 设置生命周期
-	SetLifeSpan(1.f);
+	CollisionBox->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 }
 
 void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
-	// FVector_NetQuantize ImpactPoint = Hit.ImpactPoint;
-	// UE_LOG(LogTemp, Warning, TEXT("ImpactPoint: %s"), *ImpactPoint.ToString());
+	// UE_LOG(LogTemp, Warning, TEXT("AProjectileBullet::OnHit Location: %s"), *Hit.ImpactPoint.ToString());
+	// UE_LOG(LogTemp, Warning, TEXT("AProjectileBullet::OnHit Rotation: %s"), *Hit.ImpactNormal.Rotation().ToString());
 
-	if (HasAuthority())
+	ABaseCharacter* DamagedActor = Cast<ABaseCharacter>(OtherActor);
+
+	if (HasAuthority() && DamagedActor && GetInstigator())
 	{
-		ACharacter* OwnerCharacter = Cast<ACharacter>(GetInstigator());
-		if (OwnerCharacter)
-		{
-			AController* OwnerController = OwnerCharacter->Controller;
-			if (OwnerController)
-			{
-				UGameplayStatics::ApplyDamage(OtherActor, Damage, OwnerController, this, UEquipmentDamageType::StaticClass());
-			}
-		}
+		UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigator()->Controller, this, UDamageTypeEquipment::StaticClass());
 	}
 
-	// 发生碰撞延长生命周期，以便特效有足够时间展示
-	SetLifeSpan(11.f);
-
-	if (TracerComponent)
-	{
-		TracerComponent->DestroyComponent();
-	}
-
-	if (ImpactParticle)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactParticle, GetActorTransform());
-	}
+	SetLifeSpan(5.f);
 
 	if (ImpactSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
 	}
 
-	if (ImpactDecal)
+	if (TracerEffectComponent)
 	{
-		auto DecalComponent = UGameplayStatics::SpawnDecalAttached(
-			ImpactDecal,
-			FVector(10.f),
-			HitComp,
-			NAME_None,
-			Hit.ImpactPoint,
-			Hit.ImpactNormal.Rotation(),
-			EAttachLocation::KeepWorldPosition,
-			10.f
-		);
+		TracerEffectComponent->DestroyComponent();
+	}
 
-		DecalComponent->SetFadeScreenSize(0.004f);
+	if (DamagedActor == nullptr)
+	{
+		if (ImpactEffect)
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(),
+				ImpactEffect,
+				GetActorLocation(),
+				GetActorRotation()
+			);
+		}
+
+		if (ImpactDecal)
+		{
+			auto DecalComponent = UGameplayStatics::SpawnDecalAttached(
+				ImpactDecal,
+				FVector(10.f),
+				HitComp,
+				NAME_None,
+				Hit.ImpactPoint,
+				Hit.ImpactNormal.Rotation(),
+				EAttachLocation::KeepWorldPosition,
+				5.f
+			);
+
+			DecalComponent->SetFadeScreenSize(0.004f);
+		}
 	}
 }

@@ -1,26 +1,41 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "GameFramework/PlayerState.h"
+#include "AbilitySystemInterface.h"
 #include "BasePlayerState.generated.h"
 
 enum class ETeam : uint8;
+enum class EMutantCharacterName: uint8;
 
 UCLASS()
-class BIOCHEMICALARENA_API ABasePlayerState : public APlayerState
+class BIOCHEMICALARENA_API ABasePlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
 	ABasePlayerState();
 
+	virtual void Reset() override;
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	class UAttributeSetBase* GetAttributeSetBase();
+	float GetMaxHealth();
+	float GetHealth();
+	float GetDamageReceivedMul();
+	float GetRepelReceivedMul();
+	float GetCharacterLevel();
+
 	virtual void SetTeam(ETeam TempTeam);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSetHumanCharacterName(const FString& TempHumanCharacterName);
+	UFUNCTION(Server, Reliable)
+	void ServerSetMutantCharacterName(EMutantCharacterName TempMutantCharacterName);
 
 	UFUNCTION()
-	void SetMutantCharacterName(const FString& TempMutantCharacterName);
+	void SetMutantCharacterName(EMutantCharacterName TempMutantCharacterName);
 
 	virtual void AddDamage(float TempDamage);
 	void AddDefeat();
@@ -32,14 +47,13 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 
-	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere)
-	ETeam Team;
-	UFUNCTION()
-	virtual void OnRep_Team();
-	void SetPlayerNameTeamColor();
+	virtual void InitData();
 
 	UPROPERTY()
-	class ABaseGameState* BaseGameState;
+	class UBAAbilitySystemComponent* AbilitySystemComponent;
+	UPROPERTY()
+	UAttributeSetBase* AttributeSetBase;
+
 	UPROPERTY()
 	class ABaseCharacter* BaseCharacter;
 	UPROPERTY()
@@ -47,7 +61,13 @@ protected:
 	UPROPERTY()
 	FString HumanCharacterName = "SAS";
 	UPROPERTY()
-	FString MutantCharacterName = "Tank";
+	EMutantCharacterName MutantCharacterName = EMutantCharacterName::Tank;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere)
+	ETeam Team;
+	UFUNCTION()
+	virtual void OnRep_Team();
+	void InitOverheadWidget();
 
 	UPROPERTY(ReplicatedUsing = OnRep_Damage)
 	float Damage;
@@ -70,7 +90,7 @@ protected:
 public:
 	FORCEINLINE ETeam GetTeam() const { return Team; }
 	FORCEINLINE FString GetHumanCharacterName() const { return HumanCharacterName; }
-	FORCEINLINE FString GetMutantCharacterName() const { return MutantCharacterName; }
+	FORCEINLINE EMutantCharacterName GetMutantCharacterName() const { return MutantCharacterName; }
 
 	FORCEINLINE float GetDamage() const { return Damage; }
 	FORCEINLINE float GetDefeat() const { return Defeat; }

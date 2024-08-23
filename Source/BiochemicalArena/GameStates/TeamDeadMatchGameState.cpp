@@ -38,7 +38,7 @@ void ATeamDeadMatchGameState::WatchGameState()
 	// 监视比赛状态
 	if (TeamDeadMatchMode->bWatchMatchState)
 	{
-		if (Team1.Num() == 0 || Team2.Num() == 0)
+		if (Team1.IsEmpty() || Team2.IsEmpty())
 		{
 			TeamDeadMatchMode->EndMatch();
 		}

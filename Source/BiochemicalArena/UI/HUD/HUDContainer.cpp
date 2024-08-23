@@ -4,9 +4,11 @@
 #include "MutationMutant.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "PauseMenu.h"
-#include "RadialMenuContainer.h"
-#include "Scoreboard.h"
 #include "TeamDeadMatch.h"
+#include "RadialMenu/RadialMenuContainer.h"
+#include "Scoreboard/Scoreboard.h"
+#include "BagMenu/BagMenu.h"
+#include "CharacterMenu/CharacterMenu.h"
 
 void UHUDContainer::NativeOnInitialized()
 {
@@ -25,4 +27,14 @@ void UHUDContainer::NativeOnInitialized()
 void UHUDContainer::ShowPauseMenu()
 {
 	if (PauseMenuClass) MainStack->AddWidget(PauseMenuClass);
+}
+
+void UHUDContainer::ShowBagMenu()
+{
+	if (BagMenuClass) MainStack->AddWidget(BagMenuClass);
+}
+
+void UHUDContainer::ShowCharacterMenu()
+{
+	if (CharacterMenuClass) MainStack->AddWidget(CharacterMenuClass);
 }

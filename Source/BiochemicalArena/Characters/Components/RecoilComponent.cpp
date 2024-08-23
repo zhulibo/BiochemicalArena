@@ -248,6 +248,7 @@ float URecoilComponent::GetCurRecoilVert()
 	{
 		return 0.f;
 	}
+
 	return RecoilVertTotal;
 }
 
@@ -257,5 +258,6 @@ float URecoilComponent::GetCurRecoilHor()
 	{
 		return 0.f;
 	}
+
 	return RecoilHorTotal;
 }

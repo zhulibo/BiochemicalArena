@@ -26,6 +26,7 @@ public:
 	void SelectRadialMenu(double X, double Y);
 	void ChangeRadialMenu();
 	void CloseRadialMenu();
+	void ShowBagMenu();
 
 	void SetHUDCrosshair(float CrosshairSpread);
 
@@ -59,7 +60,7 @@ protected:
 	virtual void HandleMatchHasEnded();
 
 	bool bNeedInitHUD = false;
-	virtual void InitHUD();
+	virtual void InitHUD() {}
 	virtual void SetHUDTime() {}
 
 };

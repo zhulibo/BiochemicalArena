@@ -1,7 +1,7 @@
 #include "Pickup.h"
 
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/PlayerControllers/MutationController.h"
+#include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "Components/SphereComponent.h"
 
 APickup::APickup()
@@ -25,9 +25,10 @@ void APickup::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (AMutationController* MutationController = Cast<AMutationController>(GetWorld()->GetFirstPlayerController()))
+	if (MutationGameState == nullptr) MutationGameState = GetWorld()->GetGameState<AMutationGameState>();
+	if (MutationGameState)
 	{
-		MutationController->OnRoundStarted.AddUObject(this, &ThisClass::OnRoundStarted);
+		MutationGameState->OnRoundStarted.AddUObject(this, &ThisClass::OnRoundStarted);
 	}
 }
 

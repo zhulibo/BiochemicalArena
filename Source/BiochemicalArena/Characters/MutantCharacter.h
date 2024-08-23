@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
+#include "GameplayEffectTypes.h"
+#include "GameplayTagContainer.h"
 #include "MutantCharacter.generated.h"
 
 UENUM(BlueprintType)
@@ -22,6 +24,12 @@ class BIOCHEMICALARENA_API AMutantCharacter : public ABaseCharacter
 public:
 	AMutantCharacter();
 
+	virtual void PossessedBy(AController* NewController) override;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayAbilityBase> SkillAbility;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> SkillEffect;
+
 	UPROPERTY()
 	EMutantCharacterName MutantCharacterName;
 
@@ -34,7 +42,10 @@ public:
 	virtual void LeftHandAttackEnd();
 
 	UFUNCTION(Server, Reliable)
-	void ServerSelectCharacter(const FString& CharacterName);
+	void ServerSelectCharacter(EMutantCharacterName TempMutantCharacterName);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRepel(FVector ImpulseVector);
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -43,6 +54,11 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void UnPossessed() override;
+	virtual void Destroyed() override;
+
+	virtual void OnAbilitySystemComponentInit() override;
+	void OnLocalSkillCooldownTagChanged(FGameplayTag GameplayTag, int32 TagCount);
+	void OnLocalCharacterLevelChanged(const FOnAttributeChangeData& Data);
 
 	UPROPERTY(VisibleAnywhere)
 	UCapsuleComponent* RightHandCapsule;
@@ -52,6 +68,8 @@ protected:
 	UPROPERTY()
 	class AMutationMode* MutationMode;
 	EMutantState MutantState;
+	UPROPERTY()
+	class AMutationController* MutationController;
 
 	UPROPERTY()
 	class UMutantAnimInstance* MutantAnimInstance;
@@ -60,17 +78,14 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HeavyAttackMontage;
 
-	UPROPERTY(EditAnywhere, Category = "Input | Mutant")
-	UInputMappingContext* MutantMappingContext;
-	UPROPERTY(EditAnywhere, Category = "Input | Mutant")
-	UInputAction* LightAttackAction;
-	UPROPERTY(EditAnywhere, Category = "Input | Mutant")
-	UInputAction* HeavyAttackAction;
-
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class UInputMutant> InputMutant;
 	virtual void LightAttackButtonPressed(const FInputActionValue& Value);
 	virtual void LightAttackButtonReleased(const FInputActionValue& Value);
 	virtual void HeavyAttackButtonPressed(const FInputActionValue& Value);
 	virtual void HeavyAttackButtonReleased(const FInputActionValue& Value);
+	void CharacterMenuButtonPressed(const FInputActionValue& Value);
+	void SkillButtonPressed(const FInputActionValue& Value);
 
 	UFUNCTION(Server, Reliable)
 	void ServerLightAttack();
@@ -84,9 +99,9 @@ protected:
 	void MulticastHeavyAttack();
 	void LocalHeavyAttack();
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	float LightAttackDamage;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere)
 	float HeavyAttackDamage;
 
 	UPROPERTY()
@@ -100,6 +115,10 @@ protected:
 	UFUNCTION()
 	virtual void OnLeftHandCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	virtual void DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, float Damage);
 
 	UFUNCTION()
 	void MutantReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,

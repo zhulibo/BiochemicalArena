@@ -32,8 +32,6 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsAiming;
 	UPROPERTY(BlueprintReadOnly)
-	bool bIsDead;
-	UPROPERTY(BlueprintReadOnly)
 	float AimYaw;
 	UPROPERTY(BlueprintReadOnly)
 	float AimPitch;

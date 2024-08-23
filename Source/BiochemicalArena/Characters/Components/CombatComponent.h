@@ -14,6 +14,7 @@ class BIOCHEMICALARENA_API UCombatComponent : public UActorComponent
 
 public:
 	UCombatComponent();
+
 	friend class AHumanCharacter;
 
 	class AEquipment* GetCurEquipment(); // If it has equipment in use return it, or return nullptr
@@ -118,10 +119,11 @@ protected:
 	void LocalSetAiming(bool bNewAimingState);
 
 	// 射击
-	bool bCanFire = true; // TODO 切换武器时重置为true
+	bool bCanFire = true;
 	bool bIsFirstShot = true;
 	bool bFireButtonPressed;
-	void FireHandle(bool bPressed);
+	void StartFire();
+	void StopFire();
 	void Fire();
 	bool CanFire();
 	FTimerHandle LoadNewBulletTimerHandle;
@@ -169,12 +171,12 @@ protected:
 	void DestroyEquipments();
 
 	// 近战攻击
-	void MeleeAttack(int32 Type);
+	void MeleeAttack(ECombatState CombatStateToSet);
 	UFUNCTION(Server, Reliable)
-	void ServerMeleeAttack(int32 Type);
+	void ServerMeleeAttack(ECombatState CombatStateToSet);
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastMeleeAttack(int32 Type);
-	void LocalMeleeAttack(int32 Type);
+	void MulticastMeleeAttack(ECombatState CombatStateToSet);
+	void LocalMeleeAttack(ECombatState CombatStateToSet);
 
 	// 投掷
 	void Throw();

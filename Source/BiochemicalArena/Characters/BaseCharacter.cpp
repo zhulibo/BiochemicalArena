@@ -1,4 +1,5 @@
 #include "BaseCharacter.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -10,15 +11,23 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "CommonInputSubsystem.h"
-#include "BiochemicalArena/Equipments/DamageTypes/FallDamageType.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "BiochemicalArena/Abilities/AttributeSetBase.h"
+#include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
+#include "BiochemicalArena/Abilities/GameplayAbilityBase.h"
+#include "BiochemicalArena/Equipments/Data/DamageTypeFall.h"
+#include "BiochemicalArena/Equipments/Projectiles/ProjectileBullet.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/System/StorageSaveGame.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/OverheadWidget.h"
 #include "Components/WidgetComponent.h"
+#include "Data/CharacterSound.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Net/UnrealNetwork.h"
+#include "Data/InputBase.h"
 
 ABaseCharacter::ABaseCharacter()
 {
@@ -48,30 +57,30 @@ ABaseCharacter::ABaseCharacter()
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 }
 
-void ABaseCharacter::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-}
-
 void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 监听输入设备变化
+	// 监听输入设备类型改变
 	UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController());
 	if (CommonInputSubsystem)
 	{
-		if (!CommonInputSubsystem->OnInputMethodChangedNative.IsBoundToObject(this)) CommonInputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::OnInputMethodChanged);
+		if (!CommonInputSubsystem->OnInputMethodChangedNative.IsBoundToObject(this))
+		{
+			CommonInputSubsystem->OnInputMethodChangedNative.AddUObject(this, &ThisClass::OnInputMethodChanged);
+		}
 	}
 
 	if (OverheadWidget)
 	{
-		UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+		if (OverheadWidgetClass == nullptr) OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
 		if (OverheadWidgetClass)
 		{
 			OverheadWidgetClass->BaseCharacter = this;
 		}
 	}
+
+	GetMesh()->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 }
 
 // 增强输入
@@ -79,35 +88,37 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	if (InputBase == nullptr) return;
+
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
 	{
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 		if (Subsystem)
 		{
-			Subsystem->AddMappingContext(BaseMappingContext, 0);
+			Subsystem->AddMappingContext(InputBase->BaseMappingContext, 0);
 		}
 	}
 
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
 	{
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
-		EnhancedInputComponent->BindAction(LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
-		EnhancedInputComponent->BindAction(LookStickAction, ETriggerEvent::Triggered, this, &ThisClass::LookStick);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
-		EnhancedInputComponent->BindAction(CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
+		EnhancedInputComponent->BindAction(InputBase->MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
+		EnhancedInputComponent->BindAction(InputBase->LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
+		EnhancedInputComponent->BindAction(InputBase->LookStickAction, ETriggerEvent::Triggered, this, &ThisClass::LookStick);
+		EnhancedInputComponent->BindAction(InputBase->JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
+		EnhancedInputComponent->BindAction(InputBase->CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(InputBase->CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
+		EnhancedInputComponent->BindAction(InputBase->CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
 
-		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Started, this, &ThisClass::ScoreboardButtonPressed);
-		EnhancedInputComponent->BindAction(ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
-		EnhancedInputComponent->BindAction(PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
+		EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
+		EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
+		EnhancedInputComponent->BindAction(InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
 
-		EnhancedInputComponent->BindAction(RadialMenuAction, ETriggerEvent::Started, this, &ThisClass::RadialMenuButtonPressed);
-		EnhancedInputComponent->BindAction(RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
-		EnhancedInputComponent->BindAction(RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChange);
-		EnhancedInputComponent->BindAction(RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
+		EnhancedInputComponent->BindAction(InputBase->RadialMenuAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuButtonPressed);
+		EnhancedInputComponent->BindAction(InputBase->RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
+		EnhancedInputComponent->BindAction(InputBase->RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChange);
+		EnhancedInputComponent->BindAction(InputBase->RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
 	}
 }
 
@@ -171,6 +182,7 @@ void ABaseCharacter::PollInitMeshCollision()
 				GetMesh()->SetCollisionObjectType(ECC_Team2SkeletalMesh);
 				break;
 			}
+
 			HasInitMeshCollision = true;
 		}
 	}
@@ -191,19 +203,149 @@ void ABaseCharacter::CalcAimPitch()
 
 void ABaseCharacter::PollInit()
 {
-	if (IsLocallyControlled() && BaseController == nullptr) // WARNING 依赖BaseController为空，需要保证BaseController之前未被赋值
+	if (IsLocallyControlled() && !bIsLocalControllerReady)
 	{
 		BaseController = Cast<ABaseController>(Controller);
 		if (BaseController)
 		{
-			OnLocallyControllerReady();
+			bIsLocalControllerReady = true;
+
+			OnLocalControllerReady();
 
 			BaseController->ManualReset();
 		}
 	}
 }
 
-// 输入设备变化
+void ABaseCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// 初始化ASC
+	InitAbilityActorInfo();
+
+	OnAbilitySystemComponentInit();
+
+	if (AbilitySystemComponent)
+	{
+		// 赋予初始技能
+		for (TSubclassOf<UGameplayAbilityBase> StartupAbility : StartupAbilities)
+		{
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility));
+		}
+
+		// 赋予初始Effect
+		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
+		for (TSubclassOf<UGameplayEffect> StartupEffect : StartupEffects)
+		{
+			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(StartupEffect, GetCharacterLevel(), EffectContext);
+			if (SpecHandle.IsValid())
+			{
+				AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
+			}
+		}
+
+		// 赋值默认AttributeSet Effect
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, GetCharacterLevel(), EffectContext);
+		if (SpecHandle.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
+		}
+	}
+}
+
+void ABaseCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	InitAbilityActorInfo();
+
+	OnAbilitySystemComponentInit();
+}
+
+void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+	FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (BloodEffect_Projectile)
+	{
+		// UE_LOG(LogTemp, Warning, TEXT("ABaseCharacter::OnHit Location: %s"), *Hit.ImpactPoint.ToString());
+		// UE_LOG(LogTemp, Warning, TEXT("ABaseCharacter::OnHit Rotation: %s"), *Hit.ImpactNormal.Rotation().ToString());
+
+		FRotator HitRotation = Hit.ImpactNormal.Rotation();
+		auto BloodEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			BloodEffect_Projectile,
+			Hit.ImpactPoint,
+			FRotator(-HitRotation.Pitch, HitRotation.Yaw + 180.f, HitRotation.Roll)
+		);
+
+		if (AProjectileBullet* ProjectileBullet = Cast<AProjectileBullet>(OtherActor))
+		{
+			BloodEffectComponent->SetVariableInt("ParticleCount", ULibraryCommon::GetBloodParticleCount(ProjectileBullet->Damage));
+		}
+		BloodEffectComponent->SetVariableLinearColor("Color", BloodColor);
+	}
+}
+
+void ABaseCharacter::InitAbilityActorInfo()
+{
+	if (BasePlayerState == nullptr) BasePlayerState = GetPlayerState<ABasePlayerState>();
+	if (BasePlayerState)
+	{
+		AbilitySystemComponent = Cast<UBAAbilitySystemComponent>(BasePlayerState->GetAbilitySystemComponent());
+		AbilitySystemComponent->InitAbilityActorInfo(BasePlayerState, this);
+		AttributeSetBase = BasePlayerState->GetAttributeSetBase();
+	}
+}
+
+void ABaseCharacter::OnAbilitySystemComponentInit()
+{
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSetBase->GetMaxHealthAttribute()).AddUObject(this, &ThisClass::OnMaxHealthChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSetBase->GetHealthAttribute()).AddUObject(this, &ThisClass::OnHealthChanged);
+	}
+}
+
+UAbilitySystemComponent* ABaseCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+UAttributeSetBase* ABaseCharacter::GetAttributeSetBase()
+{
+	return AttributeSetBase;
+}
+
+float ABaseCharacter::GetMaxHealth()
+{
+	return AttributeSetBase ? AttributeSetBase->GetMaxHealth() : 0.f;
+}
+
+float ABaseCharacter::GetHealth()
+{
+	return AttributeSetBase ? AttributeSetBase->GetHealth() : 0.f;
+}
+
+float ABaseCharacter::GetDamageReceivedMul()
+{
+	return AttributeSetBase ? AttributeSetBase->GetDamageReceivedMul() : 0.f;
+}
+
+float ABaseCharacter::GetRepelReceivedMul()
+{
+	return AttributeSetBase ? AttributeSetBase->GetRepelReceivedMul() : 0.f;
+}
+
+float ABaseCharacter::GetCharacterLevel()
+{
+	return AttributeSetBase ? AttributeSetBase->GetCharacterLevel() : 0.f;
+}
+
+// 输入设备类型改变
 void ABaseCharacter::OnInputMethodChanged(ECommonInputType TempCommonInputType)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnInputMethodChanged: %d"), TempCommonInputType);
@@ -214,7 +356,6 @@ void ABaseCharacter::OnInputMethodChanged(ECommonInputType TempCommonInputType)
 // 根据地形播放不同脚步声
 void ABaseCharacter::PlayFootstepSound()
 {
-	// 射线检测脚下地形
 	FHitResult HitResult;
 	FVector Start = GetActorLocation();
 	FVector End = Start - FVector(0.f, 0.f, 100.f);
@@ -225,39 +366,34 @@ void ABaseCharacter::PlayFootstepSound()
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (HitResult.bBlockingHit && AssetSubsystem)
+	if (HitResult.bBlockingHit && AssetSubsystem && AssetSubsystem->CharacterSound)
 	{
+		USoundCue* Sound;
 		switch (UGameplayStatics::GetSurfaceType(HitResult))
 		{
 		case EPhysicalSurface::SurfaceType1:
-			if (AssetSubsystem->MetalSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->MetalSound, HitResult.Location);
+			Sound = AssetSubsystem->CharacterSound->MetalSound;
 			break;
 		case EPhysicalSurface::SurfaceType2:
-			if (AssetSubsystem->WaterSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->WaterSound, HitResult.Location);
+			Sound = AssetSubsystem->CharacterSound->WaterSound;
 			break;
 		case EPhysicalSurface::SurfaceType3:
-			if (AssetSubsystem->GrassSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->GrassSound, HitResult.Location);
+			Sound = AssetSubsystem->CharacterSound->GrassSound;
 			break;
 		case EPhysicalSurface::SurfaceType4:
-			if (AssetSubsystem->MudSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->MudSound, HitResult.Location);
+			Sound = AssetSubsystem->CharacterSound->MudSound;
 			break;
 		default:
-			if (AssetSubsystem->CommonSound) UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->CommonSound, HitResult.Location);
+			Sound = AssetSubsystem->CharacterSound->CommonSound;
 			break;
 		}
+		UGameplayStatics::PlaySoundAtLocation(this, Sound, HitResult.Location);
 	}
 }
 
 void ABaseCharacter::FellOutOfWorld(const UDamageType& DmgType)
 {
-	UGameplayStatics::ApplyDamage(this, Health, BaseController, this, UFallDamageType::StaticClass());
-}
-
-void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ThisClass, Health);
+	UGameplayStatics::ApplyDamage(this, GetHealth(), BaseController, this, UDamageTypeFall::StaticClass());
 }
 
 void ABaseCharacter::Move(const FInputActionValue& Value)
@@ -380,6 +516,7 @@ void ABaseCharacter::RadialMenuChange(const FInputActionValue& Value)
 	}
 }
 
+// TODO 弦操作使用IA_RadialMenu时，手柄RadialMenuButtonPressed不触发，使用了新建的IA_RadialMenuSelectChord，待改回IA_RadialMenu
 void ABaseCharacter::RadialMenuSelect(const FInputActionValue& Value)
 {
 	FVector2D AxisVector = Value.Get<FVector2D>();
@@ -405,8 +542,8 @@ void ABaseCharacter::Landed(const FHitResult& Hit)
 		MulticastPlayOuchSound(DamageRate);
 
 		// 应用伤害
-		float TakenDamage = FMath::Clamp(MaxHealth * DamageRate, 0.f, Health);
-		UGameplayStatics::ApplyDamage(this, TakenDamage, Controller, this, UFallDamageType::StaticClass());
+		float TakenDamage = FMath::Clamp(GetMaxHealth() * DamageRate, 0.f, GetHealth());
+		UGameplayStatics::ApplyDamage(this, TakenDamage, Controller, this, UDamageTypeFall::StaticClass());
 	}
 }
 
@@ -441,40 +578,51 @@ float ABaseCharacter::CalcFallDamageRate()
 
 void ABaseCharacter::MulticastPlayOuchSound_Implementation(float DamageRate)
 {
-	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr) return;
-
-	if (DamageRate == 0.05f && AssetSubsystem->OuchSound1)
+	if (OuchSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->OuchSound1, GetActorLocation());
-	}
-	else if (DamageRate == 0.1f && AssetSubsystem->OuchSound2)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->OuchSound2, GetActorLocation());
-	}
-	else if (DamageRate == 0.15f && AssetSubsystem->OuchSound3)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->OuchSound3, GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(this, OuchSound, GetActorLocation());
 	}
 }
 
 void ABaseCharacter::SetHealth(float TempHealth)
 {
-	Health = TempHealth;
-
-	if (IsLocallyControlled()) SetHUDHealth();
+	if (AttributeSetBase)
+	{
+		AttributeSetBase->SetHealth(TempHealth);
+	}
 }
 
-void ABaseCharacter::OnRep_Health()
+// 使用RPC通知攻击者立刻响应受伤者血量变化（UAttributeSetBase中的Health同步有点慢）
+void ABaseCharacter::MulticastSetHealth_Implementation(float TempHealth, AController* AttackerController)
 {
-	if (IsLocallyControlled()) SetHUDHealth();
+	if (HasAuthority()) return;
+
+	if (AttackerController && AttackerController->IsLocalController())
+	{
+		SetHealth(TempHealth);
+	}
 }
 
-void ABaseCharacter::SetHUDHealth()
+void ABaseCharacter::OnMaxHealthChanged(const FOnAttributeChangeData& Data)
 {
+	if (OverheadWidgetClass == nullptr) OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+	if (OverheadWidgetClass)
+	{
+		OverheadWidgetClass->OnMaxHealthChange(Data.NewValue);
+	}
+}
+
+void ABaseCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
+{
+	if (OverheadWidgetClass == nullptr) OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject());
+	if (OverheadWidgetClass)
+	{
+		OverheadWidgetClass->OnHealthChange(Data.OldValue, Data.NewValue);
+	}
+
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
-		BaseController->SetHUDHealth(Health);
+		BaseController->SetHUDHealth(Data.NewValue);
 	}
 }

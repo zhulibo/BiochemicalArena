@@ -4,6 +4,9 @@
 #include "GameFramework/GameState.h"
 #include "BaseGameState.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnRoundStarted);
+DECLARE_MULTICAST_DELEGATE(FOnRoundEnded);
+
 enum class ETeam : uint8;
 
 UCLASS()
@@ -19,19 +22,26 @@ public:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastAddKillLog(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState);
 
+	virtual void OnRep_MatchState() override;
+	FOnRoundStarted OnRoundStarted;
+	FOnRoundEnded OnRoundEnded;
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY()
 	class ABaseController* BaseController;
 
+	virtual void HandleMatchHasStarted() override;
+	virtual void HandleRoundHasEnded();
+
 	UPROPERTY(ReplicatedUsing = OnRep_Team1)
 	TArray<ABasePlayerState*> Team1;
 	UPROPERTY(ReplicatedUsing = OnRep_Team2)
 	TArray<ABasePlayerState*> Team2;
 	UFUNCTION()
-	virtual void OnRep_Team1();
+	virtual void OnRep_Team1() {}
 	UFUNCTION()
-	virtual void OnRep_Team2();
+	virtual void OnRep_Team2() {}
 
 };

@@ -1,6 +1,10 @@
 #include "Weapon.h"
 
+#include "DataRegistryId.h"
+#include "DataRegistrySubsystem.h"
 #include "EquipmentAnimInstance.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "Components/SphereComponent.h"
@@ -19,10 +23,47 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	MuzzleSocket = EquipmentMesh->GetSocketByName(FName("Muzzle"));
+	InitData();
+}
 
-	CarriedAmmo = MaxCarriedAmmo;
-	Ammo = MagCapacity;
+// 初始化数据
+void AWeapon::InitData()
+{
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FString EnumValue = UEnum::GetValueAsString(EquipmentName);
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+
+		FDataRegistryId DataRegistryId1(DR_EquipmentData, FName(EnumValue));
+		if (const FEquipmentData* EquipmentData = DRSubsystem->GetCachedItem<FEquipmentData>(DataRegistryId1))
+		{
+			AimingFOVMul = EquipmentData->AimingFOVMul;
+			AimSpeed = EquipmentData->AimSpeed;
+			MaxCarriedAmmo = EquipmentData->MaxCarriedAmmo;
+			MagCapacity = EquipmentData->MagCapacity;
+			FireRate = EquipmentData->FireRate;
+			bIsAutomatic = EquipmentData->bIsAutomatic;
+			Damage = EquipmentData->Damage;
+			Impulse = EquipmentData->Impulse;
+
+			CarriedAmmo = MaxCarriedAmmo;
+			Ammo = MagCapacity;
+		}
+
+		FDataRegistryId DataRegistryId2(DR_EquipmentRecoil, FName(EnumValue));
+		if (const FEquipmentRecoil* EquipmentData = DRSubsystem->GetCachedItem<FEquipmentRecoil>(DataRegistryId2))
+		{
+			RecoilMaxVert = EquipmentData->RecoilMaxVert;
+			RecoilMinVert = EquipmentData->RecoilMinVert;
+			RecoilMaxHor = EquipmentData->RecoilMaxHor;
+			RecoilMinHor = EquipmentData->RecoilMinHor;
+			FirstShotRecoilMul = EquipmentData->FirstShotRecoilMul;
+			RecoilIncTime = EquipmentData->RecoilIncTime;
+			RecoilTotalVertLimit = EquipmentData->RecoilTotalVertLimit;
+			RecoilDecSpeed = EquipmentData->RecoilDecSpeed;
+			CenterSpread = EquipmentData->CenterSpread;
+		}
+	}
 }
 
 void AWeapon::Fire(const FVector& HitTarget, float RecoilVert, float RecoilHor)

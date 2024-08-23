@@ -20,7 +20,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnLoginStatusChanged, const FAuthLoginStatu
 
 // Lobby
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCreateLobbyComplete, bool bWasSuccessful);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnFindLobbyComplete, bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnFindLobbiesComplete, bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinLobbyComplete, bool bWasSuccessful);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLobbyInvitationAdded, const FLobbyInvitationAdded& LobbyInvitationAdded);
@@ -45,7 +45,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveLobbyComplete, bool bWasSuccessful);
 // Session
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCreateSessionComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAddSessionMemberComplete, bool bWasSuccessful);
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnFindSessionComplete, bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnFindSessionsComplete, bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionComplete, bool bWasSuccessful);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnLeaveSessionComplete, bool bWasSuccessful);
 
@@ -86,8 +86,8 @@ public:
 	FName LocalLobbyName = FName(TEXT("LocalLobbyName"));
 	void CreateLobby();
 	FOnCreateLobbyComplete OnCreateLobbyComplete;
-	void FindLobby(FString LobbyName, FString GameMode, FString MapName);
-	FOnFindLobbyComplete OnFindLobbyComplete;
+	void FindLobbies(FString LobbyName, FString GameMode, FString MapName);
+	FOnFindLobbiesComplete OnFindLobbiesComplete;
 	void JoinLobby(TSharedRef<const FLobby> Lobby);
 	FOnJoinLobbyComplete OnJoinLobbyComplete;
 
@@ -132,17 +132,16 @@ public:
 	FName LocalSessionName = FName(TEXT("LocalSessionName"));
 	void CreateSession();
 	FOnCreateSessionComplete OnCreateSessionComplete;
-	void AddSessionMember();
+	void AddSessionMember(FAccountId AccountId);
 	FOnAddSessionMemberComplete OnAddSessionMemberComplete;
 	TSharedPtr<const ISession> GetSessionByName();
-	void FindSession();
-	FOnFindSessionComplete OnFindSessionComplete;
-	void JoinSession(FString SessionId);
+	void FindSessions();
+	FOnFindSessionsComplete OnFindSessionsComplete;
+	void JoinSession(FOnlineSessionId OnlineSessionId);
 	FOnJoinSessionComplete OnJoinSessionComplete;
-	FOnlineSessionId ToOnlineSessionId(FString SessionId);
+	FString GetResolvedConnectString(FOnlineSessionId OnlineSessionId);
 	void LeaveSession();
 	FOnLeaveSessionComplete OnLeaveSessionComplete;
-	FString GetResolvedConnectString(FString SessionId);
 
 	// UserFile
 	void EnumerateFiles();

@@ -1,6 +1,5 @@
 #include "Setting.h"
 #include "CommonTextBlock.h"
-#include "SettingTab.h"
 #include "TabControl.h"
 #include "BiochemicalArena/GameModes/MenuMode.h"
 #include "BiochemicalArena/PlayerControllers/MenuController.h"

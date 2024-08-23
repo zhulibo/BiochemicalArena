@@ -1,22 +1,29 @@
 #include "HumanCharacter.h"
+
+#include "DataRegistryId.h"
+#include "DataRegistrySubsystem.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "..\Equipments\Throwing.h"
-#include "BiochemicalArena/Equipments/EquipmentType.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "Components/CombatComponent.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "..\System\StorageSaveGameType.h"
 #include "..\System\StorageSaveGame.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Equipments/Pickups/PickupEquipment.h"
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/System/StorageSubsystem.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/CombatStateType.h"
 #include "Components/CrosshairComponent.h"
 #include "Components/RecoilComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Data/InputBase.h"
+#include "Data/InputHuman.h"
 #include "Net/UnrealNetwork.h"
 
 AHumanCharacter::AHumanCharacter()
@@ -29,8 +36,7 @@ AHumanCharacter::AHumanCharacter()
 
 	CrosshairComponent = CreateDefaultSubobject<UCrosshairComponent>(TEXT("CrosshairComponent"));
 
-	MaxHealth = 300.f;
-	Health = MaxHealth;
+	BloodColor = COLOR_HUMAN;
 }
 
 void AHumanCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -75,13 +81,15 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	if (InputHuman == nullptr) return;
+
 	APlayerController* PlayerController = Cast<APlayerController>(Controller);
 	if (PlayerController)
 	{
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 		if (Subsystem)
 		{
-			Subsystem->AddMappingContext(HumanMappingContext, 1);
+			Subsystem->AddMappingContext(InputHuman->HumanMappingContext, 1);
 		}
 	}
 
@@ -89,17 +97,20 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
 	if (EnhancedInputComponent)
 	{
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ThisClass::AimButtonPressed);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ThisClass::AimButtonReleased);
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::FireButtonPressed);
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ThisClass::FireButtonReleased);
-		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &ThisClass::ReloadButtonPressed);
-		EnhancedInputComponent->BindAction(DropAction, ETriggerEvent::Triggered, this, &ThisClass::DropButtonPressed);
-		EnhancedInputComponent->BindAction(SwapPrimaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapPrimaryEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(SwapSecondaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapSecondaryEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(SwapMeleeEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapMeleeEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(SwapThrowingEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapThrowingEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(SwapLastEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapLastEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->AimAction, ETriggerEvent::Started, this, &ThisClass::AimButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->AimAction, ETriggerEvent::Completed, this, &ThisClass::AimButtonReleased);
+		EnhancedInputComponent->BindAction(InputHuman->FireAction, ETriggerEvent::Started, this, &ThisClass::FireButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->FireAction, ETriggerEvent::Completed, this, &ThisClass::FireButtonReleased);
+		EnhancedInputComponent->BindAction(InputHuman->ReloadAction, ETriggerEvent::Triggered, this, &ThisClass::ReloadButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->DropAction, ETriggerEvent::Triggered, this, &ThisClass::DropButtonPressed);
+
+		EnhancedInputComponent->BindAction(InputHuman->SwapPrimaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapPrimaryEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->SwapSecondaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapSecondaryEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->SwapMeleeEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapMeleeEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->SwapThrowingEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapThrowingEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(InputHuman->SwapLastEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapLastEquipmentButtonPressed);
+
+		EnhancedInputComponent->BindAction(InputHuman->BagMenuAction, ETriggerEvent::Triggered, this, &ThisClass::BagMenuButtonPressed);
 	}
 }
 
@@ -118,96 +129,125 @@ void AHumanCharacter::UnPossessed()
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer());
 		if (Subsystem)
 		{
-			Subsystem->RemoveMappingContext(HumanMappingContext);
+			if (InputBase) Subsystem->RemoveMappingContext(InputBase->BaseMappingContext);
+			if (InputHuman) Subsystem->RemoveMappingContext(InputHuman->HumanMappingContext);
 		}
 	}
 }
 
-void AHumanCharacter::OnLocallyControllerReady()
+void AHumanCharacter::OnLocalControllerReady()
 {
-	Super::OnLocallyControllerReady();
+	Super::OnLocalControllerReady();
+
+	int32 CurBagIndex = 0;
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
+	{
+		int32 TempCurBagIndex = StorageSubsystem->StorageCache->CurBagIndex;
+		if (TempCurBagIndex > 0 && TempCurBagIndex < StorageSubsystem->StorageCache->Bags.Num())
+		{
+			CurBagIndex = TempCurBagIndex;
+		}
+	}
 
 	// 获取本地背包里的装备的名字
-	FString PrimaryEquipmentName = GetEquipmentName(0, EEquipmentType::Primary);
-	FString SecondaryEquipmentName = GetEquipmentName(0, EEquipmentType::Secondary);
-	FString MeleeEquipmentName = GetEquipmentName(0, EEquipmentType::Melee);
-	FString ThrowingEquipmentName = GetEquipmentName(0, EEquipmentType::Throwing);
+	FString PrimaryName = GetEquipmentName(CurBagIndex, EEquipmentType::Primary);
+	FString SecondaryName = GetEquipmentName(CurBagIndex, EEquipmentType::Secondary);
+	FString MeleeName = GetEquipmentName(CurBagIndex, EEquipmentType::Melee);
+	FString ThrowingName = GetEquipmentName(CurBagIndex, EEquipmentType::Throwing);
 
 	// 测试用
-	// PrimaryEquipmentName = "M870";
+	// PrimaryName = "M870";
 
 	// 本地Controller就绪后，在服务端生成武器，然后复制到所有客户端
-	ServerSetDefaultEquipment(PrimaryEquipmentName, SecondaryEquipmentName, MeleeEquipmentName, ThrowingEquipmentName);
+	ServerSetDefaultEquipment(PrimaryName, SecondaryName, MeleeName, ThrowingName);
 }
 
-void AHumanCharacter::ServerSetDefaultEquipment_Implementation(const FString& PrimaryEquipmentName,
-	const FString& SecondaryEquipmentName, const FString& MeleeEquipmentName, const FString& ThrowingEquipmentName)
+void AHumanCharacter::ServerSetDefaultEquipment_Implementation(const FString& PrimaryName,
+	const FString& SecondaryName, const FString& MeleeName, const FString& ThrowingName)
 {
 	if (CombatComponent == nullptr) return;
 
-	// 加载装备类
-	UClass* PrimaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(PrimaryEquipmentName));
-	UClass* SecondaryEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(SecondaryEquipmentName));
-	UClass* MeleeEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(MeleeEquipmentName));
-	UClass* ThrowingEquipmentClass = StaticLoadClass(UObject::StaticClass(), nullptr, *GetEquipmentClassPath(ThrowingEquipmentName));
+	TObjectPtr<UClass> PrimaryClass;
+	TObjectPtr<UClass> SecondaryClass;
+	TObjectPtr<UClass> MeleeClass;
+	TObjectPtr<UClass> ThrowingClass;
 
-	if (PrimaryEquipmentClass)
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
 	{
-		DefaultPrimaryEquipment = GetWorld()->SpawnActor<AWeapon>(PrimaryEquipmentClass);
+		FDataRegistryId DataRegistryId1(DR_EquipmentMain, FName(PrimaryName));
+		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId1))
+		{
+			PrimaryClass = EquipmentMain->EquipmentClass;
+		}
+		FDataRegistryId DataRegistryId2(DR_EquipmentMain, FName(SecondaryName));
+		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId2))
+		{
+			SecondaryClass = EquipmentMain->EquipmentClass;
+		}
+		FDataRegistryId DataRegistryId3(DR_EquipmentMain, FName(MeleeName));
+		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId3))
+		{
+			MeleeClass = EquipmentMain->EquipmentClass;
+		}
+		FDataRegistryId DataRegistryId4(DR_EquipmentMain, FName(ThrowingName));
+		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId4))
+		{
+			ThrowingClass = EquipmentMain->EquipmentClass;
+		}
+	}
+
+	if (PrimaryClass)
+	{
+		DefaultPrimaryEquipment = GetWorld()->SpawnActor<AWeapon>(PrimaryClass);
 		CombatComponent->LocalEquipEquipment(DefaultPrimaryEquipment);
 		CombatComponent->LocalSwapEquipment(EEquipmentType::Primary);
 	}
-	if (SecondaryEquipmentClass)
+	if (SecondaryClass)
 	{
-		DefaultSecondaryEquipment = GetWorld()->SpawnActor<AWeapon>(SecondaryEquipmentClass);
+		DefaultSecondaryEquipment = GetWorld()->SpawnActor<AWeapon>(SecondaryClass);
 		CombatComponent->LocalEquipEquipment(DefaultSecondaryEquipment);
 	}
-	if (MeleeEquipmentClass)
+	if (MeleeClass)
 	{
-		DefaultMeleeEquipment = GetWorld()->SpawnActor<AMelee>(MeleeEquipmentClass);
+		DefaultMeleeEquipment = GetWorld()->SpawnActor<AMelee>(MeleeClass);
 		CombatComponent->LocalEquipEquipment(DefaultMeleeEquipment);
 	}
-	if (ThrowingEquipmentClass)
+	if (ThrowingClass)
 	{
-		DefaultThrowingEquipment = GetWorld()->SpawnActor<AThrowing>(ThrowingEquipmentClass);
+		DefaultThrowingEquipment = GetWorld()->SpawnActor<AThrowing>(ThrowingClass);
 		CombatComponent->LocalEquipEquipment(DefaultThrowingEquipment);
 	}
 }
 
 // 获取装备的名字
-FString AHumanCharacter::GetEquipmentName(int32 BagIndex, EEquipmentType EquipmentType)
+FString AHumanCharacter::GetEquipmentName(int32 CurBagIndex, EEquipmentType EquipmentType)
 {
+	FString EquipmentName = "";
+
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem == nullptr || StorageSubsystem->StorageCache->Bags.Num() == 0) return FString();
-	FString EquipmentName;
+	if (StorageSubsystem == nullptr || StorageSubsystem->StorageCache->Bags.IsEmpty())
+	{
+		return EquipmentName;
+	}
+
 	switch (EquipmentType)
 	{
 	case EEquipmentType::Primary:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Primary;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Primary;
 		break;
 	case EEquipmentType::Secondary:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Secondary;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Secondary;
 		break;
 	case EEquipmentType::Melee:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Melee;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Melee;
 		break;
 	case EEquipmentType::Throwing:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[BagIndex].Throwing;
+		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Throwing;
 		break;
 	}
-	return EquipmentName;
-}
 
-// 获取装备类的存放路径
-FString AHumanCharacter::GetEquipmentClassPath(FString EquipmentName)
-{
-	if (EquipmentName.IsEmpty()) return FString();
-	if (EquipmentName.Contains("_")) // HACK 如果装备名字包含下划线，说明是带皮肤的装备
-	{
-		FString EquipmentFolderName = EquipmentName.Left(EquipmentName.Find("_"));
-		return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/Main/%s/%s/BP_%s.BP_%s_C'"), *EquipmentFolderName, *EquipmentName, *EquipmentName, *EquipmentName);
-	}
-	return FString::Printf(TEXT("/Script/Engine.Blueprint'/Game/Equipments/Main/%s/Default/BP_%s.BP_%s_C'"), *EquipmentName, *EquipmentName, *EquipmentName);
+	return EquipmentName;
 }
 
 void AHumanCharacter::OnRep_DefaultPrimaryEquipment()
@@ -253,7 +293,7 @@ void AHumanCharacter::AimButtonPressed(const FInputActionValue& Value)
 	}
 	else if (CombatComponent->CurrentEquipmentType == EEquipmentType::Melee)
 	{
-		CombatComponent->MeleeAttack(1); // TODO CombatState == ECombatState::Ready
+		CombatComponent->MeleeAttack(ECombatState::HeavyAttacking);
 	}
 }
 
@@ -271,11 +311,11 @@ void AHumanCharacter::FireButtonPressed(const FInputActionValue& Value)
 
 	if (CombatComponent->GetCurShotEquipment())
 	{
-		CombatComponent->FireHandle(true);
+		CombatComponent->StartFire();
 	}
 	else if (CombatComponent->GetCurMeleeEquipment())
 	{
-		CombatComponent->MeleeAttack(0); // TODO CombatState == ECombatState::Ready
+		CombatComponent->MeleeAttack(ECombatState::LightAttacking);
 	}
 	else if (CombatComponent->GetCurThrowingEquipment())
 	{
@@ -287,7 +327,7 @@ void AHumanCharacter::FireButtonReleased(const FInputActionValue& Value)
 {
 	if (CombatComponent && CombatComponent->GetCurShotEquipment())
 	{
-		CombatComponent->FireHandle(false);
+		CombatComponent->StopFire();
 	}
 }
 
@@ -394,6 +434,15 @@ void AHumanCharacter::SwapLastEquipmentButtonPressed(const FInputActionValue& Va
 	if (CombatComponent) CombatComponent->SwapEquipment(CombatComponent->LastEquipmentType);
 }
 
+void AHumanCharacter::BagMenuButtonPressed(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->ShowBagMenu();
+	}
+}
+
 void AHumanCharacter::HumanReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 	AController* AttackerController, AActor* DamageCauser)
 {
@@ -427,7 +476,9 @@ void AHumanCharacter::MulticastTeamDeadMatchDead_Implementation()
 	if (BaseController) DisableInput(BaseController);
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetEnableGravity(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
 	// 重生
 	if (HasAuthority())
@@ -462,7 +513,9 @@ void AHumanCharacter::MulticastMutationDead_Implementation()
 	if (BaseController) DisableInput(BaseController);
 
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->SetEnableGravity(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 }
 
 void AHumanCharacter::GetInfect(AMutantCharacter* AttackerCharacter, ABaseController* AttackerController, EMutantState MutantState)

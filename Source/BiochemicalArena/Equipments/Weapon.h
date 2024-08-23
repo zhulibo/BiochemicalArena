@@ -26,35 +26,35 @@ public:
 	virtual void SetCarriedAmmo(int32 AmmoNum);
 
 	// 后坐力范围
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilMaxVert;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilMinVert;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilMaxHor;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilMinHor;
 
 	// 首发后坐力倍率
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float FirstShotRecoilMul;
 
 	// 应用后坐力需要的时间
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilIncTime;
 
 	// 总后坐力上限
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilTotalVertLimit;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilTotalHorLimit;
 
 	// 后坐力回复速度
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float RecoilDecSpeed;
 
 	// 子弹散布，固定值，不受其他因素影响，固定存在
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float CenterSpread;
 
 	UFUNCTION(NetMulticast, Reliable)
@@ -65,42 +65,42 @@ protected:
 
 	UPROPERTY()
 	const USkeletalMeshSocket* MuzzleSocket;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class AShell> ShellClass;
 
 	UPROPERTY()
-	float AimingFOVFactor = 0.9; // 缩放倍数
+	float AimingFOVMul = 0.9; // 缩放倍数
 	UPROPERTY()
 	float AimSpeed = 30.f;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	int32 MaxCarriedAmmo; // 最大携弹量
 	UPROPERTY()
 	int32 CarriedAmmo; // 当前携弹量
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	int32 MagCapacity; // 弹匣容量
 	UPROPERTY()
 	int32 Ammo; // 当前弹匣子弹数量
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float FireRate;
-	UPROPERTY(EditAnywhere)
-	bool bIsAutomatic = true;
+	UPROPERTY()
+	bool bIsAutomatic;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float Damage;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float Impulse;
+
+	void InitData();
 
 	void SpendRound();
 	void SetHUDAmmo();
 	void SetHUDCarriedAmmo();
 
-private:
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AShell> ShellClass;
-
 public:
-	FORCEINLINE float GetAimingFOVFactor() const { return AimingFOVFactor; }
+	FORCEINLINE float GetAimingFOVMul() const { return AimingFOVMul; }
 	FORCEINLINE float GetAimSpeed() const { return AimSpeed; }
 
 	FORCEINLINE int32 GetAmmo() const { return Ammo; }

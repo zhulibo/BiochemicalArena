@@ -14,7 +14,7 @@ public:
 	void CreateStorageSaveGame();
 	UPROPERTY()
 	class UStorageSaveGame* StorageCache; // 存档缓存
-	void SaveToDisk();
+	void Save();
 
 	void ApplySetting();
 

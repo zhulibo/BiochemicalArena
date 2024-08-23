@@ -11,8 +11,9 @@
 #include "TimerManager.h"
 #include "..\..\Equipments\Throwing.h"
 #include "BiochemicalArena/Characters/HumanAnimInstance.h"
+#include "BiochemicalArena/Characters/Data/CharacterSound.h"
 #include "BiochemicalArena/Equipments/EquipmentAnimInstance.h"
-#include "BiochemicalArena/Equipments/EquipmentType.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
@@ -89,7 +90,7 @@ void UCombatComponent::InterpFOV(float DeltaSeconds)
 
 	if (bIsAiming)
 	{
-		CurrentFOV = FMath::FInterpTo(CurrentFOV, GetCurShotEquipment()->GetAimingFOVFactor() * DefaultFOV, DeltaSeconds, GetCurShotEquipment()->GetAimSpeed());
+		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV * GetCurShotEquipment()->GetAimingFOVMul(), DeltaSeconds, GetCurShotEquipment()->GetAimSpeed());
 	}
 	else
 	{
@@ -217,12 +218,20 @@ void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 	Equipment->EquipEquipment();
 
 	AssignEquipment(Equipment);
+
+	if (AssetSubsystem == nullptr) AssetSubsystem = HumanCharacter->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem && AssetSubsystem->CharacterSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->CharacterSound->EquipSound, HumanCharacter->GetActorLocation());
+	}
+
 	AttachToBodySocket(Equipment);
 }
 
 void UCombatComponent::AssignEquipment(AEquipment* Equipment)
 {
 	if (Equipment == nullptr) return;
+
 	switch (Equipment->GetEquipmentType())
 	{
 	case EEquipmentType::Primary:
@@ -264,12 +273,6 @@ void UCombatComponent::AttachToBodySocket(AEquipment* Equipment)
 	if (const USkeletalMeshSocket* BodySocket = HumanCharacter->GetMesh()->GetSocketByName(BodySocketName))
 	{
 		BodySocket->AttachActor(Equipment, HumanCharacter->GetMesh());
-
-		if (AssetSubsystem == nullptr) AssetSubsystem = HumanCharacter->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-		if (AssetSubsystem && AssetSubsystem->EquipSound)
-		{
-			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->EquipSound, HumanCharacter->GetActorLocation());
-		}
 	}
 }
 
@@ -297,8 +300,6 @@ void UCombatComponent::MulticastSwapEquipment_Implementation(EEquipmentType Equi
 
 void UCombatComponent::LocalSwapEquipment(EEquipmentType EquipmentType)
 {
-	if (HumanCharacter == nullptr) return;
-
 	if (AEquipment* NewEquipment = GetEquipmentByType(EquipmentType))
 	{
 		PreLocalSwapEquipment();
@@ -319,25 +320,27 @@ void UCombatComponent::PreLocalSwapEquipment()
 // 播放当前装备切出动画
 void UCombatComponent::PlaySwapOutMontage(AEquipment* NewEquipment)
 {
-	// 记录旧装备
+	// 记录旧装备（不等切出动画完成，适应快速切枪）
 	if (NewEquipment)
 	{
 		LastEquipmentType = CurrentEquipmentType;
 		CurrentEquipmentType = NewEquipment->GetEquipmentType();
 	}
 
-	if (GetCurEquipment())
+	if (GetLastEquipment())
 	{
+		GetLastEquipment()->OnStartSwapOut();
+
 		if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(HumanCharacter->GetMesh()->GetAnimInstance());
 		if (HumanAnimInstance)
 		{
 			// 播放切出时的角色动画
-			HumanAnimInstance->Montage_Play(GetCurEquipment()->SwapOutMontage_C);
+			HumanAnimInstance->Montage_Play(GetLastEquipment()->SwapOutMontage_C);
 
 			// 播放切出时的装备动画
-			if (GetCurEquipment()->GetEquipmentAnimInstance())
+			if (GetLastEquipment()->GetEquipmentAnimInstance())
 			{
-				GetCurEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurEquipment()->SwapOutMontage_E);
+				GetLastEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetLastEquipment()->SwapOutMontage_E);
 			}
 
 			// 切出动画播放完后播放切入动画
@@ -348,7 +351,7 @@ void UCombatComponent::PlaySwapOutMontage(AEquipment* NewEquipment)
 				PlaySwapInMontage(bInterrupted, NewEquipment);
 			});
 			// Don't use Montage_SetEndDelegate, if SwapOutMontage ended, current frame will be the base pose.
-			HumanAnimInstance->Montage_SetBlendingOutDelegate(OnMontageBlendingOutStarted, GetCurEquipment()->SwapOutMontage_C);
+			HumanAnimInstance->Montage_SetBlendingOutDelegate(OnMontageBlendingOutStarted, GetLastEquipment()->SwapOutMontage_C);
 		}
 	}
 	// 投掷装备扔出后切换到上一个武器 / 开局赋予武器时，当前武器为空
@@ -489,22 +492,23 @@ void UCombatComponent::LocalSetAiming(bool bNewAimingState)
 	}
 }
 
-void UCombatComponent::FireHandle(bool bPressed)
+void UCombatComponent::StartFire()
 {
-	bFireButtonPressed = bPressed;
-	if (bFireButtonPressed)
-	{
-		bIsFirstShot = true;
+	bFireButtonPressed = true;
 
-		Fire();
-	}
-	else
+	bIsFirstShot = true;
+
+	Fire();
+}
+
+void UCombatComponent::StopFire()
+{
+	bFireButtonPressed = false;
+
+	// 重置水平后坐力方向
+	if (HumanCharacter->GetRecoilComponent())
 	{
-		// 重置水平后坐力方向
-		if (HumanCharacter->GetRecoilComponent())
-		{
-			HumanCharacter->GetRecoilComponent()->SetRecoilHorDirection(ERecoilHorDirection::Random);
-		}
+		HumanCharacter->GetRecoilComponent()->SetRecoilHorDirection(ERecoilHorDirection::Random);
 	}
 }
 
@@ -542,9 +546,9 @@ bool UCombatComponent::CanFire()
 	{
 		// 播放击锤音效
 		if (AssetSubsystem == nullptr) AssetSubsystem = HumanCharacter->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-		if (AssetSubsystem && AssetSubsystem->ClickSound)
+		if (AssetSubsystem && AssetSubsystem->CharacterSound->ClickSound)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->ClickSound, HumanCharacter->GetActorLocation());
+			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->CharacterSound->ClickSound, HumanCharacter->GetActorLocation());
 		}
 
 		return false;
@@ -752,49 +756,48 @@ void UCombatComponent::DestroyEquipments()
 	if (ThrowingEquipment) ThrowingEquipment->Destroy();
 }
 
-void UCombatComponent::MeleeAttack(int32 Type)
+void UCombatComponent::MeleeAttack(ECombatState CombatStateToSet)
 {
-	LocalMeleeAttack(Type);
-	ServerMeleeAttack(Type);
+	if (CombatState != ECombatState::Ready) return;
+
+	LocalMeleeAttack(CombatStateToSet);
+	ServerMeleeAttack(CombatStateToSet);
 }
 
-void UCombatComponent::ServerMeleeAttack_Implementation(int32 Type)
+void UCombatComponent::ServerMeleeAttack_Implementation(ECombatState CombatStateToSet)
 {
-	MulticastMeleeAttack(Type);
+	MulticastMeleeAttack(CombatStateToSet);
 }
 
-void UCombatComponent::MulticastMeleeAttack_Implementation(int32 Type)
+void UCombatComponent::MulticastMeleeAttack_Implementation(ECombatState CombatStateToSet)
 {
 	if (HumanCharacter && !HumanCharacter->IsLocallyControlled())
 	{
-		LocalMeleeAttack(Type);
+		LocalMeleeAttack(CombatStateToSet);
 	}
 }
 
-void UCombatComponent::LocalMeleeAttack(int32 Type)
+void UCombatComponent::LocalMeleeAttack(ECombatState CombatStateToSet)
 {
-	if (CombatState == ECombatState::Ready)
+	if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(HumanCharacter->GetMesh()->GetAnimInstance());
+	if (HumanAnimInstance && GetCurMeleeEquipment())
 	{
-		if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(HumanCharacter->GetMesh()->GetAnimInstance());
-		if (HumanAnimInstance && GetCurMeleeEquipment())
+		CombatState = CombatStateToSet;
+
+		if (CombatState == ECombatState::LightAttacking)
 		{
-			if (Type == 0)
+			HumanAnimInstance->Montage_Play(GetCurMeleeEquipment()->LightAttackMontage_C);
+			if (GetCurMeleeEquipment()->GetEquipmentAnimInstance())
 			{
-				CombatState = ECombatState::LightAttacking;
-				HumanAnimInstance->Montage_Play(GetCurMeleeEquipment()->LightAttackMontage_C);
-				if (GetCurMeleeEquipment()->GetEquipmentAnimInstance())
-				{
-					GetCurMeleeEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurMeleeEquipment()->LightAttackMontage_E);
-				}
+				GetCurMeleeEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurMeleeEquipment()->LightAttackMontage_E);
 			}
-			else
+		}
+		else if (CombatState == ECombatState::HeavyAttacking)
+		{
+			HumanAnimInstance->Montage_Play(GetCurMeleeEquipment()->HeavyAttackMontage_C);
+			if (GetCurMeleeEquipment()->GetEquipmentAnimInstance())
 			{
-				CombatState = ECombatState::HeavyAttacking;
-				HumanAnimInstance->Montage_Play(GetCurMeleeEquipment()->HeavyAttackMontage_C);
-				if (GetCurMeleeEquipment()->GetEquipmentAnimInstance())
-				{
-					GetCurMeleeEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurMeleeEquipment()->HeavyAttackMontage_E);
-				}
+				GetCurMeleeEquipment()->GetEquipmentAnimInstance()->Montage_Play(GetCurMeleeEquipment()->HeavyAttackMontage_E);
 			}
 		}
 	}
@@ -806,6 +809,7 @@ void UCombatComponent::SetAttackCollisionEnabled(bool bIsEnabled)
 	{
 		MeleeEquipment->SetAttackCollisionEnabled(bIsEnabled);
 	}
+
 	if (!bIsEnabled)
 	{
 		CombatState = ECombatState::Ready;

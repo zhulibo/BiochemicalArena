@@ -1,0 +1,270 @@
+#include "RadialMenuContainer.h"
+#include "CommonTextBlock.h"
+#include "RadialMenu.h"
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/Characters/Components/CombatComponent.h"
+#include "BiochemicalArena/Equipments/Equipment.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
+
+void URadialMenuContainer::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	SetHumanRadialMenuText();
+}
+
+// 显示轮盘
+void URadialMenuContainer::ShowRadialMenu()
+{
+	if (GetVisibility() == ESlateVisibility::Visible) return;
+
+	HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
+	if (HumanCharacter == nullptr) MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
+
+	TitleEquipment->SetColorAndOpacity(COLOR_MUTANT);
+	TitleRadio->SetColorAndOpacity(COLOR_WHITE);
+	TitlePaint->SetColorAndOpacity(COLOR_WHITE);
+
+	RadialMenuEquipment->SetVisibility(ESlateVisibility::Visible);
+	RadialMenuRadio->SetVisibility(ESlateVisibility::Hidden);
+	RadialMenuPaint->SetVisibility(ESlateVisibility::Hidden);
+
+	ActiveRadialMenuIndex = 1;
+
+	SetSelectedItem();
+
+	SetVisibility(ESlateVisibility::Visible);
+}
+
+// 设置轮盘选中项
+void URadialMenuContainer::SetSelectedItem()
+{
+	if (HumanCharacter)
+	{
+		if (HumanCharacter->GetCombatComponent() && HumanCharacter->GetCombatComponent()->GetCurEquipment())
+		{
+			switch (HumanCharacter->GetCombatComponent()->GetCurEquipment()->GetEquipmentType())
+			{
+			case EEquipmentType::Primary:
+				RadialMenuEquipment->SetSelectedItem(1);
+				RadialMenuEquipment->LastSelectedItemIndex = 1;
+				break;
+			case EEquipmentType::Secondary:
+				RadialMenuEquipment->SetSelectedItem(2);
+				RadialMenuEquipment->LastSelectedItemIndex = 2;
+				break;
+			case EEquipmentType::Melee:
+				RadialMenuEquipment->SetSelectedItem(3);
+				RadialMenuEquipment->LastSelectedItemIndex = 3;
+				break;
+			case EEquipmentType::Throwing:
+				RadialMenuEquipment->SetSelectedItem(4);
+				RadialMenuEquipment->LastSelectedItemIndex = 4;
+				break;
+			}
+		}
+	}
+	else if (MutantCharacter)
+	{
+
+	}
+}
+
+// 切换轮盘
+void URadialMenuContainer::ChangeRadialMenu()
+{
+	if (ActiveRadialMenuIndex == 1)
+	{
+		RadialMenuEquipment->SetVisibility(ESlateVisibility::Hidden);
+		TitleEquipment->SetColorAndOpacity(COLOR_WHITE);
+
+		RadialMenuRadio->SetVisibility(ESlateVisibility::Visible);
+		TitleRadio->SetColorAndOpacity(COLOR_MUTANT);
+
+		ActiveRadialMenuIndex = 2;
+	}
+	else if (ActiveRadialMenuIndex == 2)
+	{
+		RadialMenuRadio->SetVisibility(ESlateVisibility::Hidden);
+		TitleRadio->SetColorAndOpacity(COLOR_WHITE);
+
+		RadialMenuPaint->SetVisibility(ESlateVisibility::Visible);
+		TitlePaint->SetColorAndOpacity(COLOR_MUTANT);
+
+		ActiveRadialMenuIndex = 3;
+	}
+	else if (ActiveRadialMenuIndex == 3)
+	{
+		RadialMenuPaint->SetVisibility(ESlateVisibility::Hidden);
+		TitlePaint->SetColorAndOpacity(COLOR_WHITE);
+
+		RadialMenuEquipment->SetVisibility(ESlateVisibility::Visible);
+		TitleEquipment->SetColorAndOpacity(COLOR_MUTANT);
+
+		ActiveRadialMenuIndex = 1;
+	}
+}
+
+// 选择轮盘项
+void URadialMenuContainer::SelectRadialMenu(double X, double Y)
+{
+	// UE_LOG(LogTemp, Warning, TEXT("Select %f, %f"), X, Y);
+	if (X * X + Y * Y < .6) return;
+
+	if (URadialMenu* RadialMenu = GetActiveRadialMenu())
+	{
+		float Angle = FMath::Atan2(Y, X) * 180 / PI;
+		// UE_LOG(LogTemp, Warning, TEXT("Angle %f"), Angle);
+
+		if (Angle > -112.5 && Angle <= -67.5)
+		{
+			RadialMenu->SetSelectedItem(1);
+		}
+		else if (Angle > -67.5 && Angle <= -22.5)
+		{
+			RadialMenu->SetSelectedItem(2);
+		}
+		else if (Angle > -22.5 && Angle <= 22.5)
+		{
+			RadialMenu->SetSelectedItem(3);
+		}
+		else if (Angle > 22.5 && Angle <= 67.5)
+		{
+			RadialMenu->SetSelectedItem(4);
+		}
+		else if (Angle > 67.5 && Angle <= 112.5)
+		{
+			RadialMenu->SetSelectedItem(5);
+		}
+		else if (Angle > 112.5 && Angle <= 157.5)
+		{
+			RadialMenu->SetSelectedItem(6);
+		}
+		else if (Angle > 157.5 || Angle <= -157.5)
+		{
+			RadialMenu->SetSelectedItem(7);
+		}
+		else if (Angle > -157.5 && Angle <= -112.5)
+		{
+			RadialMenu->SetSelectedItem(8);
+		}
+	}
+}
+
+// 关闭轮盘
+void URadialMenuContainer::CloseRadialMenu()
+{
+	if (ActiveRadialMenuIndex == 1)
+	{
+		if (RadialMenuEquipment->LastSelectedItemIndex != RadialMenuEquipment->SelectedItemIndex)
+		{
+			// 人类
+			if (HumanCharacter)
+			{
+				if (RadialMenuEquipment->SelectedItemIndex == 1)
+				{
+					HumanCharacter->SwapPrimaryEquipmentButtonPressed();
+				}
+				else if (RadialMenuEquipment->SelectedItemIndex == 2)
+				{
+					HumanCharacter->SwapSecondaryEquipmentButtonPressed();
+				}
+				else if (RadialMenuEquipment->SelectedItemIndex == 3)
+				{
+					HumanCharacter->SwapMeleeEquipmentButtonPressed();
+				}
+				else if (RadialMenuEquipment->SelectedItemIndex == 4)
+				{
+					HumanCharacter->SwapThrowingEquipmentButtonPressed();
+				}
+			}
+			// 突变体
+			else if (MutantCharacter)
+			{
+
+			}
+		}
+	}
+	else if (ActiveRadialMenuIndex == 2)
+	{
+		// // 人类
+		// if (HumanCharacter)
+		// {
+		// 	HumanCharacter->SendRadio(RadialMenuRadio->SelectedItemIndex);
+		// }
+		// // 突变体
+		// else if (MutantCharacter)
+		// {
+		// 	MutantCharacter->SendRadio(RadialMenuRadio->SelectedItemIndex);
+		// }
+	}
+	else if (ActiveRadialMenuIndex == 3)
+	{
+		// // 人类
+		// if (HumanCharacter)
+		// {
+		// 	HumanCharacter->SprayPaint(RadialMenuPaint->SelectedItemIndex);
+		// }
+		// // 突变体
+		// else if (MutantCharacter)
+		// {
+		// 	MutantCharacter->SprayPaint(RadialMenuPaint->SelectedItemIndex);
+		// }
+	}
+
+	SetVisibility(ESlateVisibility::Hidden);
+}
+
+void URadialMenuContainer::OnTeamChange(ETeam TempTeam)
+{
+	if (TempTeam == ETeam::Team1)
+	{
+		SetHumanRadialMenuText();
+	}
+	else if (TempTeam == ETeam::Team2)
+	{
+		SetMutantRadialMenuText();
+	}
+}
+
+void URadialMenuContainer::SetHumanRadialMenuText()
+{
+	RadialMenuEquipment->Item1->SetText(FText::FromString("Primary"));
+	RadialMenuEquipment->Item2->SetText(FText::FromString("Secondary"));
+	RadialMenuEquipment->Item3->SetText(FText::FromString("Melee"));
+	RadialMenuEquipment->Item4->SetText(FText::FromString("Throwing"));
+	RadialMenuEquipment->Item5->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item6->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item7->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item8->SetText(FText::FromString("-1"));
+}
+
+void URadialMenuContainer::SetMutantRadialMenuText()
+{
+	RadialMenuEquipment->Item1->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item2->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item3->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item4->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item5->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item6->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item7->SetText(FText::FromString("-1"));
+	RadialMenuEquipment->Item8->SetText(FText::FromString("-1"));
+}
+
+// 获取活跃的轮盘
+URadialMenu* URadialMenuContainer::GetActiveRadialMenu()
+{
+	switch (ActiveRadialMenuIndex)
+	{
+	case 1:
+		return RadialMenuEquipment;
+	case 2:
+		return RadialMenuRadio;
+	case 3:
+		return RadialMenuPaint;
+	default:
+		return nullptr;
+	}
+}

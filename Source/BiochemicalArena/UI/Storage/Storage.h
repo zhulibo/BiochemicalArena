@@ -2,8 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "DataRegistryId.h"
 #include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Storage.generated.h"
+
+#define STORAGETYPE_ALL FString("All")
+#define STORAGETYPE_CHARACTER FString("Character")
 
 enum class EEquipmentType : uint8;
 
@@ -30,8 +34,9 @@ protected:
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
-	UPROPERTY()
-	class UAssetSubsystem* AssetSubsystem;
+
+	TMap<FDataRegistryId, const uint8*> HumanCharacterMain;
+	TMap<FDataRegistryId, const uint8*> EquipmentMain;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* StorageTypeButtonContainer;
@@ -55,7 +60,7 @@ protected:
 	void OnEquipmentButtonClicked(class UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
 	class UCommonActivatableWidgetSwitcher* BagSwitcher;
-	void SaveBag(EEquipmentType& EquipmentType, FString& EquipmentName);
+	void SaveBag(EEquipmentType EquipmentType, FString EquipmentName);
 	void SaveBagToStorage();
 
 	void OnCharacterButtonClicked(UStorageButton* CommonButton);

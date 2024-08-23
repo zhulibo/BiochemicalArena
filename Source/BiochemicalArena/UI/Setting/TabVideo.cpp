@@ -22,7 +22,7 @@ UWidget* UTabVideo::NativeGetDesiredFocusTarget() const
 void UTabVideo::SetUIDefaultValue()
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		BrightnessAnalogSlider->SetValue(StorageSubsystem->StorageCache->Brightness);
 		Brightness->SetText(FText::AsNumber(StorageSubsystem->StorageCache->Brightness));
@@ -38,9 +38,9 @@ void UTabVideo::OnBrightnessChanged(float Value)
 	GEngine->DisplayGamma = Value;
 
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->StorageCache)
 	{
 		StorageSubsystem->StorageCache->Brightness = Value;
-		StorageSubsystem->SaveToDisk();
+		StorageSubsystem->Save();
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "GameFramework/SaveGame.h"
 #include "StorageSaveGame.generated.h"
 
@@ -14,15 +15,14 @@ class BIOCHEMICALARENA_API UStorageSaveGame : public USaveGame
 public:
 	UStorageSaveGame();
 
-	/*
-	 * 本类所有属性虽然都会上传到了云端，但云端数据读取下来之后只有Bags和Character会应用到本地，
-	 * 其他属性因玩家设备不同，只采用本地数据。
-	 */
-
 	UPROPERTY()
 	TArray<FBag> Bags;
+	int32 CurBagIndex = 0;
+
 	UPROPERTY()
-	FString Character = "SAS";
+	FString HumanCharacter = "SAS";
+	UPROPERTY()
+	EMutantCharacterName MutantCharacterName = EMutantCharacterName::Tank;
 
 	UPROPERTY()
 	float MouseSensitivity = 1.f;

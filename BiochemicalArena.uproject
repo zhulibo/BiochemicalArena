@@ -11,7 +11,10 @@
 			"AdditionalDependencies": [
 				"Engine",
 				"UMG",
-				"CommonUI"
+				"CommonUI",
+				"GameplayAbilities",
+				"CoreUObject",
+				"DataRegistry"
 			]
 		}
 	],
@@ -37,6 +40,14 @@
 		},
 		{
 			"Name": "SkeletalMeshModelingTools",
+			"Enabled": true
+		},
+		{
+			"Name": "GameplayAbilities",
+			"Enabled": true
+		},
+		{
+			"Name": "NiagaraFluids",
 			"Enabled": true
 		}
 	]
