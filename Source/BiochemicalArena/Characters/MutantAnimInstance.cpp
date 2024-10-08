@@ -12,7 +12,6 @@ void UMutantAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	if (MutantCharacter == nullptr) return;
 
 	FVector Velocity = MutantCharacter->GetVelocity();
-
 	Velocity.Z = 0.f;
 	Speed = Velocity.Size();
 
@@ -26,11 +25,9 @@ void UMutantAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	FRotator DiffRotation = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
 	AimYaw = DiffRotation.Yaw;
 
-	// 根据AimPitch计算offset骨骼偏移量
+	// 根据AimPitch计算骨骼偏移量
 	AimPitch = MutantCharacter->GetAimPitch();
-	Head_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 30.f, -30.f);
-	Neck_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 20.f, -20.f);
-
-	UpperArm_R_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 75.f, -75.f);
-	UpperArm_L_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 80.f, -80.f);
+	Spine_01_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 40.f, -40.f);
+	Spine_02_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 30.f, -30.f);
+	Spine_03_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 20.f, -20.f);
 }

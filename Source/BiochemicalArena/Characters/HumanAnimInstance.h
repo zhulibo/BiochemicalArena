@@ -36,12 +36,10 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	float AimPitch;
 	UPROPERTY(BlueprintReadOnly)
-	FRotator Head_Rotator;
+	FRotator Spine_01_Rotator;
 	UPROPERTY(BlueprintReadOnly)
-	FRotator Neck_Rotator;
+	FRotator Spine_02_Rotator;
 	UPROPERTY(BlueprintReadOnly)
-	FRotator UpperArm_R_Rotator;
-	UPROPERTY(BlueprintReadOnly)
-	FRotator UpperArm_L_Rotator;
+	FRotator Spine_03_Rotator;
 
 };

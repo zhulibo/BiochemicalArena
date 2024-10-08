@@ -28,6 +28,7 @@
 #include "Data/CharacterSound.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Data/InputBase.h"
+#include "Net/UnrealNetwork.h"
 
 ABaseCharacter::ABaseCharacter()
 {
@@ -40,7 +41,7 @@ ABaseCharacter::ABaseCharacter()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh(), "Camera");
 	CameraBoom->TargetArmLength = 0.f;
-	CameraBoom->bUsePawnControlRotation = true;
+	// CameraBoom->bUsePawnControlRotation = true;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
@@ -55,6 +56,13 @@ ABaseCharacter::ABaseCharacter()
 	GetCharacterMovement()->AirControlBoostMultiplier = 1;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+}
+
+void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, ControllerPitch);
 }
 
 void ABaseCharacter::BeginPlay()
@@ -131,23 +139,6 @@ void ABaseCharacter::Tick(float DeltaSeconds)
 	CalcAimPitch();
 
 	PollInit();
-
-	// Manually copy the CameraBone's increased rotator(camera shake) to Camera.
-	if (IsLocallyControlled())
-	{
-		FQuat PelvisBoneQuat = GetMesh()->GetBoneQuaternion("Pelvis", EBoneSpaces::WorldSpace);
-		FQuat CameraBoneQuat = GetMesh()->GetBoneQuaternion("Camera", EBoneSpaces::WorldSpace);
-		FRotator CurRelativeRotator = CameraBoneQuat.Rotator() - PelvisBoneQuat.Rotator();
-
-		// HACK Hard code IdleRelativeRotator
-		// UE_LOG(LogTemp, Warning, TEXT("CurRelativeRotator: %s"), *CurRelativeRotator.ToString());
-		FRotator IdleRelativeRotator = FRotator(0.014002, -179.986025, -90.090419);
-
-		FRotator CurIncreasedRotator = CurRelativeRotator - IdleRelativeRotator;
-
-		// The coordinate axes of Camera and CameraBoom are different
-		Camera->SetRelativeRotation(FRotator(CurIncreasedRotator.Roll, CurIncreasedRotator.Yaw, CurIncreasedRotator.Pitch));
-	}
 }
 
 // 设置碰撞
@@ -176,9 +167,21 @@ void ABaseCharacter::PollSetMeshCollision()
 // 计算俯仰
 void ABaseCharacter::CalcAimPitch()
 {
-	AimPitch = GetBaseAimRotation().Pitch;
-	// Remote character need map pitch from [360, 270) to [0, -90)
-	if (AimPitch > 90.f && !IsLocallyControlled())
+	// 把ControllerPitch复制到模拟端
+	if (HasAuthority())
+	{
+		ControllerPitch = GetViewRotation().Pitch;
+	}
+
+	AimPitch = ControllerPitch;
+
+	// 本地存在Controller，覆盖掉网络复制的值，避免延迟
+	if (IsLocallyControlled())
+	{
+		AimPitch = GetViewRotation().Pitch;
+	}
+
+	if (AimPitch > 90.f)
 	{
 		FVector2D InRange(360.f, 270.f);
 		FVector2D OutRange(0.f, -90.f);

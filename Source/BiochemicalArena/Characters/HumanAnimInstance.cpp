@@ -1,9 +1,7 @@
 #include "HumanAnimInstance.h"
 #include "HumanCharacter.h"
-#include "BiochemicalArena/BiochemicalArena.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "BiochemicalArena/Equipments/Equipment.h"
 #include "Components/CombatComponent.h"
 
 void UHumanAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -28,10 +26,9 @@ void UHumanAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	FRotator DiffRotation = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
 	AimYaw = DiffRotation.Yaw;
 
-	// 根据AimPitch计算offset骨骼偏移量
+	// 根据AimPitch计算骨骼偏移量
 	AimPitch = HumanCharacter->GetAimPitch();
-	Head_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 30.f, -30.f);
-	Neck_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 20.f, -20.f);
-	UpperArm_R_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 75.f, -75.f);
-	UpperArm_L_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 80.f, -80.f);
+	Spine_01_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 40.f, -40.f);
+	Spine_02_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 30.f, -30.f);
+	Spine_03_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 20.f, -20.f);
 }

@@ -51,6 +51,7 @@ public:
 	UNiagaraSystem* BloodEffect_Melee;
 
 protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -97,7 +98,10 @@ protected:
 
 	void PollSetMeshCollision();
 
-	float AimPitch; // 俯仰
+	UPROPERTY(Replicated)
+	float ControllerPitch;
+	UPROPERTY()
+	float AimPitch;
 	void CalcAimPitch();
 
 	void PollInit();
