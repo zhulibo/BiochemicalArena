@@ -31,7 +31,5 @@ public:
 	UInputAction* SwapThrowingEquipmentAction;
 	UPROPERTY(EditAnywhere)
 	UInputAction* SwapLastEquipmentAction;
-	UPROPERTY(EditAnywhere)
-	UInputAction* BagMenuAction;
 
 };

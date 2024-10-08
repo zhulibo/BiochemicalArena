@@ -1,11 +1,11 @@
 #include "TabOther.h"
-#include "BiochemicalArena/System/StorageSubsystem.h"
+#include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 
 void UTabOther::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	SetUIDefaultValue();
+	SetUISavedValue();
 }
 
 UWidget* UTabOther::NativeGetDesiredFocusTarget() const
@@ -13,10 +13,10 @@ UWidget* UTabOther::NativeGetDesiredFocusTarget() const
 	return Super::NativeGetDesiredFocusTarget();
 }
 
-void UTabOther::SetUIDefaultValue()
+void UTabOther::SetUISavedValue()
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem && StorageSubsystem->StorageCache)
+	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 	}
 }

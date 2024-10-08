@@ -6,11 +6,12 @@
 #include "DataRegistrySubsystem.h"
 #include "StorageButton.h"
 #include "BiochemicalArena/Characters/Data/CharacterType.h"
-#include "..\..\System\StorageSaveGameType.h"
+#include "BiochemicalArena/System/Storage/ConfigType.h"
 #include "BiochemicalArena/Equipments/Data/EquipmentType.h"
-#include "..\..\System\StorageSaveGame.h"
+#include "BiochemicalArena/System/Storage/SaveGameSetting.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/System/StorageSubsystem.h"
+#include "BiochemicalArena/System/Storage/DefaultConfig.h"
+#include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/ButtonSlot.h"
 #include "Components/ScrollBoxSlot.h"
@@ -25,14 +26,14 @@ void UStorage::NativeOnInitialized()
 	// 添加顶部库存分类Tab按钮
 	AddStorageTypeButton();
 
-	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
-	{
-		EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnQueryOwnershipComplete);
-		EOSSubsystem->OnReadFileComplete.AddUObject(this, &ThisClass::OnReadFileComplete);
-		EOSSubsystem->OnEnumerateFilesComplete.AddUObject(this, &ThisClass::OnEnumerateFilesComplete);
-		// EOSSubsystem->QueryOwnership(); // TODO
-	}
+	// EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	// if (EOSSubsystem)
+	// {
+	// 	EOSSubsystem->OnQueryOwnershipComplete.AddUObject(this, &ThisClass::OnQueryOwnershipComplete);
+	// 	EOSSubsystem->OnReadFileComplete.AddUObject(this, &ThisClass::OnReadFileComplete);
+	// 	EOSSubsystem->OnEnumerateFilesComplete.AddUObject(this, &ThisClass::OnEnumerateFilesComplete);
+	// 	// EOSSubsystem->QueryOwnership(); // TODO
+	// }
 
 	// 获取角色和装备数据
 	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
@@ -40,13 +41,13 @@ void UStorage::NativeOnInitialized()
 		if (UDataRegistry* DataRegistry = DRSubsystem->GetRegistryForType(DR_HumanCharacterMain))
 		{
 			const UScriptStruct* OutStruct;
-			DataRegistry->GetAllCachedItems(HumanCharacterMain, OutStruct);
+			DataRegistry->GetAllCachedItems(HumanCharacterMains, OutStruct);
 		}
 
 		if (UDataRegistry* DataRegistry = DRSubsystem->GetRegistryForType(DR_EquipmentMain))
 		{
 			const UScriptStruct* OutStruct;
-			DataRegistry->GetAllCachedItems(EquipmentMain, OutStruct);
+			DataRegistry->GetAllCachedItems(EquipmentMains, OutStruct);
 		}
 	}
 }
@@ -63,19 +64,19 @@ void UStorage::OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FStrin
 
 	Ownership = TempOwnership;
 
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
-	{
-		// 默认显示全部库存
-		if (StorageTypeButtonContainer)
-		{
-			UCommonButton* AllTypeButton = Cast<UCommonButton>(StorageTypeButtonContainer->GetChildAt(0));
-			if (AllTypeButton) OnStorageTypeButtonClicked(AllTypeButton);
-		}
-
-		// 缓存用户文件
-		EOSSubsystem->EnumerateFiles();
-	}
+	// if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	// if (EOSSubsystem)
+	// {
+	// 	// 默认显示全部库存
+	// 	if (StorageTypeButtonContainer)
+	// 	{
+	// 		UCommonButton* AllTypeButton = Cast<UCommonButton>(StorageTypeButtonContainer->GetChildAt(0));
+	// 		if (AllTypeButton) OnStorageTypeButtonClicked(AllTypeButton);
+	// 	}
+	//
+	// 	// 缓存用户文件
+	// 	EOSSubsystem->EnumerateFiles();
+	// }
 }
 
 // 缓存用户文件完成
@@ -83,57 +84,57 @@ void UStorage::OnEnumerateFilesComplete(bool bWasSuccessful)
 {
 	if (!bWasSuccessful) return;
 
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-
-	if (EOSSubsystem && StorageSubsystem)
-	{
-		if (EOSSubsystem->GetEnumeratedFiles().Contains(StorageSubsystem->GetSlotName())) // 云包含该存档文件
-		{
-			EOSSubsystem->ReadFile(StorageSubsystem->GetSlotName()); // 读取存档文件
-		}
-		else // 云不包含该存档文件
-		{
-			InitPlayerConfig(StorageSubsystem->StorageCache); // 使用本地存档
-		}
-	}
+	// if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	// if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	//
+	// if (EOSSubsystem && StorageSubsystem)
+	// {
+	// 	if (EOSSubsystem->GetEnumeratedFiles().Contains(StorageSubsystem->GetSlotName())) // 云包含该存档文件
+	// 	{
+	// 		EOSSubsystem->ReadFile(StorageSubsystem->GetSlotName()); // 读取存档文件
+	// 	}
+	// 	else // 云不包含该存档文件
+	// 	{
+	// 		InitPlayerConfig(StorageSubsystem->StorageCache); // 使用本地存档
+	// 	}
+	// }
 }
 
 // 读取存档文件完成
-void UStorage::OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents)
-{
-	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem == nullptr) return;
-
-	if (bWasSuccessful) // 使用云存档文件
-	{
-		UStorageSaveGame* StorageSaveGame = NewObject<UStorageSaveGame>(this);
-		FMemoryReader MemoryReader((FileContents.Get()), true);
-		FObjectAndNameAsStringProxyArchive Ar(MemoryReader, false);
-		Ar.ArIsSaveGame = false;
-		Ar.ArNoDelta = true;
-		StorageSaveGame->Serialize(Ar);
-
-		InitPlayerConfig(StorageSaveGame);
-	}
-	else // 使用本地存档
-	{
-		InitPlayerConfig(StorageSubsystem->StorageCache);
-	}
-}
+// void UStorage::OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents)
+// {
+// 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+// 	if (StorageSubsystem == nullptr) return;
+//
+// 	if (bWasSuccessful) // 使用云存档文件
+// 	{
+// 		USaveGameSetting* SaveGameSetting = NewObject<USaveGameSetting>(this);
+// 		FMemoryReader MemoryReader((FileContents.Get()), true);
+// 		FObjectAndNameAsStringProxyArchive Ar(MemoryReader, false);
+// 		Ar.ArIsSaveGame = false;
+// 		Ar.ArNoDelta = true;
+// 		SaveGameSetting->Serialize(Ar);
+//
+// 		InitPlayerConfig(SaveGameSetting);
+// 	}
+// 	else // 使用本地存档
+// 	{
+// 		InitPlayerConfig(StorageSubsystem->StorageCache);
+// 	}
+// }
 
 // 初始化玩家配置
-void UStorage::InitPlayerConfig(UStorageSaveGame* StorageSaveGame)
+void UStorage::InitPlayerConfig(USaveGameSetting* SaveGameSetting)
 {
-	if(StorageSaveGame)
+	if(SaveGameSetting)
 	{
 		// 判断是否拥有装备，没有置空
-		for (int32 i = 0; i < StorageSaveGame->Bags.Num(); ++i)
+		for (int32 i = 0; i < SaveGameSetting->Bags.Num(); ++i)
 		{
-			if (!HasEquipment(StorageSaveGame->Bags[i].Primary)) StorageSaveGame->Bags[i].Primary = "";
-			if (!HasEquipment(StorageSaveGame->Bags[i].Secondary)) StorageSaveGame->Bags[i].Secondary = "";
-			if (!HasEquipment(StorageSaveGame->Bags[i].Melee)) StorageSaveGame->Bags[i].Melee = "";
-			if (!HasEquipment(StorageSaveGame->Bags[i].Throwing)) StorageSaveGame->Bags[i].Throwing = "";
+			if (!HasEquipment(SaveGameSetting->Bags[i].Primary)) SaveGameSetting->Bags[i].Primary = "";
+			if (!HasEquipment(SaveGameSetting->Bags[i].Secondary)) SaveGameSetting->Bags[i].Secondary = "";
+			if (!HasEquipment(SaveGameSetting->Bags[i].Melee)) SaveGameSetting->Bags[i].Melee = "";
+			if (!HasEquipment(SaveGameSetting->Bags[i].Throwing)) SaveGameSetting->Bags[i].Throwing = "";
 		}
 
 		// 设置装备
@@ -142,25 +143,34 @@ void UStorage::InitPlayerConfig(UStorageSaveGame* StorageSaveGame)
 			UBagContent* BagContent = Cast<UBagContent>(BagSwitcher->GetChildAt(i));
 			if (BagContent)
 			{
-				BagContent->PrimaryEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Primary));
-				BagContent->SecondaryEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Secondary));
-				BagContent->MeleeEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Melee));
-				BagContent->ThrowingEquipment->ButtonText->SetText(FText::FromString(StorageSaveGame->Bags[i].Throwing));
+				BagContent->PrimaryEquipment->ButtonText->SetText(FText::FromString(SaveGameSetting->Bags[i].Primary));
+				BagContent->SecondaryEquipment->ButtonText->SetText(FText::FromString(SaveGameSetting->Bags[i].Secondary));
+				BagContent->MeleeEquipment->ButtonText->SetText(FText::FromString(SaveGameSetting->Bags[i].Melee));
+				BagContent->ThrowingEquipment->ButtonText->SetText(FText::FromString(SaveGameSetting->Bags[i].Throwing));
 			}
 		}
 
+		FString EnumValue = UEnum::GetValueAsString(SaveGameSetting->HumanCharacterName);
+		FString HumanCharacterName = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+
 		// 判断是否拥有角色，没有则恢复默认
-		if (!HasHumanCharacter(StorageSaveGame->HumanCharacter)) StorageSaveGame->HumanCharacter = "SAS";
+		if (!HasHumanCharacter(HumanCharacterName))
+		{
+			if (const UDefaultConfig* DefaultConfig = GetDefault<UDefaultConfig>())
+			{
+				SaveGameSetting->HumanCharacterName = DefaultConfig->HumanCharacterName;
+			}
+		}
 
 		// 设置角色
-		Character->SetText(FText::FromString(StorageSaveGame->HumanCharacter));
+		Character->SetText(FText::FromString(HumanCharacterName));
 	}
 }
 
 // 是否拥有装备
 bool UStorage::HasEquipment(FString EquipmentName)
 {
-	for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMain)
+	for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
 	{
 		FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
 
@@ -180,7 +190,7 @@ bool UStorage::HasEquipment(FString EquipmentName)
 // 是否拥有角色
 bool UStorage::HasHumanCharacter(FString HumanCharacterName)
 {
-	for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMain)
+	for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMains)
 	{
 		FHumanCharacterMain ItemValue = *reinterpret_cast<const FHumanCharacterMain*>(Pair.Value);
 
@@ -209,7 +219,6 @@ void UStorage::AddStorageTypeButton()
 			AllTypeButton->ButtonText->SetText(FText::FromString(STORAGETYPE_ALL));
 			AllTypeButton->SetIsSelectable(true);
 			AllTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, AllTypeButton);
-			StorageTypeButtonContainer->AddChild(AllTypeButton);
 			UScrollBoxSlot* NewSlot = Cast<UScrollBoxSlot>(StorageTypeButtonContainer->AddChild(AllTypeButton));
 			if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 0));
 			AllTypeButton->SetIsSelected(true);
@@ -281,7 +290,7 @@ TArray<FText> UStorage::FilterEquipment(FString EquipmentType)
 {
 	TArray<FText> EquipmentNames;
 
-	for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMain)
+	for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
 	{
 		FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
 
@@ -312,7 +321,7 @@ TArray<FText> UStorage::FilterHumanCharacter()
 {
 	TArray<FText> HumanCharacterNames;
 
-	for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMain)
+	for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMains)
 	{
 		FHumanCharacterMain ItemValue = *reinterpret_cast<const FHumanCharacterMain*>(Pair.Value);
 
@@ -373,7 +382,7 @@ void UStorage::OnEquipmentButtonClicked(UStorageButton* EquipmentButton)
 {
 	FString EquipmentName = EquipmentButton->ButtonText->GetText().ToString();
 
-	for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMain)
+	for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
 	{
 		FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
 
@@ -434,9 +443,9 @@ void UStorage::SaveBagToStorage()
 	}
 
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem && StorageSubsystem->StorageCache)
+	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
-		StorageSubsystem->StorageCache->Bags = Bags;
+		StorageSubsystem->CacheSetting->Bags = Bags;
 		StorageSubsystem->Save();
 	}
 }
@@ -445,14 +454,21 @@ void UStorage::SaveBagToStorage()
 void UStorage::OnCharacterButtonClicked(UStorageButton* EquipmentButton)
 {
 	// 保存角色
-	FText CharacterName = EquipmentButton->ButtonText->GetText();
-	Character->SetText(CharacterName);
+	FText HumanCharacterName = EquipmentButton->ButtonText->GetText();
+	Character->SetText(HumanCharacterName);
 
 	// 保存角色到存档
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem && StorageSubsystem->StorageCache)
+	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
-		StorageSubsystem->StorageCache->HumanCharacter = CharacterName.ToString();
-		StorageSubsystem->Save();
+		if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+		{
+			FDataRegistryId DataRegistryId(DR_HumanCharacterMain, FName(HumanCharacterName.ToString()));
+			if (const FHumanCharacterMain* HumanCharacterMain = DRSubsystem->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
+			{
+				StorageSubsystem->CacheSetting->HumanCharacterName = HumanCharacterMain->HumanCharacterName;
+				StorageSubsystem->Save();
+			}
+		}
 	}
 }

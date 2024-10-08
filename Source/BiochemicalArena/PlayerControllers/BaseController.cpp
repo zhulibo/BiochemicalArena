@@ -178,19 +178,6 @@ void ABaseController::CloseRadialMenu()
 	}
 }
 
-void ABaseController::ShowBagMenu()
-{
-	if (HUDContainer)
-	{
-		HUDContainer->ActivateWidget();
-		FInputModeUIOnly InputModeData;
-		SetInputMode(InputModeData);
-		SetShowMouseCursor(true);
-
-		HUDContainer->ShowBagMenu();
-	}
-}
-
 void ABaseController::SetHUDCrosshair(float CrosshairSpread)
 {
 	if (HUDContainer)

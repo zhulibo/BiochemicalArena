@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Online/Commerce.h"
+// #include "Online/Commerce.h"
 #include "CommonButtonBase.h"
 #include "GoodsButton.generated.h"
 
@@ -18,6 +18,6 @@ public:
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Price;
 
-	FOffer Offer;
+	// FOffer Offer;
 
 };

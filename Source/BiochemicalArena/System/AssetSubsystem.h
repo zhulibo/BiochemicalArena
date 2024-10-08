@@ -11,9 +11,11 @@ class BIOCHEMICALARENA_API UAssetSubsystem : public UGameInstanceSubsystem
 
 public:
 	UPROPERTY()
+	class USystemSound* SystemSound;
+	UPROPERTY()
 	class UCharacterSound* CharacterSound;
 	UPROPERTY()
-	class USystemSound* SystemSound;
+	class UMutantCommon* MutantCommon;
 
 	void Test();
 

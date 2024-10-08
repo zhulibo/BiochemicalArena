@@ -3,7 +3,6 @@
 #include "AbilitySystemComponent.h"
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "BiochemicalArena/PlayerStates/MutationPlayerState.h"
@@ -59,10 +58,6 @@ void AMutationController::OnTeamChange(ETeam TempTeam)
 			HUDContainer->MutationMutant->SetVisibility(ESlateVisibility::Visible);
 
 			HUDContainer->RadialMenuContainer->OnTeamChange(ETeam::Team2);
-
-			bCanSelectCharacter = true;
-			ShowSelectCharacterTip(true);
-			GetWorld()->GetTimerManager().SetTimer(DisableSelectTimerHandle, this, &ThisClass::DisableSelectCharacter, 10.f);
 		}
 	}
 }
@@ -148,12 +143,6 @@ void AMutationController::HandleMatchStateChange()
 
 void AMutationController::HandleRoundHasEnded()
 {
-	if (IsLocalController())
-	{
-		GetWorld()->GetTimerManager().ClearTimer(DisableSelectTimerHandle);
-		DisableSelectCharacter();
-	}
-
 	if (HUDContainer)
 	{
 		HUDContainer->CommonHUD->Announcement->SetText(FText::FromString("Round end"));
@@ -290,8 +279,8 @@ void AMutationController::InitMutantHUD()
 
 		if (MutationPlayerState->GetAbilitySystemComponent())
 		{
-			FGameplayTag SkillCooldownTag = FGameplayTag::RequestGameplayTag(TAG_SKILL_CD);
-			int32 TagCount = MutationPlayerState->GetAbilitySystemComponent()->GetTagCount(SkillCooldownTag);
+			FGameplayTag Tag = FGameplayTag::RequestGameplayTag(TAG_Mutant_SKILL_CD);
+			int32 TagCount = MutationPlayerState->GetAbilitySystemComponent()->GetTagCount(Tag);
 			ShowSkillUI(TagCount == 0.f && MutationPlayerState->GetCharacterLevel() >= 2.f);
 		}
 
@@ -382,33 +371,6 @@ void AMutationController::Clear1000DamageUI()
 	if (HUDContainer)
 	{
 		HUDContainer->MutationHuman->DamageIcon->SetText(FText::FromString(""));
-	}
-}
-
-void AMutationController::ShowCharacterMenu()
-{
-	if (HUDContainer && bCanSelectCharacter)
-	{
-		HUDContainer->ActivateWidget();
-		FInputModeUIOnly InputModeData;
-		SetInputMode(InputModeData);
-		SetShowMouseCursor(true);
-
-		HUDContainer->ShowCharacterMenu();
-	}
-}
-
-void AMutationController::DisableSelectCharacter()
-{
-	bCanSelectCharacter = false;
-	ShowSelectCharacterTip(false);
-}
-
-void AMutationController::ShowSelectCharacterTip(bool bIsShow)
-{
-	if (HUDContainer)
-	{
-		HUDContainer->MutationMutant->ShowSelectCharacterTip(bIsShow);
 	}
 }
 

@@ -22,7 +22,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HeavyAttackMontage_E;
 
-	virtual void EquipEquipment() override;
+	virtual void OnEquip() override;
 
 	virtual void OnStartSwapOut() override;
 
@@ -34,9 +34,9 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	class UCapsuleComponent* AttackCapsule;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float LightAttackDamage;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	float HeavyAttackDamage;
 
 	void SetAttackCapsuleCollision();

@@ -1,7 +1,10 @@
 #include "MutantGhost.h"
 
+#include "BiochemicalArena/Abilities/AttributeSetBase.h"
+#include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
 #include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "BiochemicalArena/Characters/MutantAnimInstance.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AMutantGhost::AMutantGhost()
 {
@@ -49,4 +52,20 @@ void AMutantGhost::OnLeftHandCapsuleOverlap(UPrimitiveComponent* OverlappedCompo
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	Super::OnLeftHandCapsuleOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+}
+
+void AMutantGhost::OnAbilitySystemComponentInit()
+{
+	Super::OnAbilitySystemComponentInit();
+
+	if (AbilitySystemComponent && AttributeSetBase)
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+			AttributeSetBase->GetJumpZVelocityAttribute()).AddUObject(this, &ThisClass::OnJumpZVelocityChanged);
+	}
+}
+
+void AMutantGhost::OnJumpZVelocityChanged(const FOnAttributeChangeData& Data)
+{
+	GetCharacterMovement()->JumpZVelocity = Data.NewValue;
 }

@@ -29,6 +29,8 @@ public:
 	TSubclassOf<UGameplayAbilityBase> SkillAbility;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UGameplayEffect> SkillEffect;
+	// 被感染或开局被选为突变体
+	bool bSpawnByInfectOrChosen = false;
 
 	UPROPERTY()
 	EMutantCharacterName MutantCharacterName;
@@ -84,7 +86,6 @@ protected:
 	virtual void LightAttackButtonReleased(const FInputActionValue& Value);
 	virtual void HeavyAttackButtonPressed(const FInputActionValue& Value);
 	virtual void HeavyAttackButtonReleased(const FInputActionValue& Value);
-	void CharacterMenuButtonPressed(const FInputActionValue& Value);
 	void SkillButtonPressed(const FInputActionValue& Value);
 
 	UFUNCTION(Server, Reliable)
@@ -99,10 +100,10 @@ protected:
 	void MulticastHeavyAttack();
 	void LocalHeavyAttack();
 
-	UPROPERTY(EditAnywhere)
-	float LightAttackDamage;
-	UPROPERTY(EditAnywhere)
-	float HeavyAttackDamage;
+	UPROPERTY()
+	float LightAttackDamage = 0.f;
+	UPROPERTY()
+	float HeavyAttackDamage = 0.f;
 
 	UPROPERTY()
 	TArray<AActor*> RightHandHitEnemies;

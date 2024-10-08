@@ -1,6 +1,10 @@
 #include "Projectile.h"
+
+#include "DataRegistrySubsystem.h"
 #include "Components/BoxComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 
 AProjectile::AProjectile()
 {
@@ -24,13 +28,29 @@ void AProjectile::PostActorCreated()
 	Super::PostActorCreated();
 
 	// 尽早生成，避免OnHit时Component还未生成
-	SpawnTracerEffect();
 	SpawnTrailEffect();
+	SpawnTracerEffect();
 }
 
 void AProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AProjectile::SpawnTrailEffect()
+{
+	if (TrailEffect)
+	{
+		TrailEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
+			TrailEffect,
+			GetRootComponent(),
+			FName(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
+		);
+	}
 }
 
 void AProjectile::SpawnTracerEffect()
@@ -49,18 +69,45 @@ void AProjectile::SpawnTracerEffect()
 	}
 }
 
-void AProjectile::SpawnTrailEffect()
+float AProjectile::GetDamage(float Distance)
 {
-	if (TrailEffect)
+	float Damage = 0.f;
+
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
 	{
-		TrailEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
-			TrailEffect,
-			GetRootComponent(),
-			FName(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			EAttachLocation::KeepRelativeOffset,
-			true
-		);
+		FDataRegistryId DataRegistryId(DR_WeaponData, FName(OwnerName));
+		if (const FWeaponData* WeaponData = DRSubsystem->GetCachedItem<FWeaponData>(DataRegistryId))
+		{
+			if (UCurveFloat* DamageCurve = WeaponData->DamageCurve)
+			{
+				Damage = DamageCurve->GetFloatValue(Distance / 100);
+			}
+		}
 	}
+
+	return Damage;
+}
+
+float AProjectile::GetImpulse(float DeclineDamage)
+{
+	float Impulse = 0.f;
+
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FDataRegistryId DataRegistryId(DR_WeaponData, FName(OwnerName));
+		if (const FWeaponData* WeaponData = DRSubsystem->GetCachedItem<FWeaponData>(DataRegistryId))
+		{
+			if (UCurveFloat* DamageCurve = WeaponData->DamageCurve)
+			{
+				float MaxDamage = DamageCurve->GetFloatValue(0.f);
+
+				if (MaxDamage != 0)
+				{
+					Impulse = DeclineDamage / MaxDamage * WeaponData->Impulse;
+				}
+			}
+		}
+	}
+
+	return Impulse;
 }

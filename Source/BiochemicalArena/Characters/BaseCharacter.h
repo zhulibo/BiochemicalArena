@@ -32,6 +32,7 @@ public:
 	float GetDamageReceivedMul();
 	float GetRepelReceivedMul();
 	float GetCharacterLevel();
+	float GetJumpZVelocity();
 
 	void PlayFootstepSound();
 
@@ -94,7 +95,7 @@ protected:
 	UPROPERTY()
 	class ABaseController* BaseController;
 
-	void PollInitMeshCollision();
+	void PollSetMeshCollision();
 
 	float AimPitch; // 俯仰
 	void CalcAimPitch();
@@ -131,7 +132,7 @@ protected:
 	virtual void Landed(const FHitResult& Hit) override;
 	float CalcFallDamageRate();
 	UPROPERTY(EditAnywhere)
-	USoundCue* OuchSound;
+	class USoundCue* OuchSound;
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastPlayOuchSound(float DamageRate);
 

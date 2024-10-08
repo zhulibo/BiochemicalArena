@@ -73,11 +73,13 @@ protected:
 
 	void RandomMutate();
 	void Mutate(ACharacter* Character, AController* Controller);
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> ChangeMutantEffect;
 
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<class APickup>> PickupClasses;
 	FTimerHandle SpawnPickupTimerHandle;
-	TArray<APlayerStart*> PickupStartPoints;
+	TArray<class APlayerStart*> PickupStartPoints;
 	void SpawnPickups();
 
 public:

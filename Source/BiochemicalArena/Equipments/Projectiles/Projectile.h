@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "Projectile.generated.h"
 
+enum class EEquipmentName : uint8;
+
 UCLASS()
 class BIOCHEMICALARENA_API AProjectile : public AActor
 {
@@ -14,10 +16,14 @@ public:
 
 	UPROPERTY()
 	float InitialSpeed = 60000.f;
+
+	UFUNCTION()
+	float GetDamage(float Distance);
+	UFUNCTION()
+	float GetImpulse(float DeclineDamage);
+
 	UPROPERTY()
-	float Damage;
-	UPROPERTY()
-	float Impulse;
+	FString OwnerName;
 
 protected:
 	virtual void PostActorCreated() override;
@@ -30,19 +36,19 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	class UProjectileMovementComponent* ProjectileMovement;
 
-	// 尾部效果
-	UPROPERTY(EditAnywhere)
-	class UNiagaraSystem* TracerEffect;
-	UPROPERTY()
-	class UNiagaraComponent* TracerEffectComponent;
-	void SpawnTracerEffect();
-
 	// 在空中留下的轨迹
 	UPROPERTY(EditAnywhere)
-	UNiagaraSystem* TrailEffect;
+	class UNiagaraSystem* TrailEffect;
 	UPROPERTY()
-	UNiagaraComponent* TrailEffectComponent;
+	class UNiagaraComponent* TrailEffectComponent;
 	void SpawnTrailEffect();
+
+	// 尾部效果
+	UPROPERTY(EditAnywhere)
+	UNiagaraSystem* TracerEffect;
+	UPROPERTY()
+	UNiagaraComponent* TracerEffectComponent;
+	void SpawnTracerEffect();
 
 	// 击中效果
 	UPROPERTY(EditAnywhere)

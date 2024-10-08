@@ -96,6 +96,7 @@ void UCombatComponent::InterpFOV(float DeltaSeconds)
 	{
 		CurrentFOV = FMath::FInterpTo(CurrentFOV, DefaultFOV, DeltaSeconds, GetCurShotEquipment()->GetAimSpeed());
 	}
+
 	if (HumanCharacter && HumanCharacter->GetCamera())
 	{
 		HumanCharacter->GetCamera()->SetFieldOfView(CurrentFOV);
@@ -215,7 +216,7 @@ void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 	if (Equipment == nullptr || HumanCharacter == nullptr) return;
 
 	Equipment->SetOwner(HumanCharacter);
-	Equipment->EquipEquipment();
+	Equipment->OnEquip();
 
 	AssignEquipment(Equipment);
 
@@ -314,6 +315,8 @@ void UCombatComponent::PreLocalSwapEquipment()
 
 	bCanFire = true;
 
+	bIsAiming = false;
+
 	CombatState = ECombatState::Swapping;
 }
 
@@ -396,7 +399,9 @@ void UCombatComponent::MulticastReplaceCurEquipment_Implementation(AEquipment* E
 	Equipment->GetEquipmentMesh()->SetVisibility(true);
 
 	Equipment->SetOwner(HumanCharacter);
-	Equipment->EquipEquipment();
+	Equipment->OnEquip();
+
+	bIsAiming = false;
 
 	AssignEquipment(Equipment);
 	UseEquipment(Equipment);
@@ -430,6 +435,9 @@ void UCombatComponent::UseEquipment(AEquipment* Equipment)
 			BaseController->SetHUDCarriedAmmo(0);
 		}
 	}
+
+	// 更新玩家速度
+	HumanCharacter->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed * Equipment->GetMoveSpeedMul();
 }
 
 void UCombatComponent::FinishSwap()
@@ -454,7 +462,9 @@ void UCombatComponent::AttachToHand(AEquipment* Equipment, FString SocketNameSuf
 {
 	if (HumanCharacter == nullptr || HumanCharacter->GetMesh() == nullptr || Equipment == nullptr || SocketNameSuffix.IsEmpty()) return;
 
-	FString EquipmentName = UEnum::GetValueAsString(Equipment->GetEquipmentName());
+	EEquipmentName TempEquipmentName = Equipment->GetEquipmentParentName() == EEquipmentName::NONE ?
+		Equipment->GetEquipmentName() : Equipment->GetEquipmentParentName();
+	FString EquipmentName = UEnum::GetValueAsString(TempEquipmentName);
 	EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2) + SocketNameSuffix;
 
 	const USkeletalMeshSocket* HandSocket = HumanCharacter->GetMesh()->GetSocketByName(*EquipmentName);
@@ -485,10 +495,23 @@ void UCombatComponent::MulticastSetAiming_Implementation(bool bNewAimingState)
 
 void UCombatComponent::LocalSetAiming(bool bNewAimingState)
 {
+	if (GetCurEquipment() == nullptr) return;
+
 	bIsAiming = bNewAimingState;
+
 	if (HumanCharacter)
 	{
-		HumanCharacter->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+		float Speed;
+		if (bIsAiming)
+		{
+			Speed = AimWalkSpeed * GetCurEquipment()->GetMoveSpeedMul();
+		}
+		else
+		{
+			Speed = BaseWalkSpeed * GetCurEquipment()->GetMoveSpeedMul();
+		}
+
+		HumanCharacter->GetCharacterMovement()->MaxWalkSpeed = Speed;
 	}
 }
 
@@ -546,7 +569,7 @@ bool UCombatComponent::CanFire()
 	{
 		// 播放击锤音效
 		if (AssetSubsystem == nullptr) AssetSubsystem = HumanCharacter->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-		if (AssetSubsystem && AssetSubsystem->CharacterSound->ClickSound)
+		if (AssetSubsystem && AssetSubsystem->CharacterSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->CharacterSound->ClickSound, HumanCharacter->GetActorLocation());
 		}
@@ -735,7 +758,8 @@ void UCombatComponent::LocalDropEquipment(EEquipmentType EquipmentType)
 {
 	if (GetEquipmentByType(EquipmentType))
 	{
-		GetEquipmentByType(EquipmentType)->DropEquipment();
+		GetEquipmentByType(EquipmentType)->OnDrop();
+
 		switch (EquipmentType)
 		{
 		case EEquipmentType::Primary:

@@ -26,7 +26,7 @@ void AProjectileBullet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetLifeSpan(2.f);
+	SetLifeSpan(1.f);
 
 	CollisionBox->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 }
@@ -41,7 +41,13 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 
 	if (HasAuthority() && DamagedActor && GetInstigator())
 	{
-		UGameplayStatics::ApplyDamage(OtherActor, Damage, GetInstigator()->Controller, this, UDamageTypeEquipment::StaticClass());
+		UGameplayStatics::ApplyDamage(
+			OtherActor,
+			GetDamage(Hit.Distance),
+			GetInstigator()->Controller,
+			this,
+			UDamageTypeEquipment::StaticClass()
+		);
 	}
 
 	SetLifeSpan(5.f);

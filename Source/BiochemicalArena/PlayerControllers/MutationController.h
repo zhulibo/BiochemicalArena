@@ -23,10 +23,6 @@ public:
 
 	void Show1000DamageUI();
 
-	bool bCanSelectCharacter = true;
-	void ShowCharacterMenu();
-	void DisableSelectCharacter();
-
 	void ShowSkillUI(bool bIsShow);
 
 	void UpdateRageUI(float UpdateRageUI);
@@ -102,8 +98,5 @@ protected:
 
 	FTimerHandle DamageIconTimerHandle;
 	void Clear1000DamageUI();
-
-	FTimerHandle DisableSelectTimerHandle;
-	void ShowSelectCharacterTip(bool bIsShow);
 
 };

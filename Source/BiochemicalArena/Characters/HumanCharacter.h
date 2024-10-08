@@ -64,7 +64,6 @@ protected:
 	void ReloadButtonPressed(const FInputActionValue& Value);
 	void DropButtonPressed(const FInputActionValue& Value);
 	void SwapLastEquipmentButtonPressed(const FInputActionValue& Value);
-	void BagMenuButtonPressed(const FInputActionValue& Value);
 
 	UFUNCTION(Server, Reliable)
 	void ServerDetectOverlappingEquipment();
@@ -72,7 +71,7 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerSetDefaultEquipment(const FString& PrimaryName,
 		const FString& SecondaryName, const FString& MeleeName, const FString& ThrowingName);
-	FString GetEquipmentName(int32 CurBagIndex, EEquipmentType EquipmentType);
+	FString GetEquipmentName(int32 CurLoadoutIndex, EEquipmentType EquipmentType);
 
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimaryEquipment)
 	class AWeapon* DefaultPrimaryEquipment;

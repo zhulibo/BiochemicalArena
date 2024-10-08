@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
-#include "BagMenuButton.generated.h"
+#include "LoadoutSelectButton.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UBagMenuButton : public UCommonButtonBase
+class BIOCHEMICALARENA_API ULoadoutSelectButton : public UCommonButtonBase
 {
 	GENERATED_BODY()
 

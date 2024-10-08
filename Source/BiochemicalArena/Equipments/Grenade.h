@@ -21,12 +21,12 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class USoundCue* ExplodeSound;
 
-	UPROPERTY(EditAnywhere)
-	float Damage;
-	UPROPERTY(EditAnywhere)
-	float DamageInnerRadius;
-	UPROPERTY(EditAnywhere)
-	float DamageOuterRadius;
+	UPROPERTY()
+	float Damage = 500.f;
+	UPROPERTY()
+	float DamageInnerRadius = 1.f;
+	UPROPERTY()
+	float DamageOuterRadius = 5.f;
 	void ExplodeDamage();
 
 };

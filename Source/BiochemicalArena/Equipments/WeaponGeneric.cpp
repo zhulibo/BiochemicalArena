@@ -1,11 +1,11 @@
 #include "WeaponGeneric.h"
 
-#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "..\PlayerStates\TeamType.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "Components/BoxComponent.h"
+#include "Data/EquipmentType.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Projectiles/ProjectileBullet.h"
@@ -51,8 +51,10 @@ void AWeaponGeneric::Fire(const FVector& HitTarget, float RecoilVert, float Reco
 		SpawnParams
 	);
 
-	Projectile->Damage = Damage;
-	Projectile->Impulse = Impulse;
+	EEquipmentName TempEquipmentName = EquipmentParentName == EEquipmentName::NONE ? EquipmentName : EquipmentParentName;
+	FString EnumValue = UEnum::GetValueAsString(TempEquipmentName);
+	EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+	Projectile->OwnerName = EnumValue;
 
 	switch (OwnerTeam)
 	{

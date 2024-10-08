@@ -6,8 +6,9 @@
 #include "BiochemicalArena/Abilities/AttributeSetBase.h"
 #include "BiochemicalArena/Characters/Components/OverheadWidget.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
-#include "BiochemicalArena/System/StorageSaveGame.h"
-#include "BiochemicalArena/System/StorageSubsystem.h"
+#include "BiochemicalArena/System/Storage/DefaultConfig.h"
+#include "BiochemicalArena/System/Storage/SaveGameSetting.h"
+#include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -17,6 +18,12 @@ ABasePlayerState::ABasePlayerState()
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	AttributeSetBase = CreateDefaultSubobject<UAttributeSetBase>(TEXT("BaseAttributeSet"));
+
+	if (const UDefaultConfig* DefaultConfig = GetDefault<UDefaultConfig>())
+	{
+		HumanCharacterName = DefaultConfig->HumanCharacterName;
+		MutantCharacterName = DefaultConfig->MutantCharacterName;
+	}
 
 	Team = ETeam::NoTeam;
 }
@@ -39,10 +46,10 @@ void ABasePlayerState::BeginPlay()
 	if (BaseController && BaseController->IsLocalController())
 	{
 		UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-		if (StorageSubsystem && StorageSubsystem->StorageCache)
+		if (StorageSubsystem && StorageSubsystem->CacheSetting)
 		{
-			ServerSetHumanCharacterName(StorageSubsystem->StorageCache->HumanCharacter);
-			ServerSetMutantCharacterName(StorageSubsystem->StorageCache->MutantCharacterName);
+			ServerSetHumanCharacterName(StorageSubsystem->CacheSetting->HumanCharacterName);
+			ServerSetMutantCharacterName(StorageSubsystem->CacheSetting->MutantCharacterName);
 		}
 	}
 
@@ -98,6 +105,11 @@ float ABasePlayerState::GetRepelReceivedMul()
 float ABasePlayerState::GetCharacterLevel()
 {
 	return AttributeSetBase ? AttributeSetBase->GetCharacterLevel() : 0.f;
+}
+
+float ABasePlayerState::GetJumpZVelocity()
+{
+	return AttributeSetBase ? AttributeSetBase->GetJumpZVelocity() : 0.f;
 }
 
 void ABasePlayerState::SetTeam(ETeam TempTeam)
@@ -173,7 +185,7 @@ void ABasePlayerState::InitOverheadWidget()
 	});
 }
 
-void ABasePlayerState::ServerSetHumanCharacterName_Implementation(const FString& TempHumanCharacterName)
+void ABasePlayerState::ServerSetHumanCharacterName_Implementation(EHumanCharacterName TempHumanCharacterName)
 {
 	HumanCharacterName = TempHumanCharacterName;
 }

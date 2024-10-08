@@ -34,34 +34,37 @@ void AWeapon::InitData()
 		FString EnumValue = UEnum::GetValueAsString(EquipmentName);
 		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 
-		FDataRegistryId DataRegistryId1(DR_EquipmentData, FName(EnumValue));
-		if (const FEquipmentData* EquipmentData = DRSubsystem->GetCachedItem<FEquipmentData>(DataRegistryId1))
 		{
-			AimingFOVMul = EquipmentData->AimingFOVMul;
-			AimSpeed = EquipmentData->AimSpeed;
-			MaxCarriedAmmo = EquipmentData->MaxCarriedAmmo;
-			MagCapacity = EquipmentData->MagCapacity;
-			FireRate = EquipmentData->FireRate;
-			bIsAutomatic = EquipmentData->bIsAutomatic;
-			Damage = EquipmentData->Damage;
-			Impulse = EquipmentData->Impulse;
+			FDataRegistryId DataRegistryId(DR_WeaponData, FName(EnumValue));
+			if (const FWeaponData* WeaponData = DRSubsystem->GetCachedItem<FWeaponData>(DataRegistryId))
+			{
+				AimingFOVMul = WeaponData->AimingFOVMul;
+				AimSpeed = WeaponData->AimSpeed;
+				MaxCarriedAmmo = WeaponData->MaxCarriedAmmo;
+				MagCapacity = WeaponData->MagCapacity;
+				FireRate = WeaponData->FireRate;
+				bIsAutomatic = WeaponData->bIsAutomatic;
+				MoveSpeedMul = WeaponData->MoveSpeedMul;
 
-			CarriedAmmo = MaxCarriedAmmo;
-			Ammo = MagCapacity;
+				CarriedAmmo = MaxCarriedAmmo;
+				Ammo = MagCapacity;
+			}
 		}
 
-		FDataRegistryId DataRegistryId2(DR_EquipmentRecoil, FName(EnumValue));
-		if (const FEquipmentRecoil* EquipmentData = DRSubsystem->GetCachedItem<FEquipmentRecoil>(DataRegistryId2))
 		{
-			RecoilMaxVert = EquipmentData->RecoilMaxVert;
-			RecoilMinVert = EquipmentData->RecoilMinVert;
-			RecoilMaxHor = EquipmentData->RecoilMaxHor;
-			RecoilMinHor = EquipmentData->RecoilMinHor;
-			FirstShotRecoilMul = EquipmentData->FirstShotRecoilMul;
-			RecoilIncTime = EquipmentData->RecoilIncTime;
-			RecoilTotalVertLimit = EquipmentData->RecoilTotalVertLimit;
-			RecoilDecSpeed = EquipmentData->RecoilDecSpeed;
-			CenterSpread = EquipmentData->CenterSpread;
+			FDataRegistryId DataRegistryId(DR_EquipmentRecoil, FName(EnumValue));
+			if (const FEquipmentRecoil* EquipmentData = DRSubsystem->GetCachedItem<FEquipmentRecoil>(DataRegistryId))
+			{
+				RecoilMaxVert = EquipmentData->RecoilMaxVert;
+				RecoilMinVert = EquipmentData->RecoilMinVert;
+				RecoilMaxHor = EquipmentData->RecoilMaxHor;
+				RecoilMinHor = EquipmentData->RecoilMinHor;
+				FirstShotRecoilMul = EquipmentData->FirstShotRecoilMul;
+				RecoilIncTime = EquipmentData->RecoilIncTime;
+				RecoilTotalVertLimit = EquipmentData->RecoilTotalVertLimit;
+				RecoilDecSpeed = EquipmentData->RecoilDecSpeed;
+				CenterSpread = EquipmentData->CenterSpread;
+			}
 		}
 	}
 }

@@ -1,3 +1,6 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+using System.IO;
 using UnrealBuildTool;
 
 public class BiochemicalArena : ModuleRules
@@ -14,8 +17,6 @@ public class BiochemicalArena : ModuleRules
 				"InputCore",
 				"EnhancedInput",
 				"CommonInput",
-				"OnlineServicesInterface",
-				"CoreOnline",
 				"Niagara",
 				"GameplayAbilities",
 				"GameplayTags",
@@ -30,6 +31,8 @@ public class BiochemicalArena : ModuleRules
 				"SlateCore",
 				"UMG",
 				"CommonUI",
+				"RHI",
+				"CommonOnlineServices",
 			}
 		);
 

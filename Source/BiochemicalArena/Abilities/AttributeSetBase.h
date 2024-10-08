@@ -43,6 +43,10 @@ public:
 	FGameplayAttributeData CharacterLevel;
 	ATTRIBUTE_ACCESSORS(UAttributeSetBase, CharacterLevel)
 
+	UPROPERTY(ReplicatedUsing = OnRep_JumpZVelocity)
+	FGameplayAttributeData JumpZVelocity;
+	ATTRIBUTE_ACCESSORS(UAttributeSetBase, JumpZVelocity)
+
 protected:
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
@@ -54,5 +58,7 @@ protected:
 	virtual void OnRep_RepelReceivedMul(const FGameplayAttributeData& OldRepelReceivedMul);
 	UFUNCTION()
 	virtual void OnRep_CharacterLevel(const FGameplayAttributeData& OldCharacterLevel);
+	UFUNCTION()
+	virtual void OnRep_JumpZVelocity(const FGameplayAttributeData& OldJumpZVelocity);
 
 };

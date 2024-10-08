@@ -18,8 +18,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	UInputAction* HeavyAttackAction;
 	UPROPERTY(EditAnywhere)
-	UInputAction* CharacterMenuAction;
-	UPROPERTY(EditAnywhere)
 	UInputAction* SkillAction;
 
 };

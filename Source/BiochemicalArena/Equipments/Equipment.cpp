@@ -63,8 +63,9 @@ void AEquipment::BeginPlay()
 		FDataRegistryId DataRegistryId(DR_EquipmentMain, FName(EnumValue));
 		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
 		{
-			EquipmentType = EquipmentMain->EquipmentType;
+			EquipmentParentName = EquipmentMain->EquipmentParentName;
 			EquipmentCate = EquipmentMain->EquipmentCate;
+			EquipmentType = EquipmentMain->EquipmentType;
 		}
 	}
 }
@@ -86,7 +87,7 @@ UEquipmentAnimInstance* AEquipment::GetEquipmentAnimInstance()
 	return EquipmentAnimInstance;
 }
 
-void AEquipment::EquipEquipment()
+void AEquipment::OnEquip()
 {
 	EquipmentState = EEquipmentState::Equipped;
 
@@ -116,7 +117,7 @@ void AEquipment::SetOwnerTeam()
 	}
 }
 
-void AEquipment::DropEquipment()
+void AEquipment::OnDrop()
 {
 	EquipmentState = EEquipmentState::Dropped;
 

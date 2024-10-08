@@ -12,7 +12,7 @@ class BIOCHEMICALARENA_API UCharacterSound : public UDataAsset
 public:
 	// 捡到装备的声音
 	UPROPERTY(EditAnywhere)
-	USoundCue* EquipSound;
+	class USoundCue* EquipSound;
 	// 无子弹时扣动扳机的声音
 	UPROPERTY(EditAnywhere)
 	USoundCue* ClickSound;

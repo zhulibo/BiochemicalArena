@@ -1,33 +1,49 @@
 #include "PlayerSubsystem.h"
 
+#include "Auth.h"
+#include "Connect.h"
+#include "ServiceManager.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 
 UPlayerSubsystem::UPlayerSubsystem()
 {
-	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
-	{
-		EOSSubsystem = LocalPlayer->GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-		if (EOSSubsystem)
-		{
-			EOSSubsystem->OnLoginComplete.AddUObject(this, &ThisClass::OnLoginComplete);
-			EOSSubsystem->OnLoginStatusChanged.AddUObject(this, &ThisClass::OnLoginStatusChanged);
-		}
-	}
 }
 
-void UPlayerSubsystem::Login(int32 Type)
+void UPlayerSubsystem::Tick(float DeltaTime)
 {
-	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+	if (ServiceManager)
 	{
-		if (EOSSubsystem == nullptr) EOSSubsystem = LocalPlayer->GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-		if (EOSSubsystem)
-		{
-			EOSSubsystem->Login(LocalPlayer->GetPlatformUserId(), Type);
-		}
+		ServiceManager->UpdateEOS();
 	}
 }
 
-void UPlayerSubsystem::OnLoginComplete(bool bWasSuccessful)
+void UPlayerSubsystem::Login(ELoginType LoginType, FString ID, FString Token)
+{
+	ServiceManager = UServiceManager::GetServiceManager();
+	if (ServiceManager)
+	{
+		Auth = ServiceManager->GetAuth();
+		if (Auth)
+		{
+			if (!Auth->OnLoginOut.IsBoundToObject(this)) Auth->OnLoginOut.AddUObject(this, &ThisClass::OnLoginOut);
+		}
+
+		Connect = ServiceManager->GetConnect();
+		if (Connect)
+		{
+			if (!Connect->OnConnectComplete.IsBoundToObject(this)) Connect->OnConnectComplete.AddUObject(this, &ThisClass::OnConnectComplete);
+			if (!Connect->OnConnectLoginOut.IsBoundToObject(this)) Connect->OnConnectAuthExpiration.AddUObject(this, &ThisClass::OnConnectAuthExpiration);
+			if (!Connect->OnConnectLoginOut.IsBoundToObject(this)) Connect->OnConnectLoginOut.AddUObject(this, &ThisClass::OnConnectLoginOut);
+		}
+	}
+
+	if (Auth)
+	{
+		Auth->Login(LoginType, ID, Token);
+	}
+}
+
+void UPlayerSubsystem::OnConnectComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
@@ -41,30 +57,37 @@ void UPlayerSubsystem::OnLoginComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Login failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Login failed!"), false);
 	}
 }
 
-void UPlayerSubsystem::OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged)
+void UPlayerSubsystem::OnLoginOut()
 {
-	if (AuthLoginStatusChanged.LoginStatus == ELoginStatus::LoggedIn)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_MUTANT, TEXT("Login status changed: LoggedIn!"), false);
-	}
-	else if (AuthLoginStatusChanged.LoginStatus == ELoginStatus::LoggedInReducedFunctionality)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_WHITE, TEXT("Login status changed: LoggedInReducedFunctionality!"), false);
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_MAIN, TEXT("Login status changed: NotLoggedIn or UsingLocalProfile!"), false);
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("OnLoginOut!"), false);
 
-		if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+	{
+		if (APlayerController* PlayerController = LocalPlayer->GetPlayerController(GetWorld()))
 		{
-			if (APlayerController* PlayerController = LocalPlayer->GetPlayerController(GetWorld()))
-			{
-				PlayerController->ClientTravel("/Game/Maps/UI_Login", ETravelType::TRAVEL_Absolute);
-			}
+			PlayerController->ClientTravel("/Game/Maps/UI_Login", ETravelType::TRAVEL_Absolute);
+		}
+	}
+}
+
+void UPlayerSubsystem::OnConnectAuthExpiration()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("OnConnectAuthExpiration! Try to refreshing."), false);
+}
+
+void UPlayerSubsystem::OnConnectLoginOut()
+{
+	GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("OnConnectLoginOut!"), false);
+
+	if (ULocalPlayer* LocalPlayer = GetLocalPlayer())
+	{
+		if (APlayerController* PlayerController = LocalPlayer->GetPlayerController(GetWorld()))
+		{
+			PlayerController->ClientTravel("/Game/Maps/UI_Login", ETravelType::TRAVEL_Absolute);
 		}
 	}
 }

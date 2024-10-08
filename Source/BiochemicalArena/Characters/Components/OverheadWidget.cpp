@@ -171,21 +171,21 @@ void UOverheadWidget::InitOverheadWidget()
 				if (BasePlayerState->GetTeam() == LocalBasePlayerState->GetTeam())
 				{
 					// 设置名字颜色
-					PlayerName->SetColorAndOpacity(COLOR_WHITE);
+					PlayerName->SetColorAndOpacity(C_WHITE);
 
 					// 设置血条颜色
 					if (UMaterialInstanceDynamic* MID = HealthBar->GetDynamicMaterial())
 					{
-						MID->SetVectorParameterValue(TEXT("TeamColor"), BaseCharacter->bIsImmune ? COLOR_BLUE : COLOR_WHITE);
+						MID->SetVectorParameterValue(TEXT("TeamColor"), BaseCharacter->bIsImmune ? C_BLUE : C_WHITE);
 					}
 				}
 				else
 				{
-					PlayerName->SetColorAndOpacity(COLOR_HUMAN);
+					PlayerName->SetColorAndOpacity(C_RED);
 
 					if (UMaterialInstanceDynamic* MID = HealthBar->GetDynamicMaterial())
 					{
-						MID->SetVectorParameterValue(TEXT("TeamColor"), BaseCharacter->bIsImmune ? COLOR_BLUE : COLOR_HUMAN);
+						MID->SetVectorParameterValue(TEXT("TeamColor"), BaseCharacter->bIsImmune ? C_BLUE : C_RED);
 					}
 				}
 

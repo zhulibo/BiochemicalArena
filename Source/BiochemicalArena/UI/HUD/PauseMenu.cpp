@@ -5,13 +5,23 @@
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "BiochemicalArena/UI/Setting/Setting.h"
+#include "BiochemicalArena/UI/HUD/LoadoutSelect/LoadoutSelect.h"
+#include "BiochemicalArena/UI/HUD/MutantSelect/MutantSelect.h"
 
 void UPauseMenu::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	BackButton->ButtonText->SetText(FText::FromString("Back"));
-	BackButton->OnClicked().AddUObject(this, &ThisClass::OnBackButtonClicked);
+	OnDeactivated().AddUObject(this, &ThisClass::OnBack);
+	OnActivated().AddWeakLambda(this, [this]() {
+		bWantToBack = true;
+	});
+
+	LoadoutSelectButton->ButtonText->SetText(FText::FromString("Loadout"));
+	LoadoutSelectButton->OnClicked().AddUObject(this, &ThisClass::OnLoadoutSelectClicked);
+
+	MutantSelectButton->ButtonText->SetText(FText::FromString("Mutant"));
+	MutantSelectButton->OnClicked().AddUObject(this, &ThisClass::OnMutantSelectButtonClicked);
 
 	SettingButton->ButtonText->SetText(FText::FromString("Setting"));
 	SettingButton->OnClicked().AddUObject(this, &ThisClass::OnSettingButtonClicked);
@@ -25,19 +35,47 @@ void UPauseMenu::NativeOnInitialized()
 
 UWidget* UPauseMenu::NativeGetDesiredFocusTarget() const
 {
-	return SettingButton;
+	return LoadoutSelectButton;
 }
 
-void UPauseMenu::OnBackButtonClicked()
+void UPauseMenu::OnBack()
 {
+	if (!bWantToBack) return;
+
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
 	if (BaseController && BaseController->HUDContainer)
 	{
-		BaseController->HUDContainer->MainStack->RemoveWidget(*BaseController->HUDContainer->MainStack->GetActiveWidget());
-
 		FInputModeGameOnly InputModeData;
 		BaseController->SetInputMode(InputModeData);
 		BaseController->SetShowMouseCursor(false);
+	}
+}
+
+void UPauseMenu::OnLoadoutSelectClicked()
+{
+	if (LoadoutSelectClass)
+	{
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+		if (BaseController && BaseController->HUDContainer)
+		{
+			bWantToBack = false;
+
+			BaseController->HUDContainer->MainStack->AddWidget(LoadoutSelectClass);
+		}
+	}
+}
+
+void UPauseMenu::OnMutantSelectButtonClicked()
+{
+	if (MutantSelectClass)
+	{
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+		if (BaseController && BaseController->HUDContainer)
+		{
+			bWantToBack = false;
+
+			BaseController->HUDContainer->MainStack->AddWidget(MutantSelectClass);
+		}
 	}
 }
 
@@ -48,6 +86,8 @@ void UPauseMenu::OnSettingButtonClicked()
 		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
 		if (BaseController && BaseController->HUDContainer)
 		{
+			bWantToBack = false;
+
 			BaseController->HUDContainer->MainStack->AddWidget(SettingClass);
 		}
 	}

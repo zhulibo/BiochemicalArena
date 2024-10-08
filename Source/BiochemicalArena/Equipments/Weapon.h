@@ -88,11 +88,6 @@ protected:
 	UPROPERTY()
 	bool bIsAutomatic;
 
-	UPROPERTY()
-	float Damage;
-	UPROPERTY()
-	float Impulse;
-
 	void InitData();
 
 	void SpendRound();
@@ -110,8 +105,6 @@ public:
 
 	FORCEINLINE bool IsEmpty() const { return Ammo <= 0; }
 	FORCEINLINE bool IsFull() const { return Ammo == MagCapacity; }
-
-	FORCEINLINE float GetDamage() const { return Damage; }
 
 	FORCEINLINE float GetFireDelay() const { return 60 / FireRate; }
 	FORCEINLINE bool IsAutomatic() const { return bIsAutomatic; }

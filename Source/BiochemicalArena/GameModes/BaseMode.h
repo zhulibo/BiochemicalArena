@@ -29,10 +29,10 @@ protected:
 	class ABaseGameState* BaseGameState;
 
 	void SpawnHumanCharacter(AController* Controller);
-	void SpawnMutantCharacter(AController* Controller, FVector Location = FVector::ZeroVector,
-		FRotator ActorRotation = FRotator::ZeroRotator, FRotator ViewRotation = FRotator::ZeroRotator);
+	void SpawnMutantCharacter(AController* Controller, bool bSpawnByInfectOrChosen = false,
+		FVector Location = FVector::ZeroVector, FRotator ActorRotation = FRotator::ZeroRotator, FRotator ViewRotation = FRotator::ZeroRotator);
 
-	TArray<APlayerStart*> Team1PlayerStarts;
+	TArray<class APlayerStart*> Team1PlayerStarts;
 	TArray<APlayerStart*> Team2PlayerStarts;
 	AActor* FindCharacterPlayerStart(ETeam Team);
 	void AssignTeam(AController* Controller, ETeam Team);

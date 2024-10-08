@@ -1,7 +1,6 @@
-#include "StorageSaveGame.h"
-#include "StorageSaveGameType.h"
+#include "DefaultConfig.h"
 
-UStorageSaveGame::UStorageSaveGame()
+UDefaultConfig::UDefaultConfig()
 {
 	// 设置默认背包
 	FBag Bag;

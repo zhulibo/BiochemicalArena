@@ -30,8 +30,8 @@ public:
 
 	class UEquipmentAnimInstance* GetEquipmentAnimInstance();
 
-	virtual void EquipEquipment();
-	virtual void DropEquipment();
+	virtual void OnEquip();
+	virtual void OnDrop();
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastHiddenMesh();
@@ -56,15 +56,19 @@ protected:
 	virtual void OnAreaSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	UPROPERTY()
-	EEquipmentState EquipmentState;
-
-	UPROPERTY()
-	EEquipmentType EquipmentType;
-	UPROPERTY()
-	EEquipmentCate EquipmentCate;
 	UPROPERTY(EditAnywhere)
 	EEquipmentName EquipmentName;
+	UPROPERTY()
+	EEquipmentName EquipmentParentName;
+	UPROPERTY()
+	EEquipmentCate EquipmentCate;
+	UPROPERTY()
+	EEquipmentType EquipmentType;
+
+	UPROPERTY()
+	EEquipmentState EquipmentState;
+	UPROPERTY()
+	float MoveSpeedMul = 1.f;
 
 	UPROPERTY()
 	class AHumanCharacter* HumanCharacter;
@@ -82,9 +86,12 @@ protected:
 public:
 	FORCEINLINE USkeletalMeshComponent* GetEquipmentMesh() const { return EquipmentMesh; }
 
-	FORCEINLINE EEquipmentType GetEquipmentType() const { return EquipmentType; }
-	FORCEINLINE EEquipmentCate GetEquipmentCate() const { return EquipmentCate; }
 	FORCEINLINE EEquipmentName GetEquipmentName() const { return EquipmentName; }
+	FORCEINLINE EEquipmentName GetEquipmentParentName() const { return EquipmentParentName; }
+	FORCEINLINE EEquipmentCate GetEquipmentCate() const { return EquipmentCate; }
+	FORCEINLINE EEquipmentType GetEquipmentType() const { return EquipmentType; }
+
 	FORCEINLINE EEquipmentState GetEquipmentState() const { return EquipmentState; }
+	FORCEINLINE float GetMoveSpeedMul() const { return MoveSpeedMul; }
 
 };

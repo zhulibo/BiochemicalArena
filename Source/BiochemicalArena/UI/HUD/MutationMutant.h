@@ -1,12 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonUserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "GameplayTagContainer.h"
 #include "MutationMutant.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UMutationMutant : public UCommonUserWidget
+class BIOCHEMICALARENA_API UMutationMutant : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -15,17 +15,9 @@ public:
 	class UCommonTextBlock* Health;
 
 	UPROPERTY(meta = (BindWidget))
-	class UHorizontalBox* SelectCharacterBox;
+	class UHorizontalBox* SkillBox;
 	UPROPERTY(meta = (BindWidget))
-	class UCommonButtonBase* SelectCharacterButton;
-	void ShowSelectCharacterTip(bool bIsShow);
-
-	UPROPERTY(meta = (BindWidget))
-	UHorizontalBox* SkillBox;
-	UPROPERTY(meta = (BindWidget))
-	UCommonButtonBase* SkillButton;
-	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* SkillText;
+	class UCommonButton* SkillButton;
 	void ShowSkillUI(bool bIsShow);
 
 	UPROPERTY(meta = (BindWidget))

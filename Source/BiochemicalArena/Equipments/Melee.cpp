@@ -1,4 +1,6 @@
 #include "Melee.h"
+
+#include "DataRegistrySubsystem.h"
 #include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -26,12 +28,26 @@ void AMelee::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FString EnumValue = UEnum::GetValueAsString(EquipmentName);
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+
+		FDataRegistryId DataRegistryId(DR_MeleeData, FName(EnumValue));
+		if (const FMeleeData* MeleeData = DRSubsystem->GetCachedItem<FMeleeData>(DataRegistryId))
+		{
+			LightAttackDamage = MeleeData->LightAttackDamage;
+			HeavyAttackDamage = MeleeData->HeavyAttackDamage;
+			MoveSpeedMul = MeleeData->MoveSpeedMul;
+		}
+	}
+
 	SetAttackCapsuleCollision();
 }
 
-void AMelee::EquipEquipment()
+void AMelee::OnEquip()
 {
-	Super::EquipEquipment();
+	Super::OnEquip();
 
 	SetAttackCapsuleCollision();
 }

@@ -32,14 +32,6 @@ void UHumanAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	AimPitch = HumanCharacter->GetAimPitch();
 	Head_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 30.f, -30.f);
 	Neck_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 20.f, -20.f);
-
 	UpperArm_R_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 75.f, -75.f);
 	UpperArm_L_Rotator.Roll = UKismetMathLibrary::MapRangeClamped(AimPitch, -90.f, 90.f, 80.f, -80.f);
-
-	if (HumanCharacter->IsLocallyControlled() && HumanCharacter->GetCurrentEquipment())
-	{
-		FTransform MuzzleTipTransform = HumanCharacter->GetCurrentEquipment()->GetEquipmentMesh()->GetSocketTransform(FName("Muzzle"), ERelativeTransformSpace::RTS_World);
-		FVector MuzzleZ(FRotationMatrix(MuzzleTipTransform.GetRotation().Rotator()).GetUnitAxis(EAxis::Z));
-		DrawDebugLine(GetWorld(), MuzzleTipTransform.GetLocation(), MuzzleTipTransform.GetLocation() + MuzzleZ * 2000.f, COLOR_MAIN);
-	}
 }

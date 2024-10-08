@@ -7,7 +7,7 @@
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "..\PlayerStates\TeamType.h"
-#include "BiochemicalArena/System/StorageSubsystem.h"
+#include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 #include "CommonInputSubsystem.h"
@@ -19,7 +19,7 @@
 #include "BiochemicalArena/Equipments/Data/DamageTypeFall.h"
 #include "BiochemicalArena/Equipments/Projectiles/ProjectileBullet.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
-#include "BiochemicalArena/System/StorageSaveGame.h"
+#include "BiochemicalArena/System/Storage/SaveGameSetting.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -126,47 +126,32 @@ void ABaseCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	PollInitMeshCollision();
+	PollSetMeshCollision();
 
 	CalcAimPitch();
 
 	PollInit();
 
-	// Don't know why Camera doesn't rotate with the CameraBoom,
-	// Manually copy the CameraBone's increased RelativeRotator(camera shake) to the Camera.
+	// Manually copy the CameraBone's increased rotator(camera shake) to Camera.
 	if (IsLocallyControlled())
 	{
-		FQuat PelvisBoneQuat = GetMesh()->GetBoneQuaternion("Pelvis", EBoneSpaces::WorldSpace); // Need EBoneSpace::LocalSpace pls!
+		FQuat PelvisBoneQuat = GetMesh()->GetBoneQuaternion("Pelvis", EBoneSpaces::WorldSpace);
 		FQuat CameraBoneQuat = GetMesh()->GetBoneQuaternion("Camera", EBoneSpaces::WorldSpace);
-		FQuat RelativeQuat = CameraBoneQuat.Inverse() * PelvisBoneQuat;
+		FRotator CurRelativeRotator = CameraBoneQuat.Rotator() - PelvisBoneQuat.Rotator();
 
-		// HACK Use UE_LOG, Print the RelativeRotator when player is in idle pose, and hardcoded it.
-		// UE_LOG(LogTemp, Warning, TEXT("IdlePoseRelativeRotator: %s"), *RelativeQuat.Rotator().ToString());
-		FRotator IdlePoseRelativeRotator = FRotator(0.000005, -180.000000, 90.090436);
+		// HACK Hard code IdleRelativeRotator
+		// UE_LOG(LogTemp, Warning, TEXT("CurRelativeRotator: %s"), *CurRelativeRotator.ToString());
+		FRotator IdleRelativeRotator = FRotator(0.014002, -179.986025, -90.090419);
 
-		// IncreasedRotator = Current RelativeRotator - the RelativeRotator of idle pose
-		FRotator IncreasedRotator = RelativeQuat.Rotator() - IdlePoseRelativeRotator;
+		FRotator CurIncreasedRotator = CurRelativeRotator - IdleRelativeRotator;
 
-		Camera->SetRelativeRotation(FRotator(IncreasedRotator.Roll, -IncreasedRotator.Yaw, -IncreasedRotator.Pitch));
+		// The coordinate axes of Camera and CameraBoom are different
+		Camera->SetRelativeRotation(FRotator(CurIncreasedRotator.Roll, CurIncreasedRotator.Yaw, CurIncreasedRotator.Pitch));
 	}
-
-	// if (IsLocallyControlled())
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("--------------------- %d"), GetLocalRole());
-	//
-	// 	FRotator CameraSocketRotation = GetMesh()->GetSocketRotation("Camera");
-	// 	UE_LOG(LogTemp, Warning, TEXT("1: %s"), *CameraSocketRotation.ToString());
-	//
-	// 	FRotator CameraBoomRotation = CameraBoom->GetComponentRotation();
-	// 	UE_LOG(LogTemp, Warning, TEXT("2: %s"), *CameraBoomRotation.ToString());
-	//
-	// 	FRotator CameraRotation = Camera->GetComponentRotation();
-	// 	UE_LOG(LogTemp, Warning, TEXT("3: %s"), *CameraRotation.ToString());
-	// }
 }
 
 // 设置碰撞
-void ABaseCharacter::PollInitMeshCollision()
+void ABaseCharacter::PollSetMeshCollision()
 {
 	if (!HasInitMeshCollision)
 	{
@@ -282,7 +267,8 @@ void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPr
 
 		if (AProjectileBullet* ProjectileBullet = Cast<AProjectileBullet>(OtherActor))
 		{
-			BloodEffectComponent->SetVariableInt("ParticleCount", ULibraryCommon::GetBloodParticleCount(ProjectileBullet->Damage));
+			float Damage = ProjectileBullet->GetDamage(Hit.Distance);
+			BloodEffectComponent->SetVariableInt("ParticleCount", ULibraryCommon::GetBloodParticleCount(Damage));
 		}
 		BloodEffectComponent->SetVariableLinearColor("Color", BloodColor);
 	}
@@ -343,6 +329,11 @@ float ABaseCharacter::GetRepelReceivedMul()
 float ABaseCharacter::GetCharacterLevel()
 {
 	return AttributeSetBase ? AttributeSetBase->GetCharacterLevel() : 0.f;
+}
+
+float ABaseCharacter::GetJumpZVelocity()
+{
+	return AttributeSetBase ? AttributeSetBase->GetJumpZVelocity() : 0.f;
 }
 
 // 输入设备类型改变
@@ -408,16 +399,16 @@ void ABaseCharacter::LookMouse(const FInputActionValue& Value)
 {
 	FVector2D AxisVector = Value.Get<FVector2D>();
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	AddControllerYawInput(AxisVector.X * StorageSubsystem->StorageCache->MouseSensitivity);
-	AddControllerPitchInput(AxisVector.Y * StorageSubsystem->StorageCache->MouseSensitivity);
+	AddControllerYawInput(AxisVector.X * StorageSubsystem->CacheSetting->MouseSensitivity);
+	AddControllerPitchInput(AxisVector.Y * StorageSubsystem->CacheSetting->MouseSensitivity);
 }
 
 void ABaseCharacter::LookStick(const FInputActionValue& Value)
 {
 	FVector2D AxisVector = Value.Get<FVector2D>();
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	AddControllerYawInput(AxisVector.X * StorageSubsystem->StorageCache->ControllerSensitivity);
-	AddControllerPitchInput(AxisVector.Y * StorageSubsystem->StorageCache->ControllerSensitivity);
+	AddControllerYawInput(AxisVector.X * StorageSubsystem->CacheSetting->ControllerSensitivity);
+	AddControllerPitchInput(AxisVector.Y * StorageSubsystem->CacheSetting->ControllerSensitivity);
 }
 
 void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)

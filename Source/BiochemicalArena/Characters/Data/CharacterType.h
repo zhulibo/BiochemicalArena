@@ -16,9 +16,9 @@ enum class EHumanCharacterName : uint8
 UENUM(BlueprintType)
 enum class EMutantCharacterName : uint8
 {
-	Tank UMETA(DisplayName = "Tank", Desc = "Tank Desc"),
-	Ghost UMETA(DisplayName = "Ghost", Desc = "Ghost Desc"),
-	Smoker UMETA(DisplayName = "Smoker", Desc = "Smoker Desc"),
+	Tank UMETA(DisplayName = "Tank"),
+	Ghost UMETA(DisplayName = "Ghost"),
+	Smoker UMETA(DisplayName = "Smoker"),
 
 	NONE UMETA(DisplayName = "NONE")
 };
@@ -28,7 +28,6 @@ struct FHumanCharacterMain : public FTableRowBase
 {
 	GENERATED_BODY()
 
-public:
 	UPROPERTY(EditAnywhere)
 	EHumanCharacterName HumanCharacterName = EHumanCharacterName::NONE;
 
@@ -49,11 +48,18 @@ struct FMutantCharacterMain : public FTableRowBase
 {
 	GENERATED_BODY()
 
-public:
 	UPROPERTY(EditAnywhere)
 	EMutantCharacterName MutantCharacterName = EMutantCharacterName::NONE;
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AMutantCharacter> MutantCharacterClass;
+
+	UPROPERTY(EditAnywhere)
+	float LightAttackDamage = 0.f;
+	UPROPERTY(EditAnywhere)
+	float HeavyAttackDamage = 0.f;
+
+	UPROPERTY(EditAnywhere)
+	FString Desc = "";
 
 };

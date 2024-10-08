@@ -25,11 +25,11 @@ void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& Caus
 				{
 					if (LocalPlayerState->GetTeam() == AttackerState->GetTeam())
 					{
-						KillLogLine->AttackerPlayer->SetColorAndOpacity(COLOR_MUTANT);
+						KillLogLine->AttackerPlayer->SetColorAndOpacity(C_GREEN);
 					}
 					else
 					{
-						KillLogLine->AttackerPlayer->SetColorAndOpacity(COLOR_HUMAN);
+						KillLogLine->AttackerPlayer->SetColorAndOpacity(C_RED);
 					}
 				}
 			}
@@ -45,11 +45,11 @@ void UCommonHUD::AddKillLog(ABasePlayerState* AttackerState, const FString& Caus
 				{
 					if (LocalPlayerState->GetTeam() == DamagedState->GetTeam())
 					{
-						KillLogLine->DamagedPlayer->SetColorAndOpacity(COLOR_MUTANT);
+						KillLogLine->DamagedPlayer->SetColorAndOpacity(C_GREEN);
 					}
 					else
 					{
-						KillLogLine->DamagedPlayer->SetColorAndOpacity(COLOR_HUMAN);
+						KillLogLine->DamagedPlayer->SetColorAndOpacity(C_RED);
 					}
 				}
 			}

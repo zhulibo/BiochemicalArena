@@ -1,13 +1,12 @@
 ﻿#pragma once
 
-#include "StorageSaveGameType.generated.h"
+#include "ConfigType.generated.h"
 
 USTRUCT(BlueprintType)
 struct FBag
 {
 	GENERATED_BODY()
 
-public:
 	UPROPERTY()
 	FString Primary;
 	UPROPERTY()

@@ -266,7 +266,7 @@ void AMutationMode::Mutate(ACharacter* Character, AController* Controller)
 
 		// 重生为突变体
 		AssignTeam(Controller, ETeam::Team2);
-		SpawnMutantCharacter(Controller, Location, ActorRotation, ViewRotation);
+		SpawnMutantCharacter(Controller, true, Location, ActorRotation, ViewRotation);
 	}
 }
 
@@ -284,7 +284,7 @@ void AMutationMode::SelectCharacter(ACharacter* Character, AController* Controll
 		Character->Destroy();
 
 		// 生成新角色
-		SpawnMutantCharacter(Controller, Location, ActorRotation, ViewRotation);
+		SpawnMutantCharacter(Controller, false, Location, ActorRotation, ViewRotation);
 	}
 }
 
@@ -372,7 +372,7 @@ void AMutationMode::MutantReceiveDamage(AMutantCharacter* DamagedCharacter, ABas
 		FVector ImpulseVector = ProjectileBullet->GetActorForwardVector();
 		ImpulseVector.Z = 0.f;
 
-		DamagedCharacter->MulticastRepel(ImpulseVector * ProjectileBullet->Impulse);
+		DamagedCharacter->MulticastRepel(ImpulseVector * ProjectileBullet->GetImpulse(Damage));
 	}
 
 	// 设置受伤者血量

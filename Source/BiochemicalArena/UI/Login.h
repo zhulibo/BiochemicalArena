@@ -4,12 +4,12 @@
 #include "CommonActivatableWidget.h"
 #include "Login.generated.h"
 
+enum class ELoginType : uint8;
+
 UCLASS()
 class BIOCHEMICALARENA_API ULogin : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
-
-public:
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -18,14 +18,20 @@ protected:
 	UPROPERTY()
 	class ALoginController* LoginController;
 	UPROPERTY()
-	class UEOSSubsystem* EOSSubsystem;
+	class UServiceManager* ServiceManager;
+	UPROPERTY()
+	class UAuth* Auth;
+	UPROPERTY()
+	class UConnect* Connect;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* LoginStatus;
 	UPROPERTY(meta = (BindWidget))
 	class UCommonButton* LoginButton;
-	void OnLoginButtonClicked(int32 Type);
+	UFUNCTION()
+	void OnLoginButtonClicked(ELoginType LoginType, FString ID, FString Token);
 	void OnLoginComplete(bool bWasSuccessful);
+	void OnConnectComplete(bool bWasSuccessful);
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* Login1Button;

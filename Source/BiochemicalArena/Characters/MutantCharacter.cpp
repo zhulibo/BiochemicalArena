@@ -1,4 +1,6 @@
 #include "MutantCharacter.h"
+
+#include "DataRegistrySubsystem.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "HumanCharacter.h"
@@ -15,19 +17,20 @@
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Data/InputBase.h"
 #include "Data/InputMutant.h"
+#include "Data/MutantCommon.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetMathLibrary.h"
 
 AMutantCharacter::AMutantCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	BloodColor = COLOR_MUTANT;
+	BloodColor = C_GREEN;
 
 	MutantState = EMutantState::Ready;
 
@@ -62,6 +65,19 @@ void AMutantCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FString EnumValue = UEnum::GetValueAsString(MutantCharacterName);
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+
+		FDataRegistryId DataRegistryId(DR_MutantCharacterMain, FName(EnumValue));
+		if (const FMutantCharacterMain* MutantCharacterMain = DRSubsystem->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
+		{
+			LightAttackDamage = MutantCharacterMain->LightAttackDamage;
+			HeavyAttackDamage = MutantCharacterMain->HeavyAttackDamage;
+		}
+	}
+
 	if (HasAuthority())
 	{
 		OnTakeAnyDamage.AddUniqueDynamic(this, &ThisClass::MutantReceiveDamage);
@@ -91,7 +107,6 @@ void AMutantCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 		EnhancedInputComponent->BindAction(InputMutant->LightAttackAction, ETriggerEvent::Completed, this, &ThisClass::LightAttackButtonReleased);
 		EnhancedInputComponent->BindAction(InputMutant->HeavyAttackAction, ETriggerEvent::Started, this, &ThisClass::HeavyAttackButtonPressed);
 		EnhancedInputComponent->BindAction(InputMutant->HeavyAttackAction, ETriggerEvent::Completed, this, &ThisClass::HeavyAttackButtonReleased);
-		EnhancedInputComponent->BindAction(InputMutant->CharacterMenuAction, ETriggerEvent::Triggered, this, &ThisClass::CharacterMenuButtonPressed);
 		EnhancedInputComponent->BindAction(InputMutant->SkillAction, ETriggerEvent::Triggered, this, &ThisClass::SkillButtonPressed);
 	}
 }
@@ -114,6 +129,17 @@ void AMutantCharacter::PossessedBy(AController* NewController)
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(SkillAbility));
+
+		if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+		if (AssetSubsystem && AssetSubsystem->MutantCommon)
+		{
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->MutantCommon->ChangeMutantAbility));
+
+			if (bSpawnByInfectOrChosen)
+			{
+				AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->MutantCommon->ChangeMutantAbility);
+			}
+		}
 	}
 }
 
@@ -123,7 +149,7 @@ void AMutantCharacter::OnAbilitySystemComponentInit()
 
 	if (AbilitySystemComponent && AttributeSetBase && IsLocallyControlled())
 	{
-		FGameplayTag SkillCooldownTag = FGameplayTag::RequestGameplayTag(TAG_SKILL_CD);
+		FGameplayTag SkillCooldownTag = FGameplayTag::RequestGameplayTag(TAG_Mutant_SKILL_CD);
 		AbilitySystemComponent->RegisterGameplayTagEvent(
 			SkillCooldownTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnLocalSkillCooldownTagChanged);
 
@@ -132,26 +158,33 @@ void AMutantCharacter::OnAbilitySystemComponentInit()
 	}
 }
 
+// 更新skill UI
 void AMutantCharacter::OnLocalSkillCooldownTagChanged(FGameplayTag GameplayTag, int32 TagCount)
 {
 	if (MutationController == nullptr) MutationController = Cast<AMutationController>(Controller);
-	if (MutationController && GetCharacterLevel() >= 2.f)
+	if (MutationController)
 	{
-		MutationController->ShowSkillUI(TagCount == 0);
+		MutationController->ShowSkillUI(TagCount == 0 && GetCharacterLevel() >= 2.f);
 	}
 }
 
+// 更新skill UI
 void AMutantCharacter::OnLocalCharacterLevelChanged(const FOnAttributeChangeData& Data)
 {
-	if (Data.NewValue < 2.f) return;
-
 	if (MutationController == nullptr) MutationController = Cast<AMutationController>(Controller);
-	if (AbilitySystemComponent && MutationController)
+	if (MutationController && AbilitySystemComponent)
 	{
-		FGameplayTag SkillCooldownTag = FGameplayTag::RequestGameplayTag(TAG_SKILL_CD);
-		int32 TagCount = AbilitySystemComponent->GetTagCount(SkillCooldownTag);
+		FGameplayTag Tag = FGameplayTag::RequestGameplayTag(TAG_Mutant_SKILL_CD);
+		MutationController->ShowSkillUI(AbilitySystemComponent->GetTagCount(Tag) == 0 && Data.NewValue > 2.f);
+	}
+}
 
-		MutationController->ShowSkillUI(TagCount == 0);
+// 处理skill功能
+void AMutantCharacter::SkillButtonPressed(const FInputActionValue& Value)
+{
+	if (AbilitySystemComponent && GetCharacterLevel() >= 2.f)
+	{
+		AbilitySystemComponent->TryActivateAbilityByClass(SkillAbility);
 	}
 }
 
@@ -182,23 +215,6 @@ void AMutantCharacter::Destroyed()
 	}
 
 	Super::Destroyed();
-}
-
-void AMutantCharacter::CharacterMenuButtonPressed(const FInputActionValue& Value)
-{
-	if (MutationController == nullptr) MutationController = Cast<AMutationController>(Controller);
-	if (MutationController)
-	{
-		MutationController->ShowCharacterMenu();
-	}
-}
-
-void AMutantCharacter::SkillButtonPressed(const FInputActionValue& Value)
-{
-	if (AbilitySystemComponent && GetCharacterLevel() >= 2.f)
-	{
-		AbilitySystemComponent->TryActivateAbilityByClass(SkillAbility);
-	}
 }
 
 void AMutantCharacter::LightAttackButtonPressed(const FInputActionValue& Value)
@@ -471,6 +487,7 @@ void AMutantCharacter::MulticastDead_Implementation()
 
 void AMutantCharacter::ServerSelectCharacter_Implementation(EMutantCharacterName TempMutantCharacterName)
 {
+	// 在服务器上保存角色，生成角色时会用
 	if (BasePlayerState == nullptr) BasePlayerState = GetPlayerState<ABasePlayerState>();
 	if (BasePlayerState)
 	{

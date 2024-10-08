@@ -1,12 +1,14 @@
 #pragma once
 
+#include <eos_lobby_types.h>
+
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "BiochemicalArena/System/EOSSubsystem.h"
-#include "Lobby.generated.h"
+// #include "BiochemicalArena/System/EOSSubsystem.h"
+#include "ServerDetail.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API ULobby : public UCommonActivatableWidget
+class BIOCHEMICALARENA_API UServerDetail : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
@@ -17,13 +19,22 @@ protected:
 
 	UPROPERTY()
 	class AMenuController* MenuController;
+	// UPROPERTY()
+	// UEOSSubsystem* EOSSubsystem;
 	UPROPERTY()
-	UEOSSubsystem* EOSSubsystem;
+	class UServiceManager* ServiceManager;
+	UPROPERTY()
+	class UAuth* Auth;
+	UPROPERTY()
+	class UConnect* Connect;
+	UPROPERTY()
+	class ULobby* Lobby;
 
-	void SetLobbyAttribute();
-	void RefreshMapComboBoxOption();
+	void SetLobbyUIAttr();
+	void InitMapComboBox();
 
-	void RefreshLobbyUI();
+	void SetLobbyUIButton();
+	void RefreshPlayerList();
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* Team1Container; // TODO Try to use MVVM
@@ -31,9 +42,8 @@ protected:
 	UCommonHierarchicalScrollBox* Team2Container;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UPlayerLineButton> PlayerLineButtonClass;
-	void AddToPlayerList(TSharedRef<const FLobbyMember> Member);
 
-	void OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined);
+	void OnMemberStatusReceived(EOS_ProductUserId TargetUserId, EOS_ELobbyMemberStatus CurrentStatus);
 
 	// 大厅属性
 	UPROPERTY(meta = (BindWidget))
@@ -50,8 +60,8 @@ protected:
 	UFUNCTION()
 	void OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
-	void OnModifyLobbyAttributesComplete(bool bWasSuccessful);
-	void OnLobbyAttributesChanged(const FLobbyAttributesChanged& LobbyAttributesChanged);
+	void OnUpdateLobbyComplete(bool bWasSuccessful);
+	void OnLobbyUpdateReceived();
 
 	// 成员属性
 	UPROPERTY(meta = (BindWidget))
@@ -63,30 +73,18 @@ protected:
 	UFUNCTION()
 	void OnReadyButtonClicked();
 
-	void OnModifyLobbyMemberAttributesComplete(bool bWasSuccessful);
-	void OnLobbyMemberAttributesChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged);
-
 	// 开始游戏
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* StartServerButton;
 	bool bIsStartingServer = false;
 	UFUNCTION()
 	void OnStartServerButtonClicked();
-	void OnCreateSessionComplete(bool bWasSuccessful);
-	void OnAddSessionMemberComplete(bool bWasSuccessful);
+	bool CanStartServer();
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* JoinServerButton;
 	UFUNCTION()
 	void OnJoinServerButtonClicked();
-	FOnlineSessionId ToOnlineSessionId(FString SessionId);
-	FOnlineSessionId OnlineSessionId;
-	void OnFindSessionsComplete(bool bWasSuccessful, const TArray<FOnlineSessionId>& FoundSessionIds);
-	void OnJoinSessionComplete(bool bWasSuccessful);
-
-	// 房主变更事件
-	void OnPromoteLobbyMemberComplete(bool bWasSuccessful);
-	void OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged);
 
 	// 离开大厅
 	UPROPERTY(meta = (BindWidget))
@@ -95,9 +93,8 @@ protected:
 	UFUNCTION()
 	void OnBackButtonClicked();
 	void OnLeaveLobbyComplete(bool bWasSuccessful);
-	void OnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft);
-
-	void OnLobbyLeft(const FLobbyLeft& LobbyLeft);
+	void OnDestroyLobbyComplete(bool bWasSuccessful);
+	void BackToServer();
 
 	// 消息
 	UPROPERTY(meta = (BindWidget))
@@ -106,22 +103,5 @@ protected:
 	UCommonButton* SendMsgButton;
 	UFUNCTION()
 	void OnSendMsgButtonClicked();
-
-	bool bIsAddingClientMember = false;
-
-	UPROPERTY(meta = (BindWidget))
-	UCommonButton* AddClientMemberButton;
-	UFUNCTION()
-	void OnAddClientMemberButtonClicked();
-
-	UPROPERTY(meta = (BindWidget))
-	UCommonButton* ServerTravelButton;
-	UFUNCTION()
-	void OnServerTravelButtonClicked();
-
-	UPROPERTY(meta = (BindWidget))
-	UCommonButton* ClientTravelButton;
-	UFUNCTION()
-	void OnClientTravelButtonClicked();
 
 };

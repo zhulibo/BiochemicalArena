@@ -14,5 +14,11 @@ public:
 	class USoundMix* SoundMix;
 	UPROPERTY(EditAnywhere)
 	class USoundClass* MasterSound;
+	UPROPERTY(EditAnywhere)
+	USoundClass* EffectsSound;
+	UPROPERTY(EditAnywhere)
+	USoundClass* MusicSound;
+	UPROPERTY(EditAnywhere)
+	USoundClass* DialogueSound;
 
 };

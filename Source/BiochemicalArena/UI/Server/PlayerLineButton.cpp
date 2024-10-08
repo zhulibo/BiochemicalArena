@@ -1,8 +1,10 @@
 #include "PlayerLineButton.h"
 
 #include "CommonTextBlock.h"
+#include "Connect.h"
+#include "Lobby.h"
+#include "ServiceManager.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 
 void UPlayerLineButton::NativeOnInitialized()
@@ -12,27 +14,34 @@ void UPlayerLineButton::NativeOnInitialized()
 	OnHovered().AddUObject(this, &ThisClass::OnPlayerLineButtonHovered);
 	OnUnhovered().AddUObject(this, &ThisClass::OnPlayerLineButtonUnhovered);
 
-	PromotePlayerButton->ButtonText->SetText(FText::FromString("Promote"));
 	PromotePlayerButton->OnClicked().AddUObject(this, &ThisClass::OnPromotePlayerButtonClicked);
 	PromotePlayerButton->SetVisibility(ESlateVisibility::Hidden);
 
-	KickPlayerButton->ButtonText->SetText(FText::FromString("Kick"));
 	KickPlayerButton->OnClicked().AddUObject(this, &ThisClass::OnKickPlayerButtonClicked);
 	KickPlayerButton->SetVisibility(ESlateVisibility::Hidden);
-	KickPlayerButton->SetIsEnabled(false); // TODO OnLobbyLeft无效，暂时禁用
 
-	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
+	ServiceManager = UServiceManager::GetServiceManager();
+	if (ServiceManager)
 	{
-		EOSSubsystem->OnKickLobbyMemberComplete.AddUObject(this, &ThisClass::OnKickLobbyMemberComplete);
+		Auth = ServiceManager->GetAuth();
+
+		Connect = ServiceManager->GetConnect();
+
+		Lobby = ServiceManager->GetLobby();
+		if (Lobby)
+		{
+			if (!Lobby->OnPromoteMemberComplete.IsBoundToObject(this)) Lobby->OnPromoteMemberComplete.AddUObject(this, &ThisClass::OnPromoteMemberComplete);
+			if (!Lobby->OnKickMemberComplete.IsBoundToObject(this)) Lobby->OnKickMemberComplete.AddUObject(this, &ThisClass::OnKickMemberComplete);
+		}
 	}
 }
 
 void UPlayerLineButton::OnPlayerLineButtonHovered()
 {
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem && EOSSubsystem->AccountInfo->AccountId == EOSSubsystem->CurrentLobby->OwnerAccountId
-		&& EOSSubsystem->AccountInfo->AccountId != Member->AccountId)
+	if (Lobby == nullptr) return;
+
+	if (UServiceManager::GetLobby()->IsOwner()
+		&& UServiceManager::GetConnect()->ProductUserId != Member.ProductUserId)
 	{
 		PromotePlayerButton->SetVisibility(ESlateVisibility::Visible);
 		KickPlayerButton->SetVisibility(ESlateVisibility::Visible);
@@ -47,29 +56,42 @@ void UPlayerLineButton::OnPlayerLineButtonUnhovered()
 
 void UPlayerLineButton::OnPromotePlayerButtonClicked()
 {
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
+	if (Lobby)
 	{
-		EOSSubsystem->PromoteLobbyMember(Member->AccountId);
+		Lobby->PromoteMember(Member.ProductUserId);
 	}
 }
 
-void UPlayerLineButton::OnKickPlayerButtonClicked()
+void UPlayerLineButton::OnPromoteMemberComplete(bool bWasSuccessful)
 {
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
-	{
-		EOSSubsystem->KickLobbyMember(Member->AccountId);
-	}
-}
+	UE_LOG(LogTemp, Warning, TEXT("OnPromoteMemberComplete %d"), bWasSuccessful);
 
-void UPlayerLineButton::OnKickLobbyMemberComplete(bool bWasSuccessful)
-{
 	if (bWasSuccessful)
 	{
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Kick lobby member failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Promote lobby member failed!"), false);
+	}
+}
+
+void UPlayerLineButton::OnKickPlayerButtonClicked()
+{
+	if (Lobby)
+	{
+		Lobby->KickMember(Member.ProductUserId);
+	}
+}
+
+void UPlayerLineButton::OnKickMemberComplete(bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnKickMemberComplete %d"), bWasSuccessful);
+
+	if (bWasSuccessful)
+	{
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Kick lobby member failed!"), false);
 	}
 }

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 UENUM(BlueprintType)
-enum class EGameMode2 : uint8
+enum class ECoolGameMode : uint8
 {
 	Mutation UMETA(DisplayName = "Mutation"),
 	TeamDeadMatch UMETA(DisplayName = "TeamDeadMatch"),

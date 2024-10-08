@@ -1,4 +1,7 @@
 #include "Server.h"
+
+#include <string>
+
 #include "CommonHierarchicalScrollBox.h"
 #include "CommonTextBlock.h"
 #include "ServerContainer.h"
@@ -7,7 +10,10 @@
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/EditableTextBox.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
+#include "ServerDetail.h"
 #include "Lobby.h"
+#include "P2P.h"
+#include "ServiceManager.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/GameModes/GameModeType.h"
 #include "BiochemicalArena/UI/Common/CommonComboBox.h"
@@ -17,46 +23,35 @@ void UServer::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	ModeComboBox->AddOption(FString("All"));
-	for (int32 j = 0; j < static_cast<int32>(EGameMode2::MAX); ++j)
+	for (int32 j = 0; j < static_cast<int32>(ECoolGameMode::MAX); ++j)
 	{
-		FString EnumValue = UEnum::GetValueAsString(static_cast<EGameMode2>(j));
+		FString EnumValue = UEnum::GetValueAsString(static_cast<ECoolGameMode>(j));
 		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 		ModeComboBox->AddOption(EnumValue);
 	}
-	ModeComboBox->SetSelectedIndex(0);
 	ModeComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnModeComboBoxChanged);
+	ModeComboBox->SetSelectedIndex(0);
 
-	MapComboBox->AddOption(FString("All"));
-	MapComboBox->SetSelectedIndex(0);
 	MapComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnMapComboBoxChanged);
 
-	ServerReFreshButton->ButtonText->SetText(FText::FromString("Refresh"));
-	ServerReFreshButton->OnClicked().AddUObject(this, &ThisClass::OnServerReFreshButtonClicked);
-
-	ServerResetButton->ButtonText->SetText(FText::FromString("Reset"));
-	ServerResetButton->OnClicked().AddUObject(this, &ThisClass::OnServerResetButtonClicked);
-
-	ServerCreateButton->ButtonText->SetText(FText::FromString("Create"));
-	ServerCreateButton->OnClicked().AddUObject(this, &ThisClass::OnServerCreateButtonClicked);
-
-	PagePrevButton->ButtonText->SetText(FText::FromString("Prev Page"));
+	RefreshServerButton->OnClicked().AddUObject(this, &ThisClass::OnRefreshServerButtonClicked);
+	ResetServerButton->OnClicked().AddUObject(this, &ThisClass::OnResetServerButtonClicked);
+	CreateServerButton->OnClicked().AddUObject(this, &ThisClass::OnCreateServerButtonClicked);
 	PagePrevButton->OnClicked().AddUObject(this, &ThisClass::OnPagePrevButtonClicked);
-
-	PageNextButton->ButtonText->SetText(FText::FromString("Next Page"));
 	PageNextButton->OnClicked().AddUObject(this, &ThisClass::OnPageNextButtonClicked);
 
-	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
+	ServiceManager = UServiceManager::GetServiceManager();
+	if (ServiceManager)
 	{
-		EOSSubsystem->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
-		EOSSubsystem->OnFindLobbiesComplete.AddUObject(this, &ThisClass::OnFindLobbiesComplete);
-		EOSSubsystem->OnJoinLobbyComplete.AddUObject(this, &ThisClass::OnJoinLobbyComplete);
+		Lobby = ServiceManager->GetLobby();
+		if (Lobby)
+		{
+			if (!Lobby->OnCreateLobbyComplete.IsBoundToObject(this)) Lobby->OnCreateLobbyComplete.AddUObject(this, &ThisClass::OnCreateLobbyComplete);
+			if (!Lobby->OnFindLobbiesComplete.IsBoundToObject(this)) Lobby->OnFindLobbiesComplete.AddUObject(this, &ThisClass::OnFindLobbiesComplete);
+			if (!Lobby->OnJoinLobbyComplete.IsBoundToObject(this)) Lobby->OnJoinLobbyComplete.AddUObject(this, &ThisClass::OnJoinLobbyComplete);
+		}
 
-		EOSSubsystem->OnLobbyInvitationAdded.AddUObject(this, &ThisClass::OnLobbyInvitationAdded);
-		EOSSubsystem->OnUILobbyJoinRequested.AddUObject(this, &ThisClass::OnUILobbyJoinRequested);
-
-		EOSSubsystem->OnLobbyJoined.AddUObject(this, &ThisClass::OnLobbyJoined);
+		P2P = ServiceManager->GetP2P();
 	}
 }
 
@@ -64,53 +59,54 @@ void UServer::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	OnServerReFreshButtonClicked();
+	// OnRefreshServerButtonClicked();
 }
 
 UWidget* UServer::NativeGetDesiredFocusTarget() const
 {
-	return ServerReFreshButton;
+	return RefreshServerButton;
 }
 
 // 创建大厅
-void UServer::OnServerCreateButtonClicked()
+void UServer::OnCreateServerButtonClicked()
 {
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
+	if (Lobby)
 	{
-		ServerCreateButton->ButtonText->SetText(FText::FromString("Creating..."));
-		ServerCreateButton->SetIsEnabled(false);
+		CreateServerButton->ButtonText->SetText(FText::FromString("Creating..."));
+		CreateServerButton->SetIsEnabled(false);
 
-		EOSSubsystem->CreateLobby();
+		Lobby->CreateLobby();
 	}
 }
 
 // 创建大厅完成事件
 void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 {
-	ServerCreateButton->ButtonText->SetText(FText::FromString("Create"));
-	ServerCreateButton->SetIsEnabled(true);
+	CreateServerButton->ButtonText->SetText(FText::FromString("Create"));
+	CreateServerButton->SetIsEnabled(true);
 
 	if (bWasSuccessful)
 	{
+		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
+		if (MenuController)
+		{
+			MenuController->ServerStack->AddWidget(ServerDetailClass);
+		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Create lobby failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Create lobby failed!"), false);
 	}
 }
 
 void UServer::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SelectedItem: %s"), *SelectedItem);
+	UE_LOG(LogTemp, Warning, TEXT("OnModeComboBoxChanged: %s %d"), *SelectedItem, SelectionType);
 
 	MapComboBox->ClearOptions();
 	MapComboBox->AddOption(FString("All"));
 
-	if (SelectedItem == "All")
-	{
-	}
-	else if (SelectedItem == "Mutation")
+	if (SelectedItem == "Mutation")
 	{
 		for (int32 j = 0; j < static_cast<int32>(EMutationMap::MAX); ++j)
 		{
@@ -134,59 +130,90 @@ void UServer::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type Sele
 
 void UServer::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SelectedItem: %s"), *SelectedItem);
+	UE_LOG(LogTemp, Warning, TEXT("OnMapComboBoxChanged: %s %d"), *SelectedItem, SelectionType);
 }
 
 // 查找大厅
-void UServer::OnServerReFreshButtonClicked()
+void UServer::OnRefreshServerButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnServerReFreshButtonClicked"));
+	UE_LOG(LogTemp, Warning, TEXT("OnRefreshServerButtonClicked"));
 
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
+	if (Lobby)
 	{
-		ServerReFreshButton->ButtonText->SetText(FText::FromString("Refreshing..."));
-		ServerReFreshButton->SetIsEnabled(false);
+		RefreshServerButton->SetIsEnabled(false);
 
-		EOSSubsystem->FindLobbies(
-			ServerNameEditableTextBox->GetText().ToString(),
-			ModeComboBox->GetSelectedOption(),
-			MapComboBox->GetSelectedOption()
-		);
+		TArray<FLobbiesAttr> Attrs;
+
+		FString ServerName = ServerNameEditableTextBox->GetText().ToString();
+		if (!ServerName.IsEmpty())
+		{
+			FLobbiesAttr Attr = {};
+			std::string TempKey = TCHAR_TO_UTF8(*LOBBY_SERVERNAME.ToString());
+			std::string TempValue = TCHAR_TO_UTF8(*ServerName);
+			Attr.Key = TempKey;
+			Attr.AsUtf8 = TempValue;
+			Attr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
+			Attr.ComparisonOp = EOS_EComparisonOp::EOS_CO_CONTAINS;
+			Attrs.Add(Attr);
+		}
+
+		FString ModeName = ModeComboBox->GetSelectedOption();
+		{
+			FLobbiesAttr Attr = {};
+			std::string TempKey = TCHAR_TO_UTF8(*LOBBY_MODENAME.ToString());
+			std::string TempValue = TCHAR_TO_UTF8(*ModeName);
+			Attr.Key = TempKey;
+			Attr.AsUtf8 = TempValue;
+			Attr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
+			Attr.ComparisonOp = EOS_EComparisonOp::EOS_CO_EQUAL;
+			Attrs.Add(Attr);
+		}
+
+		FString MapName = MapComboBox->GetSelectedOption();
+		if (!MapName.IsEmpty() && MapName != "All")
+		{
+			FLobbiesAttr Attr = {};
+			std::string TempKey = TCHAR_TO_UTF8(*LOBBY_MAPNAME.ToString());
+			std::string TempValue = TCHAR_TO_UTF8(*MapName);
+			Attr.Key = TempKey;
+			Attr.AsUtf8 = TempValue;
+			Attr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
+			Attr.ComparisonOp = EOS_EComparisonOp::EOS_CO_EQUAL;
+			Attrs.Add(Attr);
+		}
+
+		Lobby->FindLobbies(Attrs);
 	}
 }
 
 // 查找大厅完成事件
-void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies)
+void UServer::OnFindLobbiesComplete(bool bWasSuccessful, TArray<TSharedPtr<FCoolLobby>> FoundLobbies)
 {
-	ServerReFreshButton->ButtonText->SetText(FText::FromString("Refresh"));
-	ServerReFreshButton->SetIsEnabled(true);
+	RefreshServerButton->SetIsEnabled(true);
 
 	if (bWasSuccessful)
 	{
 		ServerLineButtonContainer->ClearChildren();
 
-		if (Lobbies.Num() > 0)
+		if (FoundLobbies.Num() > 0)
 		{
 			if (ServerLineButtonContainer && ServerLineButtonClass)
 			{
-				for (int32 i = 0; i < Lobbies.Num(); ++i)
+				for (int32 i = 0; i < FoundLobbies.Num(); ++i)
 				{
 					UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass);
 					if (ServerLineButton)
 					{
-						ServerLineButton->Lobby = Lobbies[i];
+						ServerLineButton->Lobby = FoundLobbies[i];
 
-						if (Lobbies[i]->Attributes.Num() > 0)
-						{
-							ServerLineButton->Server->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_LOBBYNAME)->GetString()));
-							ServerLineButton->Mode->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_GAMEMODE)->GetString()));
-							ServerLineButton->Map->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_MAPNAME)->GetString()));
-						}
-						ServerLineButton->Player->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Lobbies[i]->Members.Num(), Lobbies[i]->MaxMembers)));
+						ServerLineButton->Server->SetText(FText::FromString(FoundLobbies[i]->GetStringAttr(LOBBY_SERVERNAME)));
+						ServerLineButton->Mode->SetText(FText::FromString(FoundLobbies[i]->GetStringAttr(LOBBY_MODENAME)));
+						ServerLineButton->Map->SetText(FText::FromString(FoundLobbies[i]->GetStringAttr(LOBBY_MAPNAME)));
+						ServerLineButton->Player->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"),
+							FoundLobbies[i]->MaxMembers - FoundLobbies[i]->AvailableSlots, FoundLobbies[i]->MaxMembers)));
 						ServerLineButton->Ping->SetText(FText::FromString(TEXT("-"))); // TODO Lobby don't have ping
 
-						ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton);
+						ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton, i);
 						ServerLineButtonContainer->AddChild(ServerLineButton);
 					}
 				}
@@ -194,65 +221,63 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_WHITE, TEXT("No lobby found!"), false);
+			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("No lobby found!"), false);
 		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Find lobby failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Find lobby failed!"), false);
 	}
 }
 
 // 重置查询条件
-void UServer::OnServerResetButtonClicked()
+void UServer::OnResetServerButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnServerResetButtonClicked"));
+	UE_LOG(LogTemp, Warning, TEXT("OnResetServerButtonClicked"));
 
-	ServerNameEditableTextBox->SetText(FText::FromString(""));
-
-	ModeComboBox->ClearOptions();
-	ModeComboBox->AddOption(FString("All"));
-	for (int32 j = 0; j < static_cast<int32>(EGameMode2::MAX); ++j)
+	if (P2P)
 	{
-		FString EnumValue = UEnum::GetValueAsString(static_cast<EGameMode2>(j));
-		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-		ModeComboBox->AddOption(EnumValue);
+		P2P->QueryNATType();
 	}
-	ModeComboBox->SetSelectedIndex(0);
 
-	MapComboBox->ClearOptions();
-	MapComboBox->AddOption(FString("All"));
-	MapComboBox->SetSelectedIndex(0);
+	// ServerNameEditableTextBox->SetText(FText::FromString(""));
+	//
+	// ModeComboBox->SetSelectedIndex(0);
 }
 
 void UServer::OnPagePrevButtonClicked()
 {
-	if (ServerLineButtonContainer && ServerLineButtonContainer->GetChildAt(0))
+	if (P2P)
 	{
-		float PageHeight = ServerLineButtonContainer->GetCachedGeometry().GetAbsoluteSize().Y;
-		float LineButtonHeight = ServerLineButtonContainer->GetChildAt(0) ? ServerLineButtonContainer->GetChildAt(0)->GetCachedGeometry().GetAbsoluteSize().Y : 0.f;
-		float JumpOverLineButtonNum = 10.f;
-		if (LineButtonHeight > 0.f && PageHeight > 0.f)
-		{
-			JumpOverLineButtonNum = PageHeight * 0.5f / LineButtonHeight;
-		}
-
-		const FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
-		const float DPI = GetDefault<UUserInterfaceSettings>(UUserInterfaceSettings::StaticClass())->GetDPIScaleBasedOnSize(FIntPoint(ViewportSize.X, ViewportSize.Y));
-		int32 TargetLineButtonNum = FMath::CeilToInt(ServerLineButtonContainer->GetScrollOffset() * DPI / LineButtonHeight - JumpOverLineButtonNum + 1);
-
-		UWidget* TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
-		if (TargetLineButton == nullptr)
-		{
-			TargetLineButtonNum = 1;
-			TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
-		}
-		if (ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1) && TargetLineButton)
-		{
-			ServerLineButtonContainer->ScrollWidgetIntoView(TargetLineButton, true, EDescendantScrollDestination::Center);
-			ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1)->SetFocus();
-		}
+		P2P->GetNATType();
 	}
+
+	// if (ServerLineButtonContainer && ServerLineButtonContainer->GetChildAt(0))
+	// {
+	// 	float PageHeight = ServerLineButtonContainer->GetCachedGeometry().GetAbsoluteSize().Y;
+	// 	float LineButtonHeight = ServerLineButtonContainer->GetChildAt(0) ? ServerLineButtonContainer->GetChildAt(0)->GetCachedGeometry().GetAbsoluteSize().Y : 0.f;
+	// 	float JumpOverLineButtonNum = 10.f;
+	// 	if (LineButtonHeight > 0.f && PageHeight > 0.f)
+	// 	{
+	// 		JumpOverLineButtonNum = PageHeight * 0.5f / LineButtonHeight;
+	// 	}
+	//
+	// 	const FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
+	// 	const float DPI = GetDefault<UUserInterfaceSettings>(UUserInterfaceSettings::StaticClass())->GetDPIScaleBasedOnSize(FIntPoint(ViewportSize.X, ViewportSize.Y));
+	// 	int32 TargetLineButtonNum = FMath::CeilToInt(ServerLineButtonContainer->GetScrollOffset() * DPI / LineButtonHeight - JumpOverLineButtonNum + 1);
+	//
+	// 	UWidget* TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
+	// 	if (TargetLineButton == nullptr)
+	// 	{
+	// 		TargetLineButtonNum = 1;
+	// 		TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
+	// 	}
+	// 	if (ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1) && TargetLineButton)
+	// 	{
+	// 		ServerLineButtonContainer->ScrollWidgetIntoView(TargetLineButton, true, EDescendantScrollDestination::Center);
+	// 		ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1)->SetFocus();
+	// 	}
+	// }
 }
 
 void UServer::OnPageNextButtonClicked()
@@ -286,50 +311,40 @@ void UServer::OnPageNextButtonClicked()
 }
 
 // 加入大厅
-void UServer::OnServerLineButtonClicked(UServerLineButton* ServerLineButton)
+void UServer::OnServerLineButtonClicked(UServerLineButton* ServerLineButton, int32 Index)
 {
-	if (EOSSubsystem && ServerLineButton->Lobby.IsValid())
+	if (Lobby)
 	{
-		EOSSubsystem->JoinLobby(ServerLineButton->Lobby.ToSharedRef());
+		Lobby->JoinLobby(ServerLineButton->Lobby, UServiceManager::GetLobby()->LobbyDetailsHandles[Index]);
 	}
 }
 
 // 加入大厅完成事件
 void UServer::OnJoinLobbyComplete(bool bWasSuccessful)
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnJoinLobbyComplete %d"), bWasSuccessful);
 	if (bWasSuccessful)
 	{
+		if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
+		if (MenuController)
+		{
+			MenuController->ServerStack->AddWidget(ServerDetailClass);
+		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, COLOR_HUMAN, TEXT("Join lobby failed!"), false);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Join lobby failed!"), false);
 	}
 }
 
 // 收到邀请
-void UServer::OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
+void UServer::OnLobbyInvitationAdded()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnLobbyInvitationAdded"));
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
-	{
-		EOSSubsystem->JoinLobby(LobbyInvitationAdded.Lobby);
-	}
 }
 
 // 好友请求加入房间
-void UServer::OnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested)
+void UServer::OnUILobbyJoinRequested()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnUILobbyJoinRequested"));
-
-}
-
-// 加入大厅完成事件
-void UServer::OnLobbyJoined(const FLobbyJoined& LobbyJoined)
-{
-	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
-	if (MenuController)
-	{
-		MenuController->ServerStack->AddWidget(LobbyClass);
-	}
 }

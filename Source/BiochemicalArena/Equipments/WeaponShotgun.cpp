@@ -48,8 +48,10 @@ void AWeaponShotgun::Fire(const FVector& HitTarget, float RecoilVert, float Reco
 					SpawnParams
 				);
 
-				Projectile->Damage = Damage / PelletNum;
-				Projectile->Impulse = Impulse / PelletNum;
+				EEquipmentName TempEquipmentName = EquipmentParentName == EEquipmentName::NONE ? EquipmentName : EquipmentParentName;
+				FString EnumValue = UEnum::GetValueAsString(TempEquipmentName);
+				EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+				Projectile->OwnerName = EnumValue;
 
 				switch (OwnerTeam)
 				{

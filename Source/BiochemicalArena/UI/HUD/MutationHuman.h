@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CommonUserWidget.h"
+#include "CommonActivatableWidget.h"
 #include "MutationHuman.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UMutationHuman : public UCommonUserWidget
+class BIOCHEMICALARENA_API UMutationHuman : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 

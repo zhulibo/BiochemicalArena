@@ -10,56 +10,56 @@ void URadialMenu::SetSelectedItem(int32 NewSelectedItemIndex)
 	switch (SelectedItemIndex)
 	{
 	case 1:
-		Item1->SetColorAndOpacity(COLOR_WHITE);
+		Item1->SetColorAndOpacity(C_WHITE);
 		break;
 	case 2:
-		Item2->SetColorAndOpacity(COLOR_WHITE);
+		Item2->SetColorAndOpacity(C_WHITE);
 		break;
 	case 3:
-		Item3->SetColorAndOpacity(COLOR_WHITE);
+		Item3->SetColorAndOpacity(C_WHITE);
 		break;
 	case 4:
-		Item4->SetColorAndOpacity(COLOR_WHITE);
+		Item4->SetColorAndOpacity(C_WHITE);
 		break;
 	case 5:
-		Item5->SetColorAndOpacity(COLOR_WHITE);
+		Item5->SetColorAndOpacity(C_WHITE);
 		break;
 	case 6:
-		Item6->SetColorAndOpacity(COLOR_WHITE);
+		Item6->SetColorAndOpacity(C_WHITE);
 		break;
 	case 7:
-		Item7->SetColorAndOpacity(COLOR_WHITE);
+		Item7->SetColorAndOpacity(C_WHITE);
 		break;
 	case 8:
-		Item8->SetColorAndOpacity(COLOR_WHITE);
+		Item8->SetColorAndOpacity(C_WHITE);
 		break;
 	}
 
 	switch (NewSelectedItemIndex)
 	{
 	case 1:
-		Item1->SetColorAndOpacity(COLOR_MUTANT);
+		Item1->SetColorAndOpacity(C_GREEN);
 		break;
 	case 2:
-		Item2->SetColorAndOpacity(COLOR_MUTANT);
+		Item2->SetColorAndOpacity(C_GREEN);
 		break;
 	case 3:
-		Item3->SetColorAndOpacity(COLOR_MUTANT);
+		Item3->SetColorAndOpacity(C_GREEN);
 		break;
 	case 4:
-		Item4->SetColorAndOpacity(COLOR_MUTANT);
+		Item4->SetColorAndOpacity(C_GREEN);
 		break;
 	case 5:
-		Item5->SetColorAndOpacity(COLOR_MUTANT);
+		Item5->SetColorAndOpacity(C_GREEN);
 		break;
 	case 6:
-		Item6->SetColorAndOpacity(COLOR_MUTANT);
+		Item6->SetColorAndOpacity(C_GREEN);
 		break;
 	case 7:
-		Item7->SetColorAndOpacity(COLOR_MUTANT);
+		Item7->SetColorAndOpacity(C_GREEN);
 		break;
 	case 8:
-		Item8->SetColorAndOpacity(COLOR_MUTANT);
+		Item8->SetColorAndOpacity(C_GREEN);
 		break;
 	}
 

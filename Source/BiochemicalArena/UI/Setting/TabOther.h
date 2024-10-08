@@ -16,6 +16,6 @@ protected:
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
 
-	void SetUIDefaultValue();
+	void SetUISavedValue();
 
 };

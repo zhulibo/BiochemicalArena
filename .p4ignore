@@ -14,3 +14,4 @@
 *.sln
 
 /.vsconfig
+/BiochemicalArena.uproject.DotSettings.user

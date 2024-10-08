@@ -9,14 +9,14 @@
 #include "Components/CombatComponent.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
-#include "..\System\StorageSaveGameType.h"
-#include "..\System\StorageSaveGame.h"
+#include "BiochemicalArena/System/Storage/ConfigType.h"
+#include "BiochemicalArena/System/Storage/SaveGameSetting.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Equipments/Pickups/PickupEquipment.h"
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
-#include "BiochemicalArena/System/StorageSubsystem.h"
+#include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/CombatStateType.h"
 #include "Components/CrosshairComponent.h"
@@ -36,7 +36,7 @@ AHumanCharacter::AHumanCharacter()
 
 	CrosshairComponent = CreateDefaultSubobject<UCrosshairComponent>(TEXT("CrosshairComponent"));
 
-	BloodColor = COLOR_HUMAN;
+	BloodColor = C_RED;
 }
 
 void AHumanCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -109,8 +109,6 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(InputHuman->SwapMeleeEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapMeleeEquipmentButtonPressed);
 		EnhancedInputComponent->BindAction(InputHuman->SwapThrowingEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapThrowingEquipmentButtonPressed);
 		EnhancedInputComponent->BindAction(InputHuman->SwapLastEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapLastEquipmentButtonPressed);
-
-		EnhancedInputComponent->BindAction(InputHuman->BagMenuAction, ETriggerEvent::Triggered, this, &ThisClass::BagMenuButtonPressed);
 	}
 }
 
@@ -139,22 +137,22 @@ void AHumanCharacter::OnLocalControllerReady()
 {
 	Super::OnLocalControllerReady();
 
-	int32 CurBagIndex = 0;
+	int32 CurLoadoutIndex = 0;
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem && StorageSubsystem->StorageCache)
+	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
-		int32 TempCurBagIndex = StorageSubsystem->StorageCache->CurBagIndex;
-		if (TempCurBagIndex > 0 && TempCurBagIndex < StorageSubsystem->StorageCache->Bags.Num())
+		int32 TempCurLoadoutIndex = StorageSubsystem->CacheSetting->CurLoadoutIndex;
+		if (TempCurLoadoutIndex > 0 && TempCurLoadoutIndex < StorageSubsystem->CacheSetting->Bags.Num())
 		{
-			CurBagIndex = TempCurBagIndex;
+			CurLoadoutIndex = TempCurLoadoutIndex;
 		}
 	}
 
 	// 获取本地背包里的装备的名字
-	FString PrimaryName = GetEquipmentName(CurBagIndex, EEquipmentType::Primary);
-	FString SecondaryName = GetEquipmentName(CurBagIndex, EEquipmentType::Secondary);
-	FString MeleeName = GetEquipmentName(CurBagIndex, EEquipmentType::Melee);
-	FString ThrowingName = GetEquipmentName(CurBagIndex, EEquipmentType::Throwing);
+	FString PrimaryName = GetEquipmentName(CurLoadoutIndex, EEquipmentType::Primary);
+	FString SecondaryName = GetEquipmentName(CurLoadoutIndex, EEquipmentType::Secondary);
+	FString MeleeName = GetEquipmentName(CurLoadoutIndex, EEquipmentType::Melee);
+	FString ThrowingName = GetEquipmentName(CurLoadoutIndex, EEquipmentType::Throwing);
 
 	// 测试用
 	// PrimaryName = "M870";
@@ -175,25 +173,33 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation(const FString& Pr
 
 	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
 	{
-		FDataRegistryId DataRegistryId1(DR_EquipmentMain, FName(PrimaryName));
-		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId1))
 		{
-			PrimaryClass = EquipmentMain->EquipmentClass;
+			FDataRegistryId DataRegistryId(DR_EquipmentMain, FName(PrimaryName));
+			if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
+			{
+				PrimaryClass = EquipmentMain->EquipmentClass;
+			}
 		}
-		FDataRegistryId DataRegistryId2(DR_EquipmentMain, FName(SecondaryName));
-		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId2))
 		{
-			SecondaryClass = EquipmentMain->EquipmentClass;
+			FDataRegistryId DataRegistryId(DR_EquipmentMain, FName(SecondaryName));
+			if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
+			{
+				SecondaryClass = EquipmentMain->EquipmentClass;
+			}
 		}
-		FDataRegistryId DataRegistryId3(DR_EquipmentMain, FName(MeleeName));
-		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId3))
 		{
-			MeleeClass = EquipmentMain->EquipmentClass;
+			FDataRegistryId DataRegistryId(DR_EquipmentMain, FName(MeleeName));
+			if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
+			{
+				MeleeClass = EquipmentMain->EquipmentClass;
+			}
 		}
-		FDataRegistryId DataRegistryId4(DR_EquipmentMain, FName(ThrowingName));
-		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId4))
 		{
-			ThrowingClass = EquipmentMain->EquipmentClass;
+			FDataRegistryId DataRegistryId(DR_EquipmentMain, FName(ThrowingName));
+			if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
+			{
+				ThrowingClass = EquipmentMain->EquipmentClass;
+			}
 		}
 	}
 
@@ -221,12 +227,12 @@ void AHumanCharacter::ServerSetDefaultEquipment_Implementation(const FString& Pr
 }
 
 // 获取装备的名字
-FString AHumanCharacter::GetEquipmentName(int32 CurBagIndex, EEquipmentType EquipmentType)
+FString AHumanCharacter::GetEquipmentName(int32 CurLoadoutIndex, EEquipmentType EquipmentType)
 {
 	FString EquipmentName = "";
 
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem == nullptr || StorageSubsystem->StorageCache->Bags.IsEmpty())
+	if (StorageSubsystem == nullptr || StorageSubsystem->CacheSetting->Bags.IsEmpty())
 	{
 		return EquipmentName;
 	}
@@ -234,16 +240,16 @@ FString AHumanCharacter::GetEquipmentName(int32 CurBagIndex, EEquipmentType Equi
 	switch (EquipmentType)
 	{
 	case EEquipmentType::Primary:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Primary;
+		EquipmentName = StorageSubsystem->CacheSetting->Bags[CurLoadoutIndex].Primary;
 		break;
 	case EEquipmentType::Secondary:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Secondary;
+		EquipmentName = StorageSubsystem->CacheSetting->Bags[CurLoadoutIndex].Secondary;
 		break;
 	case EEquipmentType::Melee:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Melee;
+		EquipmentName = StorageSubsystem->CacheSetting->Bags[CurLoadoutIndex].Melee;
 		break;
 	case EEquipmentType::Throwing:
-		EquipmentName = StorageSubsystem->StorageCache->Bags[CurBagIndex].Throwing;
+		EquipmentName = StorageSubsystem->CacheSetting->Bags[CurLoadoutIndex].Throwing;
 		break;
 	}
 
@@ -432,15 +438,6 @@ void AHumanCharacter::SwapThrowingEquipmentButtonPressed()
 void AHumanCharacter::SwapLastEquipmentButtonPressed(const FInputActionValue& Value)
 {
 	if (CombatComponent) CombatComponent->SwapEquipment(CombatComponent->LastEquipmentType);
-}
-
-void AHumanCharacter::BagMenuButtonPressed(const FInputActionValue& Value)
-{
-	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	if (BaseController)
-	{
-		BaseController->ShowBagMenu();
-	}
 }
 
 void AHumanCharacter::HumanReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,

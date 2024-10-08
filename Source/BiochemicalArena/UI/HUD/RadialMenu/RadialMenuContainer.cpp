@@ -23,9 +23,9 @@ void URadialMenuContainer::ShowRadialMenu()
 	HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
 	if (HumanCharacter == nullptr) MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn());
 
-	TitleEquipment->SetColorAndOpacity(COLOR_MUTANT);
-	TitleRadio->SetColorAndOpacity(COLOR_WHITE);
-	TitlePaint->SetColorAndOpacity(COLOR_WHITE);
+	TitleEquipment->SetColorAndOpacity(C_GREEN);
+	TitleRadio->SetColorAndOpacity(C_WHITE);
+	TitlePaint->SetColorAndOpacity(C_WHITE);
 
 	RadialMenuEquipment->SetVisibility(ESlateVisibility::Visible);
 	RadialMenuRadio->SetVisibility(ESlateVisibility::Hidden);
@@ -78,30 +78,30 @@ void URadialMenuContainer::ChangeRadialMenu()
 	if (ActiveRadialMenuIndex == 1)
 	{
 		RadialMenuEquipment->SetVisibility(ESlateVisibility::Hidden);
-		TitleEquipment->SetColorAndOpacity(COLOR_WHITE);
+		TitleEquipment->SetColorAndOpacity(C_WHITE);
 
 		RadialMenuRadio->SetVisibility(ESlateVisibility::Visible);
-		TitleRadio->SetColorAndOpacity(COLOR_MUTANT);
+		TitleRadio->SetColorAndOpacity(C_GREEN);
 
 		ActiveRadialMenuIndex = 2;
 	}
 	else if (ActiveRadialMenuIndex == 2)
 	{
 		RadialMenuRadio->SetVisibility(ESlateVisibility::Hidden);
-		TitleRadio->SetColorAndOpacity(COLOR_WHITE);
+		TitleRadio->SetColorAndOpacity(C_WHITE);
 
 		RadialMenuPaint->SetVisibility(ESlateVisibility::Visible);
-		TitlePaint->SetColorAndOpacity(COLOR_MUTANT);
+		TitlePaint->SetColorAndOpacity(C_GREEN);
 
 		ActiveRadialMenuIndex = 3;
 	}
 	else if (ActiveRadialMenuIndex == 3)
 	{
 		RadialMenuPaint->SetVisibility(ESlateVisibility::Hidden);
-		TitlePaint->SetColorAndOpacity(COLOR_WHITE);
+		TitlePaint->SetColorAndOpacity(C_WHITE);
 
 		RadialMenuEquipment->SetVisibility(ESlateVisibility::Visible);
-		TitleEquipment->SetColorAndOpacity(COLOR_MUTANT);
+		TitleEquipment->SetColorAndOpacity(C_GREEN);
 
 		ActiveRadialMenuIndex = 1;
 	}

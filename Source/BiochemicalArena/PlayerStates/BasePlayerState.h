@@ -7,6 +7,7 @@
 #include "BasePlayerState.generated.h"
 
 enum class ETeam : uint8;
+enum class EHumanCharacterName: uint8;
 enum class EMutantCharacterName: uint8;
 
 UCLASS()
@@ -26,11 +27,12 @@ public:
 	float GetDamageReceivedMul();
 	float GetRepelReceivedMul();
 	float GetCharacterLevel();
+	float GetJumpZVelocity();
 
 	virtual void SetTeam(ETeam TempTeam);
 
 	UFUNCTION(Server, Reliable)
-	void ServerSetHumanCharacterName(const FString& TempHumanCharacterName);
+	void ServerSetHumanCharacterName(EHumanCharacterName TempHumanCharacterName);
 	UFUNCTION(Server, Reliable)
 	void ServerSetMutantCharacterName(EMutantCharacterName TempMutantCharacterName);
 
@@ -59,9 +61,9 @@ protected:
 	UPROPERTY()
 	class ABaseController* BaseController;
 	UPROPERTY()
-	FString HumanCharacterName = "SAS";
+	EHumanCharacterName HumanCharacterName;
 	UPROPERTY()
-	EMutantCharacterName MutantCharacterName = EMutantCharacterName::Tank;
+	EMutantCharacterName MutantCharacterName;
 
 	UPROPERTY(ReplicatedUsing = OnRep_Team, VisibleAnywhere)
 	ETeam Team;
@@ -89,7 +91,7 @@ protected:
 
 public:
 	FORCEINLINE ETeam GetTeam() const { return Team; }
-	FORCEINLINE FString GetHumanCharacterName() const { return HumanCharacterName; }
+	FORCEINLINE EHumanCharacterName GetHumanCharacterName() const { return HumanCharacterName; }
 	FORCEINLINE EMutantCharacterName GetMutantCharacterName() const { return MutantCharacterName; }
 
 	FORCEINLINE float GetDamage() const { return Damage; }

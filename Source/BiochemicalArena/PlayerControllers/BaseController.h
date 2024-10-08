@@ -26,7 +26,6 @@ public:
 	void SelectRadialMenu(double X, double Y);
 	void ChangeRadialMenu();
 	void CloseRadialMenu();
-	void ShowBagMenu();
 
 	void SetHUDCrosshair(float CrosshairSpread);
 
@@ -41,8 +40,6 @@ protected:
 	class ABaseMode* BaseMode;
 	UPROPERTY()
 	class ABaseCharacter* BaseCharacter;
-	// UPROPERTY()
-	// TObjectPtr<class ABaseCharacter> BaseCharacter;
 
 	float ServerClientDeltaTime = 0.f; // Difference between client and server time(not network delay)
 	void HandleServerClientDeltaTime();

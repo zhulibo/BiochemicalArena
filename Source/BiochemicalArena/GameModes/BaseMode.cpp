@@ -40,7 +40,8 @@ void ABaseMode::SpawnHumanCharacter(AController* Controller)
 	ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Controller->PlayerState);
 	if (BasePlayerState)
 	{
-		CharacterName = BasePlayerState->GetHumanCharacterName();
+		FString EnumValue = UEnum::GetValueAsString(BasePlayerState->GetHumanCharacterName());
+		CharacterName = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 	}
 
 	// 获取角色类
@@ -76,7 +77,8 @@ void ABaseMode::SpawnHumanCharacter(AController* Controller)
 }
 
 // 生成突变体角色
-void ABaseMode::SpawnMutantCharacter(AController* Controller, FVector Location, FRotator ActorRotation, FRotator ViewRotation)
+void ABaseMode::SpawnMutantCharacter(AController* Controller, bool bSpawnByInfectOrChosen,
+	FVector Location, FRotator ActorRotation, FRotator ViewRotation)
 {
 	if (Controller == nullptr) return;
 
@@ -120,6 +122,8 @@ void ABaseMode::SpawnMutantCharacter(AController* Controller, FVector Location, 
 		ActorRotation,
 		SpawnParams
 	);
+
+	MutantCharacter->bSpawnByInfectOrChosen = bSpawnByInfectOrChosen;
 
 	Controller->Possess(MutantCharacter);
 

@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "DataRegistryId.h"
-#include "BiochemicalArena/System/EOSSubsystem.h"
+// #include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Storage.generated.h"
 
 #define STORAGETYPE_ALL FString("All")
@@ -20,23 +20,23 @@ protected:
 	virtual void NativeOnInitialized() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
-	UPROPERTY()
-	UEOSSubsystem* EOSSubsystem;
+	// UPROPERTY()
+	// UEOSSubsystem* EOSSubsystem;
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
 
 	TArray<FString> Ownership;
 	void OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TempOwnership);
 
-	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
-	void InitPlayerConfig(class UStorageSaveGame* StorageSaveGame);
+	// void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
+	void InitPlayerConfig(class USaveGameSetting* SaveGameSetting);
 	bool HasEquipment(FString EquipmentName);
 	bool HasHumanCharacter(FString HumanCharacterName);
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
 
-	TMap<FDataRegistryId, const uint8*> HumanCharacterMain;
-	TMap<FDataRegistryId, const uint8*> EquipmentMain;
+	TMap<FDataRegistryId, const uint8*> HumanCharacterMains;
+	TMap<FDataRegistryId, const uint8*> EquipmentMains;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* StorageTypeButtonContainer;

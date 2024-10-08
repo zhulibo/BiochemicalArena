@@ -2,8 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "BiochemicalArena/System/EOSSubsystem.h"
+// #include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Server.generated.h"
+
+struct FLobbiesAttr;
+struct FCoolLobby;
 
 UCLASS()
 class BIOCHEMICALARENA_API UServer : public UCommonActivatableWidget
@@ -17,15 +20,21 @@ protected:
 
 	UPROPERTY()
 	class AMenuController* MenuController;
+	// UPROPERTY()
+	// UEOSSubsystem* EOSSubsystem;
 	UPROPERTY()
-	UEOSSubsystem* EOSSubsystem;
+	class UServiceManager* ServiceManager;
+	UPROPERTY()
+	class ULobby* Lobby;
+	UPROPERTY()
+	class UP2P* P2P;
 
 	// 创建大厅
 	UPROPERTY(meta = (BindWidget))
-	class UCommonButton* ServerCreateButton;
-	void OnServerCreateButtonClicked();
+	class UCommonButton* CreateServerButton;
+	void OnCreateServerButtonClicked();
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class ULobby> LobbyClass;
+	TSubclassOf<class UServerDetail> ServerDetailClass;
 	void OnCreateLobbyComplete(bool bWasSuccessful);
 
 	// 搜索大厅
@@ -43,17 +52,17 @@ protected:
 	void OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonButton* ServerReFreshButton;
-	void OnServerReFreshButtonClicked();
+	UCommonButton* RefreshServerButton;
+	void OnRefreshServerButtonClicked();
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* ServerLineButtonContainer;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UServerLineButton> ServerLineButtonClass;
-	void OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
+	void OnFindLobbiesComplete(bool bWasSuccessful, TArray<TSharedPtr<FCoolLobby>> FoundLobbies);
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonButton* ServerResetButton;
-	void OnServerResetButtonClicked();
+	UCommonButton* ResetServerButton;
+	void OnResetServerButtonClicked();
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* PagePrevButton;
@@ -64,13 +73,11 @@ protected:
 	void OnPageNextButtonClicked();
 
 	// 加入大厅
-	void OnServerLineButtonClicked(class UServerLineButton* ServerLineButton);
+	void OnServerLineButtonClicked(UServerLineButton* ServerLineButton, int32 Index);
 	void OnJoinLobbyComplete(bool bWasSuccessful);
 
 	// 邀请
-	void OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded);
-	void OnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested);
-
-	void OnLobbyJoined(const FLobbyJoined& LobbyJoined);
+	void OnLobbyInvitationAdded();
+	void OnUILobbyJoinRequested();
 
 };
