@@ -1,0 +1,17 @@
+.git/
+.idea/
+.vscode/
+.vs/
+
+/Binaries/
+/Plugins/*/Binaries/
+/Build/
+/DerivedDataCache/
+/Intermediate/
+/Plugins/*/Intermediate/
+/Saved/
+
+*.sln
+
+/.vsconfig
+/BiochemicalArena.uproject.DotSettings.user

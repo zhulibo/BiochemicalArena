@@ -1,0 +1,173 @@
+#include "Equipment.h"
+
+#include "DataRegistrySubsystem.h"
+#include "EquipmentAnimInstance.h"
+#include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "Animation/AnimationAsset.h"
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "Camera/CameraComponent.h"
+#include "Components/SphereComponent.h"
+#include "Net/UnrealNetwork.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
+
+AEquipment::AEquipment()
+{
+	PrimaryActorTick.bCanEverTick = false;
+	bReplicates = true;
+
+	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
+	SetRootComponent(CollisionSphere);
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CollisionSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	CollisionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore); // 忽略角色胶囊体
+	CollisionSphere->SetLinearDamping(1.f);
+	CollisionSphere->SetSphereRadius(20.f);
+
+	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("EquipmentMesh"));
+	EquipmentMesh->SetupAttachment(RootComponent);
+	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
+	OverlapSphere->SetupAttachment(RootComponent);
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OverlapSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	OverlapSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	OverlapSphere->SetSphereRadius(50.f);
+	OverlapSphere->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnAreaSphereOverlap);
+
+	OwnerTeam = ETeam::NoTeam;
+}
+
+void AEquipment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, OwnerTeam);
+}
+
+void AEquipment::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SetReplicateMovement(true);
+
+	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	{
+		FString EnumValue = UEnum::GetValueAsString(EquipmentName);
+		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+
+		FDataRegistryId DataRegistryId(DR_EquipmentMain, FName(EnumValue));
+		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
+		{
+			EquipmentParentName = EquipmentMain->EquipmentParentName;
+			EquipmentCate = EquipmentMain->EquipmentCate;
+			EquipmentType = EquipmentMain->EquipmentType;
+		}
+	}
+}
+
+void AEquipment::OnAreaSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!HasAuthority()) return;
+
+	if (AHumanCharacter* OverlapHumanCharacter = Cast<AHumanCharacter>(OtherActor))
+	{
+		OverlapHumanCharacter->EquipOverlappingEquipment(this);
+	}
+}
+
+UEquipmentAnimInstance* AEquipment::GetEquipmentAnimInstance()
+{
+	if (EquipmentAnimInstance == nullptr) EquipmentAnimInstance = Cast<UEquipmentAnimInstance>(EquipmentMesh->GetAnimInstance());
+	return EquipmentAnimInstance;
+}
+
+void AEquipment::OnEquip()
+{
+	EquipmentState = EEquipmentState::Equipped;
+
+	// 清除销毁定时器
+	GetWorldTimerManager().ClearTimer(DestroyEquipmentTimerHandle);
+
+	CollisionSphere->SetSimulatePhysics(false);
+	CollisionSphere->SetEnableGravity(false);
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	SetOwnerTeam();
+
+	// 缓存BaseController
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
+	if (HumanCharacter) BaseController = Cast<ABaseController>(HumanCharacter->GetController());
+}
+
+void AEquipment::SetOwnerTeam()
+{
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
+	if (HumanCharacter)
+	{
+		ABasePlayerState* PlayerState = Cast<ABasePlayerState>(HumanCharacter->GetPlayerState());
+		if (PlayerState) OwnerTeam = PlayerState->GetTeam();
+	}
+}
+
+void AEquipment::OnDrop()
+{
+	EquipmentState = EEquipmentState::Dropped;
+
+	CollisionSphere->SetSimulatePhysics(true);
+	CollisionSphere->SetEnableGravity(true);
+	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	/**
+	 * HACK 延迟开启AreaSphere碰撞
+	 * 1 避免DropEquipment未执行完，当前角色与武器发生OnSphereOverlap > EquipEquipment
+	 * 2 确保武器已被丢出当前角色的Overlap区域
+	 * 3 角色死亡时，等待bIsKilled已从服务器同步到本地，因为伤害只在服务端计算，Kill() > MulticastKill()
+	 */
+	FTimerHandle TimerHandle;
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::SetAreaSphereCollision, .4f);
+
+	// 丢弃一定时间后销毁
+	GetWorldTimerManager().SetTimer(DestroyEquipmentTimerHandle, this, &ThisClass::DestroyEquipment, 20.f);
+
+	FDetachmentTransformRules DetachRules(EDetachmentRule::KeepWorld, true);
+	CollisionSphere->DetachFromComponent(DetachRules);
+	// 丢弃武器时，给予一个向前的冲量
+	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
+	if (HumanCharacter)
+	{
+		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
+		if (CameraComponent)
+		{
+			float Impulse = HumanCharacter->IsDead() ? 100.f : 300.f;
+			CollisionSphere->AddImpulse(CameraComponent->GetForwardVector() * Impulse, NAME_None, true);
+		}
+	}
+
+	SetOwner(nullptr);
+	HumanCharacter = nullptr;
+	BaseController = nullptr;
+	OwnerTeam = ETeam::NoTeam;
+}
+
+void AEquipment::SetAreaSphereCollision()
+{
+	OverlapSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+}
+
+void AEquipment::DestroyEquipment()
+{
+	Destroy();
+}
+
+void AEquipment::MulticastHiddenMesh_Implementation()
+{
+	EquipmentMesh->SetVisibility(false);
+}
