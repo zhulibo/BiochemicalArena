@@ -7,7 +7,6 @@
 
 UP2P::UP2P()
 {
-	UE_LOG(LogTemp, Warning, TEXT("UP2P"));
 }
 
 void UP2P::QueryNATType()

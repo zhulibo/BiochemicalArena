@@ -29,6 +29,8 @@ protected:
 	class UConnect* Connect;
 	UPROPERTY()
 	class ULobby* Lobby;
+	UPROPERTY()
+	class USession* Session;
 
 	void SetLobbyUIAttr();
 	void InitMapComboBox();
@@ -72,6 +74,8 @@ protected:
 	UCommonButton* ReadyButton;
 	UFUNCTION()
 	void OnReadyButtonClicked();
+
+	void OnCreateSessionComplete(bool bWasSuccessful);
 
 	// 开始游戏
 	UPROPERTY(meta = (BindWidget))

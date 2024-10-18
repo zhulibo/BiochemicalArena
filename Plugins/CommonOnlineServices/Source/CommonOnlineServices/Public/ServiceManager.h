@@ -38,6 +38,8 @@ public:
 	UFUNCTION()
 	static class ULobby* GetLobby();
 	UFUNCTION()
+	static class USession* GetSession();
+	UFUNCTION()
 	static class UP2P* GetP2P();
 
 protected:
@@ -54,6 +56,8 @@ protected:
 	UConnect* Connect;
 	UPROPERTY()
 	ULobby* Lobby;
+	UPROPERTY()
+	USession* Session;
 	UPROPERTY()
 	UP2P* P2P;
 

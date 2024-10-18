@@ -14,8 +14,14 @@
 				"CommonUI",
 				"GameplayAbilities",
 				"CoreUObject",
-				"DataRegistry"
+				"DataRegistry",
+				"DeveloperSettings"
 			]
+		},
+		{
+			"Name": "Editor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

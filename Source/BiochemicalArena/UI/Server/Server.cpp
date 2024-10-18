@@ -232,50 +232,40 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, TArray<TSharedPtr<FCool
 void UServer::OnResetServerButtonClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnResetServerButtonClicked"));
-	
-	if (P2P)
-	{
-		P2P->QueryNATType();
-	}
 
-	// ServerNameEditableTextBox->SetText(FText::FromString(TEXT("")));
-	//
-	// ModeComboBox->SetSelectedIndex(0);
+	ServerNameEditableTextBox->SetText(FText::FromString(TEXT("")));
+	
+	ModeComboBox->SetSelectedIndex(0);
 }
 
 void UServer::OnPagePrevButtonClicked()
 {
-	if (P2P)
+	if (ServerLineButtonContainer && ServerLineButtonContainer->GetChildAt(0))
 	{
-		P2P->GetNATType();
+		float PageHeight = ServerLineButtonContainer->GetCachedGeometry().GetAbsoluteSize().Y;
+		float LineButtonHeight = ServerLineButtonContainer->GetChildAt(0) ? ServerLineButtonContainer->GetChildAt(0)->GetCachedGeometry().GetAbsoluteSize().Y : 0.f;
+		float JumpOverLineButtonNum = 10.f;
+		if (LineButtonHeight > 0.f && PageHeight > 0.f)
+		{
+			JumpOverLineButtonNum = PageHeight * 0.5f / LineButtonHeight;
+		}
+	
+		const FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
+		const float DPI = GetDefault<UUserInterfaceSettings>(UUserInterfaceSettings::StaticClass())->GetDPIScaleBasedOnSize(FIntPoint(ViewportSize.X, ViewportSize.Y));
+		int32 TargetLineButtonNum = FMath::CeilToInt(ServerLineButtonContainer->GetScrollOffset() * DPI / LineButtonHeight - JumpOverLineButtonNum + 1);
+	
+		UWidget* TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
+		if (TargetLineButton == nullptr)
+		{
+			TargetLineButtonNum = 1;
+			TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
+		}
+		if (ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1) && TargetLineButton)
+		{
+			ServerLineButtonContainer->ScrollWidgetIntoView(TargetLineButton, true, EDescendantScrollDestination::Center);
+			ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1)->SetFocus();
+		}
 	}
-
-	// if (ServerLineButtonContainer && ServerLineButtonContainer->GetChildAt(0))
-	// {
-	// 	float PageHeight = ServerLineButtonContainer->GetCachedGeometry().GetAbsoluteSize().Y;
-	// 	float LineButtonHeight = ServerLineButtonContainer->GetChildAt(0) ? ServerLineButtonContainer->GetChildAt(0)->GetCachedGeometry().GetAbsoluteSize().Y : 0.f;
-	// 	float JumpOverLineButtonNum = 10.f;
-	// 	if (LineButtonHeight > 0.f && PageHeight > 0.f)
-	// 	{
-	// 		JumpOverLineButtonNum = PageHeight * 0.5f / LineButtonHeight;
-	// 	}
-	//
-	// 	const FVector2D ViewportSize = FVector2D(GEngine->GameViewport->Viewport->GetSizeXY());
-	// 	const float DPI = GetDefault<UUserInterfaceSettings>(UUserInterfaceSettings::StaticClass())->GetDPIScaleBasedOnSize(FIntPoint(ViewportSize.X, ViewportSize.Y));
-	// 	int32 TargetLineButtonNum = FMath::CeilToInt(ServerLineButtonContainer->GetScrollOffset() * DPI / LineButtonHeight - JumpOverLineButtonNum + 1);
-	//
-	// 	UWidget* TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
-	// 	if (TargetLineButton == nullptr)
-	// 	{
-	// 		TargetLineButtonNum = 1;
-	// 		TargetLineButton = ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1);
-	// 	}
-	// 	if (ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1) && TargetLineButton)
-	// 	{
-	// 		ServerLineButtonContainer->ScrollWidgetIntoView(TargetLineButton, true, EDescendantScrollDestination::Center);
-	// 		ServerLineButtonContainer->GetChildAt(TargetLineButtonNum - 1)->SetFocus();
-	// 	}
-	// }
 }
 
 void UServer::OnPageNextButtonClicked()

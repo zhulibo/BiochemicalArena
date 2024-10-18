@@ -11,6 +11,7 @@
 #include "Connect.h"
 #include "Lobby.h"
 #include "ServiceManager.h"
+#include "Session.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/GameModes/GameModeType.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
@@ -46,23 +47,29 @@ void UServerDetail::NativeOnInitialized()
 	// 	EOSSubsystem->OnPromoteLobbyMemberComplete.AddUObject(this, &ThisClass::OnPromoteLobbyMemberComplete);
 	// }
 
-	// ServiceManager = UServiceManager::GetServiceManager();
-	// if (ServiceManager)
-	// {
-	// 	Auth = ServiceManager->GetAuth();
-	//
-	// 	Connect = ServiceManager->GetConnect();
-	//
-	// 	Lobby = ServiceManager->GetLobby();
-	// 	if (Lobby)
-	// 	{
-	// 		if (!Lobby->OnUpdateLobbyComplete.IsBoundToObject(this)) Lobby->OnUpdateLobbyComplete.AddUObject(this, &ThisClass::OnUpdateLobbyComplete);
-	// 		if (!Lobby->OnLobbyUpdateReceived.IsBoundToObject(this)) Lobby->OnLobbyUpdateReceived.AddUObject(this, &ThisClass::OnLobbyUpdateReceived);
-	// 		if (!Lobby->OnMemberStatusReceived.IsBoundToObject(this)) Lobby->OnMemberStatusReceived.AddUObject(this, &ThisClass::OnMemberStatusReceived);
-	// 		if (!Lobby->OnLeaveLobbyComplete.IsBoundToObject(this)) Lobby->OnLeaveLobbyComplete.AddUObject(this, &ThisClass::OnLeaveLobbyComplete);
-	// 		if (!Lobby->OnDestroyLobbyComplete.IsBoundToObject(this)) Lobby->OnDestroyLobbyComplete.AddUObject(this, &ThisClass::OnDestroyLobbyComplete);
-	// 	}
-	// }
+	ServiceManager = UServiceManager::GetServiceManager();
+	if (ServiceManager)
+	{
+		Auth = ServiceManager->GetAuth();
+	
+		Connect = ServiceManager->GetConnect();
+	
+		Lobby = ServiceManager->GetLobby();
+		if (Lobby)
+		{
+			if (!Lobby->OnUpdateLobbyComplete.IsBoundToObject(this)) Lobby->OnUpdateLobbyComplete.AddUObject(this, &ThisClass::OnUpdateLobbyComplete);
+			if (!Lobby->OnLobbyUpdateReceived.IsBoundToObject(this)) Lobby->OnLobbyUpdateReceived.AddUObject(this, &ThisClass::OnLobbyUpdateReceived);
+			if (!Lobby->OnMemberStatusReceived.IsBoundToObject(this)) Lobby->OnMemberStatusReceived.AddUObject(this, &ThisClass::OnMemberStatusReceived);
+			if (!Lobby->OnLeaveLobbyComplete.IsBoundToObject(this)) Lobby->OnLeaveLobbyComplete.AddUObject(this, &ThisClass::OnLeaveLobbyComplete);
+			if (!Lobby->OnDestroyLobbyComplete.IsBoundToObject(this)) Lobby->OnDestroyLobbyComplete.AddUObject(this, &ThisClass::OnDestroyLobbyComplete);
+		}
+		
+		Session = ServiceManager->GetSession();
+		if (Session)
+		{
+			if (!Session->OnCreateSessionComplete.IsBoundToObject(this)) Session->OnCreateSessionComplete.AddUObject(this, &ThisClass::OnCreateSessionComplete);
+		}
+	}
 }
 
 UWidget* UServerDetail::NativeGetDesiredFocusTarget() const
@@ -89,11 +96,11 @@ void UServerDetail::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// SetLobbyUIAttr();
-	//
-	// SetLobbyUIButton();
-	//
-	// RefreshPlayerList();
+	SetLobbyUIAttr();
+	
+	SetLobbyUIButton();
+	
+	RefreshPlayerList();
 }
 
 void UServerDetail::SetLobbyUIAttr()
@@ -163,7 +170,7 @@ void UServerDetail::SetLobbyUIButton()
 			MapComboBox->SetIsEnabled(true);
 
 			ReadyButton->SetIsEnabled(false);
-			JoinServerButton->SetIsEnabled(false);
+			// JoinServerButton->SetIsEnabled(false);
 			StartServerButton->SetIsEnabled(true);
 		}
 		else
@@ -173,7 +180,7 @@ void UServerDetail::SetLobbyUIButton()
 			MapComboBox->SetIsEnabled(false);
 
 			ReadyButton->SetIsEnabled(true);
-			JoinServerButton->SetIsEnabled(!Lobby->CurLobby->GetStringAttr(LOBBY_SESSIONID).IsEmpty());
+			// JoinServerButton->SetIsEnabled(!Lobby->CurLobby->GetStringAttr(LOBBY_SESSIONID).IsEmpty());
 			StartServerButton->SetIsEnabled(false);
 		}
 
@@ -364,6 +371,11 @@ void UServerDetail::OnSwitchTeamButtonClicked()
 	// 		}
 	// 	}
 	// }
+	
+	if (Session)
+	{
+		Session->CreateSession();
+	}
 }
 
 void UServerDetail::OnReadyButtonClicked()
@@ -383,14 +395,35 @@ void UServerDetail::OnReadyButtonClicked()
 	// 		}
 	// 	}
 	// }
+
+	if (Session)
+	{
+		Session->GetSessionDetail();
+	}
+}
+
+void UServerDetail::OnCreateSessionComplete(bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnCreateSessionComplete %d"), bWasSuccessful);
+
+	if (bWasSuccessful)
+	{
+		
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Create session failed!"), false);
+	}
 }
 
 void UServerDetail::OnStartServerButtonClicked()
 {
-	if (CanStartServer())
-	{
-		GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
-	}
+	GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
+
+	// if (CanStartServer())
+	// {
+	// 	GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
+	// }
 }
 
 bool UServerDetail::CanStartServer()
@@ -480,7 +513,8 @@ void UServerDetail::OnJoinServerButtonClicked()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ClientTravel---------------------------------------------------------"));
 
-		MenuController->ClientTravel("", ETravelType::TRAVEL_Absolute);
+		// TODO Need implement p2p, see SocketSubsystemEOS plugin
+		MenuController->ClientTravel("EOS:0002facb7b3f43a58ea43cf91b88d1ad:GameNetDriver:26", ETravelType::TRAVEL_Absolute);
 	}
 }
 

@@ -8,7 +8,6 @@
 
 UAuth::UAuth()
 {
-	UE_LOG(LogTemp, Warning, TEXT("UAuth"));
 }
 
 void UAuth::Login(ELoginType LoginType, FString Id, FString Token)
@@ -62,6 +61,8 @@ void UAuth::LoginCb(const EOS_Auth_LoginCallbackInfo* Data)
 	else if (Data && Data->ResultCode == EOS_EResult::EOS_InvalidUser)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("LoginCb EOS_InvalidUser"));
+
+		// TODO
 	}
 	else
 	{

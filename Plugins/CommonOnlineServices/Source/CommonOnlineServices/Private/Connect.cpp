@@ -7,7 +7,6 @@
 
 UConnect::UConnect()
 {
-	UE_LOG(LogTemp, Warning, TEXT("UConnect"));
 }
 
 void UConnect::Connect()
@@ -50,6 +49,8 @@ void UConnect::ConnectCb(const EOS_Connect_LoginCallbackInfo* Data)
 	else if (Data && Data->ResultCode == EOS_EResult::EOS_InvalidUser)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ConnectCb EOS_InvalidUser"));
+
+		// TODO 
 	}
 	else
 	{

@@ -7,12 +7,12 @@
 #include "eos_sdk.h"
 #include "Lobby.h"
 #include "P2P.h"
+#include "Session.h"
 
 UServiceManager* UServiceManager::Instance = nullptr;
 
 UServiceManager::UServiceManager()
 {
-	UE_LOG(LogTemp, Warning, TEXT("UServiceManager"));
 }
 
 // 设置EOS日志输出
@@ -222,6 +222,18 @@ ULobby* UServiceManager::GetLobby()
 	}
 
 	return Instance->Lobby;
+}
+
+USession* UServiceManager::GetSession()
+{
+	EnsureInstanceCreated();
+
+	if (Instance->Session == nullptr)
+	{
+		Instance->Session = NewObject<USession>();
+	}
+
+	return Instance->Session;
 }
 
 UP2P* UServiceManager::GetP2P()

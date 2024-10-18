@@ -60,7 +60,6 @@ void FLobbiesAttr::InitFromAttrData(EOS_Lobby_Attribute* Attr)
 
 ULobby::ULobby()
 {
-	UE_LOG(LogTemp, Warning, TEXT("ULobby"));
 }
 
 bool ULobby::IsOwner(EOS_ProductUserId ProductUserId)
@@ -148,7 +147,7 @@ void ULobby::CreateLobby()
 	Options.PermissionLevel = EOS_ELobbyPermissionLevel::EOS_LPL_PUBLICADVERTISED;
 	Options.bPresenceEnabled = true;
 	Options.bAllowInvites = true;
-	Options.BucketId = "Cool BucketId";
+	Options.BucketId = "BucketId";
 	Options.bDisableHostMigration = true;
 	Options.bEnableRTCRoom = false;
 	Options.LocalRTCOptions = nullptr;
@@ -158,13 +157,13 @@ void ULobby::CreateLobby()
 
 	TArray<int32> AllowedPlatformIds;
 	AllowedPlatformIds.Add(EOS_OPT_Unknown);
-	uint32_t* TempVar = new uint32_t[AllowedPlatformIds.Num()];
+	uint32_t* Ids = new uint32_t[AllowedPlatformIds.Num()];
 	for (int32 i = 0; i < AllowedPlatformIds.Num(); i++)
 	{
-		TempVar[i] = AllowedPlatformIds[i];
+		Ids[i] = AllowedPlatformIds[i];
 	}
 
-	Options.AllowedPlatformIds = TempVar;
+	Options.AllowedPlatformIds = Ids;
 	Options.AllowedPlatformIdsCount = AllowedPlatformIds.Num();
 	Options.bCrossplayOptOut = false;
 
