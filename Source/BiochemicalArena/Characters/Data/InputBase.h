@@ -25,6 +25,8 @@ public:
 	UInputAction* CrouchAction;
 	UPROPERTY(EditAnywhere)
 	UInputAction* CrouchControllerAction;
+	UPROPERTY(EditAnywhere)
+	UInputAction* InteractAction;
 
 	UPROPERTY(EditAnywhere)
 	UInputAction* ScoreboardAction;
@@ -38,4 +40,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	UInputAction* RadialMenuSelectAction;
 
+	UPROPERTY(EditAnywhere)
+	UInputAction* TextChatAction;
+	
 };

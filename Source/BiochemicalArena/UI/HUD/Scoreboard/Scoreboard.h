@@ -17,18 +17,17 @@ protected:
 	class ABaseGameState* BaseGameState;
 
 	void ShowScoreboard(bool bIsShow);
-	
-	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* GameTitle;
 
 	FTimerHandle TimerHandle;
-
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UScoreBoardLineButton> ScoreBoardLineButtonClass;
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* ScoreBoardContainer;
 	UFUNCTION()
 	void RefreshScoreBoard();
+
+	UPROPERTY(meta = (BindWidget))
+	class UCommonTextBlock* GameTitle;
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* FPS;

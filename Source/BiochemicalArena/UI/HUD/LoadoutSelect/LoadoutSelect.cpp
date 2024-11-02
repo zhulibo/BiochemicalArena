@@ -3,8 +3,9 @@
 #include "LoadoutSelectButton.h"
 #include "CommonHierarchicalScrollBox.h"
 #include "CommonTextBlock.h"
+#include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
-#include "BiochemicalArena/System/Storage/SaveGameSetting.h"
+#include "BiochemicalArena/System/Storage/SaveGameLoadout.h"
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "BiochemicalArena/UI/GameLayout.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
@@ -16,8 +17,7 @@ void ULoadoutSelect::NativeOnInitialized()
 
 	for (int i = 0; i < LoadoutSelectButtonContainer->GetChildrenCount(); ++i)
 	{
-		ULoadoutSelectButton* LoadoutSelectButton = Cast<ULoadoutSelectButton>(LoadoutSelectButtonContainer->GetChildAt(i));
-		if (LoadoutSelectButton)
+		if (ULoadoutSelectButton* LoadoutSelectButton = Cast<ULoadoutSelectButton>(LoadoutSelectButtonContainer->GetChildAt(i)))
 		{
 			LoadoutSelectButton->OnClicked().AddUObject(this, &ThisClass::OnLoadoutSelectButtonClicked, i);
 		}
@@ -27,9 +27,9 @@ void ULoadoutSelect::NativeOnInitialized()
 UWidget* ULoadoutSelect::NativeGetDesiredFocusTarget() const
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem && StorageSubsystem->CacheSetting)
+	if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 	{
-		int32 CurLoadoutIndex = StorageSubsystem->CacheSetting->CurLoadoutIndex;
+		int32 CurLoadoutIndex = StorageSubsystem->CacheLoadout->CurLoadoutIndex;
 		if (CurLoadoutIndex > 0 && CurLoadoutIndex < LoadoutSelectButtonContainer->GetChildrenCount())
 		{
 			return LoadoutSelectButtonContainer->GetChildAt(CurLoadoutIndex);
@@ -42,10 +42,15 @@ UWidget* ULoadoutSelect::NativeGetDesiredFocusTarget() const
 void ULoadoutSelect::OnLoadoutSelectButtonClicked(int32 CurLoadoutIndex)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem)
+	if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 	{
-		StorageSubsystem->CacheSetting->CurLoadoutIndex = CurLoadoutIndex;
-		StorageSubsystem->Save();
+		StorageSubsystem->CacheLoadout->CurLoadoutIndex = CurLoadoutIndex;
+		StorageSubsystem->SaveLoadout();
+
+		if (AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn()))
+		{
+			HumanCharacter->TrySwitchLoadout();
+		}
 	}
 
 	CloseMenu(true);

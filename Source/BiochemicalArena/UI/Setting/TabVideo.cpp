@@ -57,9 +57,9 @@ void UTabVideo::NativeOnInitialized()
 	SetUISavedValue();
 
 	// 绑定值变化回调
+	BrightnessAnalogSlider->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnBrightnessChanged);
 	WindowModeComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnWindowModeChanged);
 	ScreenResolutionComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnScreenResolutionChanged);
-	BrightnessAnalogSlider->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnBrightnessChanged);
 
 	SetDefaultHandle = RegisterUIActionBinding(FBindUIActionArgs(SetDefaultData, true, FSimpleDelegate::CreateUObject(this, &ThisClass::SetDefault)));
 }
@@ -78,7 +78,7 @@ void UTabVideo::NativeConstruct()
 
 UWidget* UTabVideo::NativeGetDesiredFocusTarget() const
 {
-	return WindowModeComboBox;
+	return BrightnessAnalogSlider;
 }
 
 void UTabVideo::OnTabButtonHovered(int Index)
@@ -95,6 +95,9 @@ void UTabVideo::SetUISavedValue()
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
+		BrightnessAnalogSlider->SetValue(StorageSubsystem->CacheSetting->Brightness);
+		Brightness->SetText(FText::AsNumber(StorageSubsystem->CacheSetting->Brightness));
+		
 		if (GameUserSettings == nullptr) GameUserSettings = GetMutableDefault<UGameUserSettings>();
 		if (GameUserSettings)
 		{
@@ -118,9 +121,22 @@ void UTabVideo::SetUISavedValue()
 				ScreenResolutionComboBox->SetSelectedOption(CurResolutionStr);
 			}
 		}
+	}
+}
 
-		BrightnessAnalogSlider->SetValue(StorageSubsystem->CacheSetting->Brightness);
-		Brightness->SetText(FText::AsNumber(StorageSubsystem->CacheSetting->Brightness));
+void UTabVideo::OnBrightnessChanged(float Value)
+{
+	Value = FMath::RoundToFloat(Value * 10) / 10;
+
+	Brightness->SetText(FText::AsNumber(Value));
+
+	GEngine->DisplayGamma = Value;
+
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem && StorageSubsystem->CacheSetting)
+	{
+		StorageSubsystem->CacheSetting->Brightness = Value;
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -153,7 +169,7 @@ void UTabVideo::OnWindowModeChanged(FString SelectedItem, ESelectInfo::Type Sele
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->WindowMode = WindowMode;
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -173,23 +189,7 @@ void UTabVideo::OnScreenResolutionChanged(FString SelectedItem, ESelectInfo::Typ
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->ScreenResolution = Resolution;
-		StorageSubsystem->Save();
-	}
-}
-
-void UTabVideo::OnBrightnessChanged(float Value)
-{
-	Value = FMath::RoundToFloat(Value * 10) / 10;
-
-	Brightness->SetText(FText::AsNumber(Value));
-
-	GEngine->DisplayGamma = Value;
-
-	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem && StorageSubsystem->CacheSetting)
-	{
-		StorageSubsystem->CacheSetting->Brightness = Value;
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -200,6 +200,9 @@ void UTabVideo::SetDefault()
 		if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 		if (StorageSubsystem && StorageSubsystem->CacheSetting)
 		{
+			BrightnessAnalogSlider->SetValue(DefaultConfig->Brightness);
+			Brightness->SetText(FText::AsNumber(DefaultConfig->Brightness));
+			
 			switch (DefaultConfig->WindowMode)
 			{
 			case EWindowMode::Fullscreen:
@@ -224,13 +227,10 @@ void UTabVideo::SetDefault()
 				GameUserSettings->SaveSettings();
 			}
 
-			BrightnessAnalogSlider->SetValue(DefaultConfig->Brightness);
-			Brightness->SetText(FText::AsNumber(DefaultConfig->Brightness));
-
+			StorageSubsystem->CacheSetting->Brightness = DefaultConfig->Brightness;
 			StorageSubsystem->CacheSetting->WindowMode = DefaultConfig->WindowMode;
 			StorageSubsystem->CacheSetting->ScreenResolution = DefaultConfig->ScreenResolution;
-			StorageSubsystem->CacheSetting->Brightness = DefaultConfig->Brightness;
-			StorageSubsystem->Save();
+			StorageSubsystem->SaveSetting();
 		}
 	}
 }

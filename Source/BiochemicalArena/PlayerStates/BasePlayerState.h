@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BiochemicalArena/Characters/Data/CharacterType.h"
+#include "Online/CoreOnline.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
 #include "BasePlayerState.generated.h"
@@ -30,9 +31,7 @@ public:
 	float GetJumpZVelocity();
 
 	virtual void SetTeam(ETeam TempTeam);
-
-	UFUNCTION(Server, Reliable)
-	void ServerSetHumanCharacterName(EHumanCharacterName Name);
+	
 	UFUNCTION(Server, Reliable)
 	void ServerSetMutantCharacterName(EMutantCharacterName Name);
 	UFUNCTION()
@@ -62,8 +61,16 @@ protected:
 	
 	UPROPERTY(Replicated)
 	EHumanCharacterName HumanCharacterName;
+	UFUNCTION(Server, Reliable)
+	void ServerSetHumanCharacterName(EHumanCharacterName Name);
+
 	UPROPERTY(Replicated)
 	EMutantCharacterName MutantCharacterName;
+
+	UPROPERTY(Replicated)
+	FUniqueNetIdRepl AccountIdRepl;
+	UFUNCTION(Server, Reliable)
+	void ServerSetAccountId(FUniqueNetIdRepl TempAccountIdRepl);
 
 	UPROPERTY(ReplicatedUsing = OnRep_Team)
 	ETeam Team;

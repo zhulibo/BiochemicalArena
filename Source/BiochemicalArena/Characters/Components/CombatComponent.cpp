@@ -578,8 +578,10 @@ bool UCombatComponent::CanFire()
 	}
 
 	// Shotgun正在上膛时可以开火
-	if (CombatState == ECombatState::Reloading
-		&& GetCurShotEquipment()->GetEquipmentCate() == EEquipmentCate::Shotgun) return true;
+	if (CombatState == ECombatState::Reloading && GetCurShotEquipment()->GetEquipmentCate() == EEquipmentCate::Shotgun)
+	{
+		return true;
+	}
 
 	return CombatState == ECombatState::Ready;
 }
@@ -772,7 +774,12 @@ void UCombatComponent::LocalDropEquipment(EEquipmentType EquipmentType)
 	}
 }
 
-void UCombatComponent::DestroyEquipments()
+void UCombatComponent::ServerDestroyEquipments_Implementation()
+{
+	LocalDestroyEquipments();
+}
+
+void UCombatComponent::LocalDestroyEquipments()
 {
 	if (PrimaryEquipment) PrimaryEquipment->Destroy();
 	if (SecondaryEquipment) SecondaryEquipment->Destroy();

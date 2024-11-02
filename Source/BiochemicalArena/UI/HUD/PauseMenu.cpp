@@ -9,7 +9,7 @@
 #include "BiochemicalArena/UI/HUD/LoadoutSelect/LoadoutSelect.h"
 #include "BiochemicalArena/UI/HUD/MutantSelect/MutantSelect.h"
 
-#define LOCTEXT_NAMESPACE "BiochemicalArena"
+#define LOCTEXT_NAMESPACE "UPauseMenu"
 
 void UPauseMenu::NativeOnInitialized()
 {

@@ -13,6 +13,8 @@ public:
 	UPROPERTY()
 	class USystemSound* SystemSound;
 	UPROPERTY()
+	class UCommonAsset* CommonAsset;
+	UPROPERTY()
 	class UCharacterSound* CharacterSound;
 	UPROPERTY()
 	class UMutantCommon* MutantCommon;

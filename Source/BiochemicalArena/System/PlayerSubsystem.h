@@ -1,10 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "PlayerSubsystem.generated.h"
 
-enum class ELoginType : uint8;
+enum class ECoolLoginType : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API UPlayerSubsystem : public ULocalPlayerSubsystem, public FTickableGameObject
@@ -20,19 +21,28 @@ public:
 		RETURN_QUICK_DECLARE_CYCLE_STAT(UPlayerSubsystem, STATGROUP_Tickables);
 	}
 
-	void Login(ELoginType LoginType, FString ID, FString Token);
+	UPROPERTY()
+	class UNotifyLayout* NotifyLayout;
+	void AddNotifyLayout();
+	void ShowNotify(const FColor DisplayColor, const FText& Msg);
+
+	void Login(ECoolLoginType LoginType, FString ID, FString Token);
+
+	// UMG会在关卡切换时销毁，待新关卡Viewport加载后再显示登录通知。
+	void ShowLoginNotify();
 
 protected:
 	UPROPERTY()
-	class UServiceManager* ServiceManager;
-	UPROPERTY()
-	class UAuth* Auth;
-	void OnLoginOut();
+	UEOSSubsystem* EOSSubsystem;
+	
+	void OnLoginComplete(bool bWasSuccessful);
+	void OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
+	
+	void LevelTravel(FString Url);
 
-	UPROPERTY()
-	class UConnect* Connect;
-	void OnConnectComplete(bool bWasSuccessful);
-	void OnConnectAuthExpiration();
-	void OnConnectLoginOut();
-
+	bool bShowNotify_LoggedIn = false;
+	bool bShowNotify_LoggedInReducedFunctionality = false;
+	bool bShowNotify_NotLoggedIn = false;
+	bool bShowNotify_UsingLocalProfile = false;
+	
 };

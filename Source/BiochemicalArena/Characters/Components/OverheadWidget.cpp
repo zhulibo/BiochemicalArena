@@ -9,6 +9,8 @@
 #include "Camera/CameraComponent.h"
 #include "Components/WidgetComponent.h"
 #include "CommonLazyImage.h"
+#include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Kismet/GameplayStatics.h"
 
 void UOverheadWidget::NativeConstruct()
@@ -32,9 +34,9 @@ void UOverheadWidget::NativeConstruct()
 			UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABaseCharacter::StaticClass(), AllPlayers);
 			for (AActor* Player : AllPlayers)
 			{
-				if (ABaseCharacter* IgnoreBaseCharacter = Cast<ABaseCharacter>(Player))
+				if (ABaseCharacter* PlayerCharacter = Cast<ABaseCharacter>(Player))
 				{
-					if (UWidgetComponent* OverheadWidget = IgnoreBaseCharacter->GetOverheadWidget())
+					if (UWidgetComponent* OverheadWidget = PlayerCharacter->GetOverheadWidget())
 					{
 						if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
 						{
@@ -62,7 +64,7 @@ void UOverheadWidget::SetPlayerName()
 		if (BasePlayerState == nullptr) BasePlayerState = Cast<ABasePlayerState>(BaseCharacter->GetPlayerState());
 		if (BasePlayerState)
 		{
-			PlayerName->SetText(FText::FromString(BasePlayerState->GetPlayerName()));
+			PlayerName->SetText(FText::FromString(ULibraryCommon::ObfuscatePlayerName(BasePlayerState->GetPlayerName(), this)));
 			return;
 		}
 	}
@@ -98,30 +100,23 @@ void UOverheadWidget::TraceOverheadWidget()
 
 		// 射线检测玩家是否被阻挡
 		FCollisionQueryParams QueryParams;
+		// 忽略所有玩家
 		TArray<AActor*> IgnoreActors;
-		// IgnoreActors.AddUnique(LocalBaseCharacter);
-		// IgnoreActors.AddUnique(BaseCharacter);
 		if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
 		if (BaseGameState)
 		{
-			if (BaseGameState && BaseGameState->GetTeam(ETeam::Team1).Num() > 0)
+			for (int32 i = 0; i < BaseGameState->GetTeam(ETeam::Team1).Num(); ++i)
 			{
-				for (int32 i = 0; i < BaseGameState->GetTeam(ETeam::Team1).Num(); ++i)
+				if (BaseGameState->GetTeam(ETeam::Team1)[i])
 				{
-					if (BaseGameState->GetTeam(ETeam::Team1)[i])
-					{
-						IgnoreActors.AddUnique(BaseGameState->GetTeam(ETeam::Team1)[i]->GetPawn());
-					}
+					IgnoreActors.AddUnique(BaseGameState->GetTeam(ETeam::Team1)[i]->GetPawn());
 				}
 			}
-			if (BaseGameState && BaseGameState->GetTeam(ETeam::Team2).Num() > 0)
+			for (int32 i = 0; i < BaseGameState->GetTeam(ETeam::Team2).Num(); ++i)
 			{
-				for (int32 i = 0; i < BaseGameState->GetTeam(ETeam::Team2).Num(); ++i)
+				if (BaseGameState->GetTeam(ETeam::Team2)[i])
 				{
-					if (BaseGameState->GetTeam(ETeam::Team2)[i])
-					{
-						IgnoreActors.AddUnique(BaseGameState->GetTeam(ETeam::Team2)[i]->GetPawn());
-					}
+					IgnoreActors.AddUnique(BaseGameState->GetTeam(ETeam::Team2)[i]->GetPawn());
 				}
 			}
 		}
@@ -147,46 +142,46 @@ void UOverheadWidget::TraceOverheadWidget()
 
 void UOverheadWidget::InitOverheadWidget()
 {
+	if (GetWorld() == nullptr || GetWorld()->bIsTearingDown) return;
+
 	if (BaseCharacter)
 	{
 		if (BasePlayerState == nullptr) BasePlayerState = Cast<ABasePlayerState>(BaseCharacter->GetPlayerState());
 
 		if (LocalBasePlayerState == nullptr)
 		{
-			if (LocalBaseController == nullptr) LocalBaseController = GetWorld() ? Cast<ABaseController>(GetWorld()->GetFirstPlayerController()) : nullptr;
+			if (LocalBaseController == nullptr) LocalBaseController = Cast<ABaseController>(GetWorld()->GetFirstPlayerController());
 			if (LocalBaseController) LocalBasePlayerState = Cast<ABasePlayerState>(LocalBaseController->PlayerState);
 		}
 
 		if (BasePlayerState && LocalBasePlayerState)
 		{
-			// UE_LOG(LogTemp, Warning, TEXT("SetColorAndOpacity Base %d Local %d"), BasePlayerState->GetTeam(), LocalBasePlayerState->GetTeam());
+			// UE_LOG(LogTemp, Warning, TEXT("SetColorAndOpacity Base GetTeam %d Local GetTeam %d"), BasePlayerState->GetTeam(), LocalBasePlayerState->GetTeam());
 			if (BasePlayerState->GetTeam() != ETeam::NoTeam && LocalBasePlayerState->GetTeam() != ETeam::NoTeam)
 			{
+				FColor TeamColor = BasePlayerState->GetTeam() == LocalBasePlayerState->GetTeam() ? C_BLUE : C_RED;
+				
+				// 设置名字颜色
+				PlayerName->SetColorAndOpacity(TeamColor);
+				
+				// 设置血条颜色
+				if (UMaterialInstanceDynamic* MID = HealthBar->GetDynamicMaterial())
+				{
+					MID->SetVectorParameterValue(TEXT("TeamColor"), TeamColor);
+						
+					if (AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(BaseCharacter))
+					{
+						if (HumanCharacter->bIsImmune)
+						{
+							MID->SetVectorParameterValue(TEXT("TeamColor"), C_YELLOW);
+						}
+					}
+				}
+
 				// 设置血条刻度
 				if (UMaterialInstanceDynamic* MID = HealthBarLine->GetDynamicMaterial())
 				{
 					MID->SetScalarParameterValue(TEXT("LineNum"), GetHealthBarLineNum());
-				}
-
-				if (BasePlayerState->GetTeam() == LocalBasePlayerState->GetTeam())
-				{
-					// 设置名字颜色
-					PlayerName->SetColorAndOpacity(C_WHITE);
-
-					// 设置血条颜色
-					if (UMaterialInstanceDynamic* MID = HealthBar->GetDynamicMaterial())
-					{
-						MID->SetVectorParameterValue(TEXT("TeamColor"), BaseCharacter->bIsImmune ? C_BLUE : C_WHITE);
-					}
-				}
-				else
-				{
-					PlayerName->SetColorAndOpacity(C_RED);
-
-					if (UMaterialInstanceDynamic* MID = HealthBar->GetDynamicMaterial())
-					{
-						MID->SetVectorParameterValue(TEXT("TeamColor"), BaseCharacter->bIsImmune ? C_BLUE : C_RED);
-					}
 				}
 
 				return;

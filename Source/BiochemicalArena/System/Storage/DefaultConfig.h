@@ -14,6 +14,14 @@ public:
 	UDefaultConfig();
 
 	UPROPERTY()
+	FString DefaultPrimary = "AK47";
+	UPROPERTY()
+	FString DefaultSecondary = "Glock17";
+	UPROPERTY()
+	FString DefaultMelee = "Kukri";
+	UPROPERTY()
+	FString DefaultThrowing = "Grenade";
+	UPROPERTY()
 	TArray<FBag> Bags;
 	int32 CurLoadoutIndex = 0;
 
@@ -24,6 +32,10 @@ public:
 
 	UPROPERTY()
 	FString Language;
+	UPROPERTY()
+	bool ObfuscatePlayerName = false;
+	UPROPERTY()
+	bool ObfuscateTextChat = false;
 
 	UPROPERTY()
 	float MouseSensitivity = 0.8f;

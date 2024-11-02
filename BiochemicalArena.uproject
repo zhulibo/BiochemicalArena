@@ -37,6 +37,10 @@
 			"Enabled": true
 		},
 		{
+			"Name": "OnlineServicesEOS",
+			"Enabled": true
+		},
+		{
 			"Name": "Chooser",
 			"Enabled": true
 		},
@@ -51,6 +55,19 @@
 		{
 			"Name": "NiagaraFluids",
 			"Enabled": true
+		},
+		{
+			"Name": "CommonOnlineServices",
+			"Enabled": false
+		},
+		{
+			"Name": "Fab",
+			"Enabled": false,
+			"SupportedTargetPlatforms": [
+				"Win64",
+				"Mac",
+				"Linux"
+			]
 		}
 	]
 }

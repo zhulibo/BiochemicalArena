@@ -8,47 +8,47 @@
 UENUM(BlueprintType)
 enum class EEquipmentName : uint8 // 装备名字
 {
-	AK47 UMETA(DisplayName = "AK47"),
-	AK47_Desert UMETA(DisplayName = "AK47_Desert"),
-	M870 UMETA(DisplayName = "M870"),
+	AK47,
+	AK47_Desert,
+	M870,
 
-	Glock17 UMETA(DisplayName = "Glock17"),
+	Glock17,
 
-	Kukri UMETA(DisplayName = "Kukri"),
+	Kukri,
 
-	Grenade UMETA(DisplayName = "Grenade"),
+	Grenade,
 
-	NONE UMETA(DisplayName = "NONE")
+	NONE
 };
 
 UENUM(BlueprintType)
 enum class EEquipmentCate : uint8 // 装备种类（武器自身属性）
 {
-	Generic UMETA(DisplayName = "Generic"),
-	Shotgun UMETA(DisplayName = "Shotgun"),
-	Melee UMETA(DisplayName = "Melee"),
-	Throwing UMETA(DisplayName = "Throwing"),
+	Generic,
+	Shotgun,
+	Melee,
+	Throwing,
 
-	NONE UMETA(DisplayName = "NONE")
+	NONE
 };
 
 UENUM(BlueprintType)
 enum class EEquipmentType : uint8 // 装备类型（装备的位置，共4个位置，未来扩充至8个）
 {
-	Primary UMETA(DisplayName = "Primary"),
-	Secondary UMETA(DisplayName = "Secondary"),
-	Melee UMETA(DisplayName = "Melee"),
-	Throwing UMETA(DisplayName = "Throwing"),
+	Primary,
+	Secondary,
+	Melee,
+	Throwing,
 
-	NONE UMETA(DisplayName = "NONE")
+	NONE
 };
 
 UENUM(BlueprintType)
 enum class EEquipmentState : uint8
 {
-	Equipped UMETA(DisplayName = "Equipped"),
-	Dropped UMETA(DisplayName = "Dropped"),
-	Thrown UMETA(DisplayName = "Thrown")
+	Equipped,
+	Dropped,
+	Thrown
 };
 
 USTRUCT(BlueprintType)

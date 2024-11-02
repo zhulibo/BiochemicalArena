@@ -7,12 +7,14 @@
 UENUM(BlueprintType)
 enum class EDamageCauserType : uint8
 {
-	Base UMETA(DisplayName = "Base"),
-	Equipment UMETA(DisplayName = "Equipment"),
-	Mutant UMETA(DisplayName = "Mutant"),
-	Fall UMETA(DisplayName = "Fall"),
-
-	MAX UMETA(Hidden)
+	Equipment,
+	Melee,
+	// 感染并不应用伤害，只是为了给击杀日志传参
+	MutantInfect,
+	// 突变体造成的伤害
+	MutantDamage,
+	// 跌落
+	Fall,
 };
 
 UCLASS()
@@ -24,9 +26,6 @@ public:
 	// Used to determine the type of damage, Only need cast to UDamageTypeBase to get the type
 	// avoid cast to UDamageTypeEquipment, UDamageTypeMutant, etc.
 	UPROPERTY(EditAnywhere)
-	EDamageCauserType DamageType = EDamageCauserType::Base;
-
-	UPROPERTY(EditAnywhere)
-	FString CauserName = "";
+	EDamageCauserType DamageType;
 
 };

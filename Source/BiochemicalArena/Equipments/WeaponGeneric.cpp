@@ -59,10 +59,10 @@ void AWeaponGeneric::Fire(const FVector& HitTarget, float RecoilVert, float Reco
 	switch (OwnerTeam)
 	{
 	case ETeam::Team1:
-		Projectile->GetCollisionBox()->SetCollisionResponseToChannel(ECC_Team2SkeletalMesh, ECollisionResponse::ECR_Block);
+		Projectile->GetCollisionBox()->SetCollisionResponseToChannel(ECC_TEAM2_MESH, ECollisionResponse::ECR_Block);
 		break;
 	case ETeam::Team2:
-		Projectile->GetCollisionBox()->SetCollisionResponseToChannel(ECC_Team1SkeletalMesh, ECollisionResponse::ECR_Block);
+		Projectile->GetCollisionBox()->SetCollisionResponseToChannel(ECC_TEAM1_MESH, ECollisionResponse::ECR_Block);
 		break;
 	}
 }

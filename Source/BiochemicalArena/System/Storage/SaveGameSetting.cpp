@@ -1,7 +1,6 @@
 #include "SaveGameSetting.h"
 
 #include "DefaultConfig.h"
-#include "Internationalization/Culture.h"
 
 USaveGameSetting::USaveGameSetting()
 {
@@ -9,14 +8,10 @@ USaveGameSetting::USaveGameSetting()
 
 	if (DefaultConfig == nullptr) return;
 
-	Bags = DefaultConfig->Bags;
-	CurLoadoutIndex = DefaultConfig->CurLoadoutIndex;
-
-	HumanCharacterName = DefaultConfig->HumanCharacterName;
-	MutantCharacterName = DefaultConfig->MutantCharacterName;
-
 	Language = DefaultConfig->Language;
-	
+	ObfuscatePlayerName = DefaultConfig->ObfuscatePlayerName;
+	ObfuscateTextChat = DefaultConfig->ObfuscateTextChat;
+
 	MouseSensitivity = DefaultConfig->MouseSensitivity;
 	MouseAimAssistSteering = DefaultConfig->MouseAimAssistSteering;
 	MouseAimAssistSlowdown = DefaultConfig->MouseAimAssistSlowdown;

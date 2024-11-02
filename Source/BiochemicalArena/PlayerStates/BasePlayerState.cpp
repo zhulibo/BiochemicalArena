@@ -6,9 +6,8 @@
 #include "BiochemicalArena/Abilities/AttributeSetBase.h"
 #include "BiochemicalArena/Characters/Components/OverheadWidget.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
-#include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "BiochemicalArena/System/Storage/DefaultConfig.h"
-#include "BiochemicalArena/System/Storage/SaveGameSetting.h"
+#include "BiochemicalArena/System/Storage/SaveGameLoadout.h"
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -35,6 +34,7 @@ void ABasePlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(ThisClass, HumanCharacterName);
 	DOREPLIFETIME(ThisClass, MutantCharacterName);
+	DOREPLIFETIME(ThisClass, AccountIdRepl);
 	DOREPLIFETIME(ThisClass, Team);
 	DOREPLIFETIME(ThisClass, Damage);
 	DOREPLIFETIME(ThisClass, Defeat);
@@ -44,15 +44,24 @@ void ABasePlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void ABasePlayerState::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	BaseController = Cast<ABaseController>(GetOwner());
 	if (BaseController && BaseController->IsLocalController())
 	{
 		UStorageSubsystem* StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-		if (StorageSubsystem && StorageSubsystem->CacheSetting)
+		if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 		{
-			ServerSetHumanCharacterName(StorageSubsystem->CacheSetting->HumanCharacterName);
-			ServerSetMutantCharacterName(StorageSubsystem->CacheSetting->MutantCharacterName);
+			ServerSetHumanCharacterName(StorageSubsystem->CacheLoadout->HumanCharacterName);
+			ServerSetMutantCharacterName(StorageSubsystem->CacheLoadout->MutantCharacterName);
+		}
+
+		// 向所有玩家分享AccountId
+		if (UEOSSubsystem* EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>())
+		{
+			if (EOSSubsystem->GetAccountId().IsValid())
+			{
+				ServerSetAccountId(FUniqueNetIdRepl(EOSSubsystem->GetAccountId()));
+			}
 		}
 	}
 
@@ -117,18 +126,18 @@ float ABasePlayerState::GetJumpZVelocity()
 
 void ABasePlayerState::SetTeam(ETeam TempTeam)
 {
-	// UE_LOG(LogTemp, Warning, TEXT("SetTeam -----------------------"));
+	// UE_LOG(LogTemp, Warning, TEXT("SetTeam ------------------------------------------"));
 
 	Team = TempTeam;
 
-	BaseCharacter = nullptr; // TODO 被销毁时自动置为nullptr
+	BaseCharacter = nullptr;
 }
 
 void ABasePlayerState::OnRep_Team()
 {
-	// UE_LOG(LogTemp, Warning, TEXT("OnRep_Team ----------------------"));
+	// UE_LOG(LogTemp, Warning, TEXT("OnRep_Team ------------------------------------------"));
 
-	BaseCharacter = nullptr; // TODO 被销毁时自动置为nullptr
+	BaseCharacter = nullptr;
 
 	BaseCharacter = Cast<ABaseCharacter>(GetPawn());
 	if (BaseCharacter)
@@ -136,13 +145,7 @@ void ABasePlayerState::OnRep_Team()
 		BaseCharacter->HasInitMeshCollision = false;
 	}
 
-	// OnRep_Team晚于本地OnControllerReady，主动调一下InitHUD
-	AMutationController* MutationController = Cast<AMutationController>(GetOwner());
-	if (MutationController && MutationController->IsLocalController())
-	{
-		MutationController->InitHUD();
-	}
-	
+	// InitOverheadWidget依赖于Team，OnRep_Team后主动调一下InitHUD。
 	InitOverheadWidget();
 }
 
@@ -165,8 +168,6 @@ void ABasePlayerState::InitOverheadWidget()
 		// 本地玩家队伍改变时，初始化本机所有玩家的OverheadWidget
 		else
 		{
-			// double Time1 = FPlatformTime::Seconds();
-
 			TArray<AActor*> AllPlayers;
 			UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABaseCharacter::StaticClass(), AllPlayers);
 			for (AActor* Player : AllPlayers)
@@ -182,9 +183,6 @@ void ABasePlayerState::InitOverheadWidget()
 					}
 				}
 			}
-
-			// double Time2 = FPlatformTime::Seconds();
-			// UE_LOG(LogTemp, Warning, TEXT("SetPlayerNameTeamColor %f"), Time2 - Time1);
 
 			return;
 		}
@@ -208,6 +206,11 @@ void ABasePlayerState::ServerSetMutantCharacterName_Implementation(EMutantCharac
 void ABasePlayerState::SetMutantCharacterName(EMutantCharacterName Name)
 {
 	MutantCharacterName = Name;
+}
+
+void ABasePlayerState::ServerSetAccountId_Implementation(FUniqueNetIdRepl TempAccountIdRepl)
+{
+	AccountIdRepl = TempAccountIdRepl;
 }
 
 void ABasePlayerState::AddDamage(float TempDamage)

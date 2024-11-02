@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "BiochemicalArena/GameStates/BaseGameState.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "HUDMutation.generated.h"
 
 UCLASS()
@@ -14,6 +15,7 @@ protected:
 	virtual void NativeOnInitialized() override;
 
 	void OnTeamChange(ETeam Team);
+	void OnHUDStateChange(EHUDState HUDState);
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHUD* CommonHUD;

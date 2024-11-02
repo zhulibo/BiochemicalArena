@@ -40,6 +40,7 @@ void ATeamDeadMatchMode::Tick(float DeltaSeconds)
 		CountdownTime = LevelStartTime + CooldownTime + WarmupTime + MatchTime - GetWorld()->GetTimeSeconds();
 		if (CountdownTime <= 0.f)
 		{
+			StartToLeaveMap();
 		}
 	}
 }
@@ -62,8 +63,7 @@ void ATeamDeadMatchMode::OnMatchStateSet()
 
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		ATeamDeadMatchController* TeamDeadMatchController = Cast<ATeamDeadMatchController>(*It);
-		if (TeamDeadMatchController)
+		if (ATeamDeadMatchController* TeamDeadMatchController = Cast<ATeamDeadMatchController>(*It))
 		{
 			TeamDeadMatchController->OnMatchStateSet(MatchState);
 		}
@@ -78,21 +78,26 @@ void ATeamDeadMatchMode::HandleMatchHasStarted()
 	// 生成角色
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		AController* Controller = Cast<AController>(*It);
-		if (Controller)
+		if (ATeamDeadMatchController* TeamDeadMatchController = Cast<ATeamDeadMatchController>(*It))
 		{
-			if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
-			if (TeamDeadMatchGameState)
-			{
-				ETeam Team = TeamDeadMatchGameState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchGameState->GetTeam(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
-				AssignTeam(Controller, Team);
-			}
-			SpawnHumanCharacter(Controller);
+			HandleSpawn(TeamDeadMatchController);
 		}
 	}
 
 	// 角色生成后开始监视比赛状态
 	bWatchMatchState = true;
+}
+
+void ATeamDeadMatchMode::HandleSpawn(AController* Controller)
+{
+	if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
+	if (TeamDeadMatchGameState)
+	{
+		ETeam Team = TeamDeadMatchGameState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchGameState->GetTeam(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
+		AssignTeam(Controller, Team);
+	}
+
+	SpawnHumanCharacter(Controller);
 }
 
 // 中途加入
@@ -103,13 +108,7 @@ void ATeamDeadMatchMode::OnPostLogin(AController* Controller)
 	// 生成角色
 	if (MatchState == MatchState::InProgress)
 	{
-		if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
-		if (TeamDeadMatchGameState)
-		{
-			ETeam Team = TeamDeadMatchGameState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchGameState->GetTeam(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
-			AssignTeam(Controller, Team);
-		}
-		SpawnHumanCharacter(Controller);
+		HandleSpawn(Controller);
 	}
 }
 

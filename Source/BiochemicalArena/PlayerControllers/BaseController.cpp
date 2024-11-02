@@ -1,12 +1,18 @@
 #include "BaseController.h"
+
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchGameState.h"
+#include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/System/PlayerSubsystem.h"
 #include "BiochemicalArena/UI/GameLayout.h"
 #include "BiochemicalArena/UI/HUD/Mutation/HUDMutation.h"
 #include "BiochemicalArena/UI/HUD/TeamDeadMatch/HUDTeamDeadMatch.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
+#include "GameFramework/PlayerState.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
+
+#define LOCTEXT_NAMESPACE "ABaseController"
 
 void ABaseController::BeginPlay()
 {
@@ -15,6 +21,11 @@ void ABaseController::BeginPlay()
 	if (IsLocalController())
 	{
 		HandleServerClientDeltaTime();
+	
+		if (UPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UPlayerSubsystem>(GetLocalPlayer()))
+		{
+			PlayerSubsystem->AddNotifyLayout();
+		}
 		
 		AddGameLayout();
 	}
@@ -33,7 +44,7 @@ void ABaseController::Tick(float DeltaSeconds)
 void ABaseController::ManualReset()
 {
 	InitHUD();
-	
+
 	BaseCharacter = nullptr; // TODO 被销毁时自动置为nullptr
 }
 
@@ -74,7 +85,6 @@ void ABaseController::AddGameLayout()
 	if (GameLayout)
 	{
 		GameLayout->AddToViewport();
-		
 		FocusGame();
 
 		if (Cast<AMutationGameState>(GetWorld()->GetGameState()))
@@ -102,11 +112,58 @@ void ABaseController::FocusUI()
 	SetShowMouseCursor(true);
 }
 
+void ABaseController::SetPlayerSpectate()
+{
+	if (HasAuthority())
+	{
+		PlayerState->SetIsSpectator(true);
+		ChangeState(NAME_Spectating);
+		bPlayerIsWaiting = true;
+
+		ClientGotoState(NAME_Spectating);
+		ClientHUDStateChanged(EHUDState::Spectating);
+	}
+}
+
+void ABaseController::SetPlayerPlay()
+{
+	if (HasAuthority())
+	{
+		PlayerState->SetIsSpectator(false);
+		ChangeState(NAME_Playing);
+		bPlayerIsWaiting = false;
+
+		ClientGotoState(NAME_Playing);
+		ClientHUDStateChanged(EHUDState::Playing);
+	}
+}
+
+void ABaseController::OnRep_Pawn()
+{
+	Super::OnRep_Pawn();
+	
+	if(IsInState(NAME_Spectating))
+	{
+		ServerViewNextPlayer();
+	}
+}
+
+void ABaseController::SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams)
+{
+	Super::SetViewTarget(NewViewTarget, TransitionParams);
+
+	OnViewTargetChange.Broadcast(NewViewTarget);
+}
+
+void ABaseController::ClientHUDStateChanged_Implementation(EHUDState HUDState)
+{
+	OnHUDStateChange.Broadcast(HUDState);
+}
+
 void ABaseController::SetHUDWarmupCountdown(int32 CountdownTime)
 {
 	FString String = ULibraryCommon::GetFormatTime(CountdownTime);
-	String = FString::Printf(TEXT("Game starts in %s"), *String);
-	ChangeAnnouncement.Broadcast(FText::FromString(String));
+	ChangeAnnouncement.Broadcast(FText::Format(LOCTEXT("GameStart", "Game starts in {0}"), FText::FromString(String)));
 }
 
 void ABaseController::HandleMatchHasStarted()
@@ -116,7 +173,16 @@ void ABaseController::HandleMatchHasStarted()
 
 void ABaseController::HandleMatchHasEnded()
 {
-	ChangeAnnouncement.Broadcast(FText::FromString("Game over"));
+	ChangeAnnouncement.Broadcast(LOCTEXT("GameOver", "Game over"));
+}
+
+void ABaseController::HandleLeavingMap()
+{
+	if (!HasAuthority() && IsLocalController())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HandleLeavingMap ------------------------------------------"));
+		ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
+	}
 }
 
 void ABaseController::SetHUDAmmo(int32 Ammo)
@@ -128,3 +194,14 @@ void ABaseController::SetHUDCarriedAmmo(int32 CarriedAmmo)
 {
 	OnCarriedAmmoChange.Broadcast(CarriedAmmo);
 }
+
+void ABaseController::ServerSendMsg_Implementation(EMsgType MsgType, ETeam Team, const FString& PlayerName, const FString& Msg)
+{
+	if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
+	if (BaseGameState)
+	{
+		BaseGameState->MulticastSendMsg(MsgType, Team, PlayerName, Msg);
+	}
+}
+
+#undef LOCTEXT_NAMESPACE

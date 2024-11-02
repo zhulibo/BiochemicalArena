@@ -5,12 +5,12 @@
 #include "EngineUtils.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/Characters/MutantCharacter.h"
 #include "BiochemicalArena/Equipments/Equipment.h"
 #include "BiochemicalArena/Equipments/Data/DamageTypeFall.h"
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/UI/TextChat/TextChat.h"
 #include "GameFramework/PlayerStart.h"
 
 ABaseMode::ABaseMode()
@@ -28,6 +28,64 @@ void ABaseMode::BeginPlay()
 void ABaseMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+}
+
+void ABaseMode::OnPostLogin(AController* NewPlayer)
+{
+	Super::OnPostLogin(NewPlayer);
+
+	UE_LOG(LogTemp, Warning, TEXT("OnPostLogin ------------------------------------------"));
+	
+	if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
+	if (BaseGameState == nullptr) return;
+
+	if (ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(NewPlayer->PlayerState))
+	{
+		BaseGameState->MulticastSendMsg(EMsgType::Join, BasePlayerState->GetTeam(), BasePlayerState->GetPlayerName());
+	}
+}
+
+void ABaseMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	UE_LOG(LogTemp, Warning, TEXT("Logout ------------------------------------------"));
+	
+	if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
+	if (BaseGameState == nullptr) return;
+
+	if (ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Exiting->PlayerState))
+	{
+		BaseGameState->MulticastSendMsg(EMsgType::Left, BasePlayerState->GetTeam(), BasePlayerState->GetPlayerName());
+	}
+
+	// 所有客户端退出后，再让服务端退出。
+	if (MatchState == MatchState::LeavingMap && GetWorld()->GetNumPlayerControllers() == 2)
+	{
+		if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("HandleLeavingMap ------------------------------------------"));
+			PlayerController->ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
+		}
+	}
+}
+
+// 离开地图
+void ABaseMode::HandleLeavingMap()
+{
+	Super::HandleLeavingMap();
+
+	// ABaseMode::Logout 中服务端退出失败，强制服务端退出。
+	FTimerHandle TimerHandle;
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindWeakLambda(this, [this]() {
+		if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("HandleLeavingMap ------------------------------------------"));
+			PlayerController->ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
+		}
+	});
+	GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 1.f, false);
 }
 
 // 生成人类角色
@@ -48,7 +106,7 @@ void ABaseMode::SpawnHumanCharacter(AController* Controller)
 	TObjectPtr<UClass> CharacterClass;
 	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
 	{
-		FDataRegistryId DataRegistryId(DR_HumanCharacterMain, FName(CharacterName));
+		FDataRegistryId DataRegistryId(DR_HUMAN_CHARACTER_MAIN, FName(CharacterName));
 		if (const FHumanCharacterMain* HumanCharacterMain = DRSubsystem->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
 		{
 			CharacterClass = HumanCharacterMain->HumanCharacterClass;
@@ -72,71 +130,8 @@ void ABaseMode::SpawnHumanCharacter(AController* Controller)
 
 	// 搞搞Controller
 	Controller->Possess(HumanCharacter);
+	// 重置俯仰
 	Controller->ClientSetRotation(HumanCharacter->GetActorRotation());
-	// TODO On server side, ROLE_SimulatedProxy's rotation has a delay.
-}
-
-// 生成突变体角色
-void ABaseMode::SpawnMutantCharacter(AController* Controller, bool bSpawnByInfectOrChosen,
-	FVector Location, FRotator ActorRotation, FRotator ViewRotation)
-{
-	if (Controller == nullptr) return;
-
-	// 获取角色名字
-	FString CharacterName;
-	if (ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Controller->PlayerState))
-	{
-		FString EnumValue = UEnum::GetValueAsString(BasePlayerState->GetMutantCharacterName());
-		CharacterName = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-	}
-
-	// 获取角色类
-	TObjectPtr<UClass> CharacterClass;
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
-	{
-		FDataRegistryId DataRegistryId(DR_MutantCharacterMain, FName(CharacterName));
-		if (const FMutantCharacterMain* MutantCharacterMain = DRSubsystem->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
-		{
-			CharacterClass = MutantCharacterMain->MutantCharacterClass;
-		}
-	}
-	if (CharacterClass == nullptr) return;
-
-	// 未传入位置和旋转，使用出生点的位置和旋转
-	if (Location == FVector::ZeroVector || ActorRotation == FRotator::ZeroRotator)
-	{
-		AActor* StartSpot = FindCharacterPlayerStart(ETeam::Team2);
-		if (StartSpot)
-		{
-			Location = StartSpot->GetActorLocation();
-			ActorRotation = StartSpot->GetActorRotation();
-		}
-	}
-
-	// 生成角色
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	AMutantCharacter* MutantCharacter = GetWorld()->SpawnActor<AMutantCharacter>(
-		CharacterClass,
-		Location,
-		ActorRotation,
-		SpawnParams
-	);
-
-	MutantCharacter->bSpawnByInfectOrChosen = bSpawnByInfectOrChosen;
-
-	Controller->Possess(MutantCharacter);
-
-	// 设置俯仰
-	if (ViewRotation == FRotator::ZeroRotator)
-	{
-		Controller->ClientSetRotation(MutantCharacter->GetActorRotation());
-	}
-	else
-	{
-		Controller->ClientSetRotation(ViewRotation);
-	}
-	// TODO On server side, ROLE_SimulatedProxy's rotation has a delay.
 }
 
 // 寻找角色出生点
@@ -184,9 +179,9 @@ void ABaseMode::AssignTeam(AController* Controller, ETeam Team)
 	if (Controller == nullptr) return;
 
 	if (BaseGameState == nullptr) BaseGameState = GetGameState<ABaseGameState>();
-	ABasePlayerState* BasePlayerState = Controller->GetPlayerState<ABasePlayerState>();
+	if (BaseGameState == nullptr) return;
 
-	if (BaseGameState && BasePlayerState)
+	if (ABasePlayerState* BasePlayerState = Controller->GetPlayerState<ABasePlayerState>())
 	{
 		BaseGameState->AddToTeam(BasePlayerState, Team);
 		BasePlayerState->SetTeam(Team);
@@ -198,29 +193,36 @@ void ABaseMode::AssignTeam(AController* Controller, ETeam Team)
 // 击杀日志
 void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser, const UDamageType* DamageType, ABasePlayerState* DamagedState)
 {
-	FString CauserName = TEXT("-1");
-	const UDamageTypeBase* DamageTypeBase = Cast<UDamageTypeBase>(DamageType);
-
-	// Equipment击杀
-	if (DamageTypeBase->DamageType == EDamageCauserType::Equipment)
+	FString CauserName = FString(TEXT("-1"));
+	
+	if (const UDamageTypeBase* DamageTypeBase = Cast<UDamageTypeBase>(DamageType))
 	{
-		// DamageCauser is Projectile, Projectile's owner is Equipment
-		if (AEquipment* CauserEquipment1 = Cast<AEquipment>(DamageCauser->GetOwner()))
+		switch (DamageTypeBase->DamageType)
 		{
-			CauserName = UEnum::GetValueAsString(CauserEquipment1->GetEquipmentName());
-			CauserName = CauserName.Right(CauserName.Len() - CauserName.Find("::") - 2);
+		case EDamageCauserType::Equipment:
+			if (AEquipment* CauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner()))
+			{
+				CauserName = UEnum::GetValueAsString(CauserEquipment->GetEquipmentName());
+				CauserName = CauserName.Right(CauserName.Len() - CauserName.Find("::") - 2);
+			}
+			break;
+		case EDamageCauserType::Melee:
+			if (AEquipment* CauserEquipment = Cast<AEquipment>(DamageCauser))
+			{
+				CauserName = UEnum::GetValueAsString(CauserEquipment->GetEquipmentName());
+				CauserName = CauserName.Right(CauserName.Len() - CauserName.Find("::") - 2);
+			}
+			break;
+		case EDamageCauserType::MutantInfect:
+			CauserName = FString(TEXT("Infect"));
+			break;
+		case EDamageCauserType::MutantDamage:
+			CauserName = FString(TEXT("Damage"));
+			break;
+		case EDamageCauserType::Fall:
+			CauserName = FString(TEXT("Fall"));
+			break;
 		}
-		// DamageCauser is Melee
-		else if (AEquipment* CauserEquipment2 = Cast<AEquipment>(DamageCauser))
-		{
-			CauserName = UEnum::GetValueAsString(CauserEquipment2->GetEquipmentName());
-			CauserName = CauserName.Right(CauserName.Len() - CauserName.Find("::") - 2);
-		}
-	}
-	// 感染 摔死 掉出地图
-	else
-	{
-		CauserName = DamageTypeBase->CauserName;
 	}
 
 	if (BaseGameState == nullptr) BaseGameState = GetGameState<ABaseGameState>();

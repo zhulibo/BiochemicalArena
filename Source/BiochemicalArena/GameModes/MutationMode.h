@@ -10,6 +10,8 @@ namespace MatchState
 	extern BIOCHEMICALARENA_API const FName PostRound;
 }
 
+enum class ESpawnReason : uint8;
+
 UCLASS()
 class BIOCHEMICALARENA_API AMutationMode : public ABaseMode
 {
@@ -36,11 +38,13 @@ public:
 		float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser) override;
 
 	void SelectMutant(ACharacter* Character, AController* Controller);
-	void MutantRespawn(ACharacter* Character, AController* Controller);
+	void MutantRespawn(ACharacter* Character, ABaseController* BaseController, bool bKilledByMelee);
+	void Mutate(ACharacter* Character, AController* Controller, ESpawnReason SpawnReason);
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void OnPostLogin(AController* NewPlayer) override;
 
 	UPROPERTY()
 	class AMutationGameState* MutationGameState;
@@ -69,13 +73,14 @@ protected:
 
 	virtual void OnMatchStateSet() override;
 	virtual void HandleMatchHasStarted() override;
-	virtual void OnPostLogin(AController* NewPlayer) override;
 
-	void RandomMutate();
-	void Mutate(ACharacter* Character, AController* Controller);
+	void RoundStartMutate();
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UGameplayEffect> ChangeMutantEffect;
 
+	void SpawnMutantCharacter(AController* Controller, ESpawnReason SpawnReason,
+	FVector Location = FVector::ZeroVector, FRotator ActorRotation = FRotator::ZeroRotator, FRotator ViewRotation = FRotator::ZeroRotator);
+	
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<class APickup>> PickupClasses;
 	FTimerHandle SpawnPickupTimerHandle;

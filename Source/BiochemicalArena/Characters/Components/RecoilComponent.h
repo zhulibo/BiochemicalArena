@@ -10,9 +10,9 @@ enum class EEquipmentType : uint8;
 UENUM(BlueprintType)
 enum class ERecoilHorDirection : uint8
 {
-	Random UMETA(DisplayName = "Random"),
-	Right UMETA(DisplayName = "Right"),
-	Left UMETA(DisplayName = "Left")
+	Random,
+	Right,
+	Left,
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))

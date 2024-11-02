@@ -6,7 +6,6 @@
 
 enum class EMutantCharacterName : uint8;
 enum class EHumanCharacterName : uint8;
-struct FBag;
 
 UCLASS()
 class BIOCHEMICALARENA_API USaveGameLoadout : public USaveGame
@@ -20,7 +19,7 @@ public:
 	int32 Version = 1;
 	
 	UPROPERTY()
-	TArray<FBag> Bags;
+	TArray<struct FBag> Bags;
 	UPROPERTY()
 	int32 CurLoadoutIndex;
 

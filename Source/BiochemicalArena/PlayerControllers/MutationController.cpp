@@ -11,6 +11,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+#define LOCTEXT_NAMESPACE "AMutationController"
+
 void AMutationController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -93,24 +95,26 @@ void AMutationController::HandleMatchStateChange()
 	if (MatchState == MatchState::InProgress)
 	{
 		RoundStartTime = GetServerTime();
-
 		HandleMatchHasStarted();
 	}
 	else if (MatchState == MatchState::PostRound)
 	{
 		RoundEndTime = GetServerTime();
-
 		HandleRoundHasEnded();
 	}
 	else if (MatchState == MatchState::WaitingPostMatch)
 	{
 		HandleMatchHasEnded();
 	}
+	else if (MatchState == MatchState::LeavingMap)
+	{
+		HandleLeavingMap();
+	}
 }
 
 void AMutationController::HandleRoundHasEnded()
 {
-	ChangeAnnouncement.Broadcast(FText::FromString("Round end"));
+	ChangeAnnouncement.Broadcast(LOCTEXT("RoundEnd", "Round end"));
 }
 
 void AMutationController::OnRep_CurrentRound()
@@ -164,8 +168,6 @@ void AMutationController::SetHUDTime()
 		}
 		else if (MatchState == MatchState::WaitingPostMatch)
 		{
-			// UE_LOG(LogTemp, Warning, TEXT("Match has ended"));
-			// ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
 		}
 
 		// 记录当前时间秒数
@@ -180,6 +182,7 @@ void AMutationController::InitHUD()
 	if (MutationPlayerState == nullptr) MutationPlayerState = Cast<AMutationPlayerState>(PlayerState);
 	if (MutationPlayerState)
 	{
+		// UE_LOG(LogTemp, Warning, TEXT("InitHUD GetTeam %d"), MutationPlayerState->GetTeam());
 		if (MutationPlayerState->GetTeam() == ETeam::Team1)
 		{
 			InitHumanHUD();
@@ -222,7 +225,7 @@ void AMutationController::InitMutantHUD()
 
 		if (MutationPlayerState->GetAbilitySystemComponent())
 		{
-			FGameplayTag Tag = FGameplayTag::RequestGameplayTag(TAG_Mutant_SKILL_CD);
+			FGameplayTag Tag = FGameplayTag::RequestGameplayTag(TAG_MUTANT_SKILL_CD);
 			int32 TagCount = MutationPlayerState->GetAbilitySystemComponent()->GetTagCount(Tag);
 			ShowHUDSkill(TagCount == 0.f && MutationPlayerState->GetCharacterLevel() >= 2.f);
 		}
@@ -274,3 +277,5 @@ void AMutationController::SetHUDDamageMul(float DamageMul)
 {
 	OnDamageMulChange.Broadcast(DamageMul);
 }
+
+#undef LOCTEXT_NAMESPACE

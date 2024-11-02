@@ -19,6 +19,7 @@ void APickupEquipment::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent,
 	AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
 	if (HumanCharacter && HumanCharacter->IsLocallyControlled())
 	{
+		HumanCharacter->bCanSwitchLoadout = false;
 		HumanCharacter->ServerGivePickupEquipment(this);
 	}
 }

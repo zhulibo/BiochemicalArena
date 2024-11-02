@@ -186,7 +186,7 @@ void UTabControl::OnMouseSensitivityChanged(float Value)
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->MouseSensitivity = MapSensitivityMouse(Value);
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -196,7 +196,7 @@ void UTabControl::OnMouseAimAssistSteeringChanged(FString SelectedItem, ESelectI
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->MouseAimAssistSteering = SelectedItem == "on";
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -206,7 +206,7 @@ void UTabControl::OnMouseAimAssistSlowdownChanged(FString SelectedItem, ESelectI
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->MouseAimAssistSlowdown = SelectedItem == "on";
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -218,7 +218,7 @@ void UTabControl::OnControllerSensitivityChanged(float Value)
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->ControllerSensitivity = MapSensitivityController(Value);
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -228,7 +228,7 @@ void UTabControl::OnControllerAimAssistSteeringChanged(FString SelectedItem, ESe
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->ControllerAimAssistSteering = SelectedItem == "on";
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 void UTabControl::OnControllerAimAssistSlowdownChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
@@ -237,7 +237,7 @@ void UTabControl::OnControllerAimAssistSlowdownChanged(FString SelectedItem, ESe
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->ControllerAimAssistSlowdown = SelectedItem == "on";
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -266,7 +266,7 @@ void UTabControl::SetDefault()
 			StorageSubsystem->CacheSetting->ControllerSensitivity = DefaultConfig->ControllerSensitivity;
 			StorageSubsystem->CacheSetting->ControllerAimAssistSteering = DefaultConfig->ControllerAimAssistSteering;
 			StorageSubsystem->CacheSetting->ControllerAimAssistSlowdown = DefaultConfig->ControllerAimAssistSlowdown;
-			StorageSubsystem->Save();
+			StorageSubsystem->SaveSetting();
 		}
 	}
 }

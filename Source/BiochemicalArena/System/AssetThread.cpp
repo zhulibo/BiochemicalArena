@@ -21,7 +21,7 @@ uint32 AssetThread::Run()
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("AssetSubsystem nullptr!"), false);
+		UE_LOG(LogTemp, Warning, TEXT("AssetSubsystem nullptr!"));
 	}
 
 	return 0;

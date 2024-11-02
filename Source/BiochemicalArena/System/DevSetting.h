@@ -13,4 +13,7 @@ public:
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "EditorMaps", meta=(AllowedClasses="/Script/Engine.World"))
 	TArray<FSoftObjectPath> EditorMaps;
 	
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	int32 MutateClientIndex = 1;
+
 };

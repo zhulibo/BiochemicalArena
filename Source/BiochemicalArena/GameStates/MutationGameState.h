@@ -14,6 +14,8 @@ public:
 
 	virtual void AddToTeam(ABasePlayerState* BasePlayerState, ETeam Team) override;
 	virtual void RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam Team) override;
+	
+	void EndRoundIfAllBeKilledByMelee();
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-// #include "EOSSubsystem.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "StorageSubsystem.generated.h"
 
@@ -13,32 +13,38 @@ class BIOCHEMICALARENA_API UStorageSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	void CreateSaveGameSetting();
+	UPROPERTY()
+	FString SlotSetting = TEXT("Slot1");
+	UPROPERTY()
+	FString SlotLoadout = TEXT("Slot2");
+
 	UPROPERTY()
 	class USaveGameSetting* CacheSetting;
 	UPROPERTY()
 	class USaveGameLoadout* CacheLoadout;
-	void Save();
+	void SaveSetting();
+	void SaveLoadout();
 
 	void ApplySetting();
-
 	void SetAudio(float Value, ESoundClassType SoundClassType);
 
 protected:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	UPROPERTY()
-	FString SettingSlotName = TEXT("Slot1");
-	UPROPERTY()
-	FString LoadoutSlotName = TEXT("Slot2");
-
+	UEOSSubsystem* EOSSubsystem;
 	UPROPERTY()
 	uint32 UserIndex = 0;
 
-	// UPROPERTY()
-	// UEOSSubsystem* EOSSubsystem;
-	FTimerHandle SaveToCloudTimerHandle;
-	void SaveToCloud();
+	void CreateSaveGameSetting();
+	void CreateSaveGameLoadout();
+	
+	FTimerHandle SaveSettingToCloudTimerHandle;
+	void SaveSettingToCloud();
+	
+	FTimerHandle SaveLoadoutToCloudTimerHandle;
+	void SaveLoadoutToCloud();
+	
 	void OnWriteFileComplete(bool bWasSuccessful);
 
 	UPROPERTY()

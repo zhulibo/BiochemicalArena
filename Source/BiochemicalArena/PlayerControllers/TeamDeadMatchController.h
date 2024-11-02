@@ -19,7 +19,7 @@ public:
 	void OnMatchStateSet(FName TempMatchState);
 
 	FOnTeamScoreChange OnTeamScoreChange;
-	
+
 	virtual void SetHUDHealth(float Health) override;
 	void SetHUDTeamScore(float Score, ETeam Team);
 

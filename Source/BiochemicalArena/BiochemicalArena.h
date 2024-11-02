@@ -4,35 +4,40 @@
 
 #include "CoreMinimal.h"
 
+// 颜色
+#define C_RED FColor(150, 0, 0, 255)
+#define C_GREEN FColor(0, 150, 0, 255)
+#define C_BLUE FColor(0, 100, 200, 255)
 #define C_YELLOW FColor(238, 119, 0, 255)
-#define C_RED FColor(187, 0, 0, 255)
-#define C_GREEN FColor(0, 187, 0, 255)
 #define C_WHITE FColor(255, 255, 255, 255)
-#define C_BLUE FColor(0, 120, 255, 255)
+#define C_GREY FColor(120, 120, 120, 255)
 
-#define ECC_Team1SkeletalMesh ECollisionChannel::ECC_GameTraceChannel1
-#define ECC_Team2SkeletalMesh ECollisionChannel::ECC_GameTraceChannel2
+// 角色碰撞
+#define ECC_TEAM1_MESH ECollisionChannel::ECC_GameTraceChannel1
+#define ECC_TEAM2_MESH ECollisionChannel::ECC_GameTraceChannel2
+#define ECC_Blood ECollisionChannel::ECC_GameTraceChannel3
 
-#define LOBBY_SERVERNAME FName(TEXT("ServerName"))
-#define LOBBY_MODENAME FName(TEXT("ModeName"))
-#define LOBBY_MAPNAME FName(TEXT("MapName"))
+// 大厅
+#define LOBBY_SCHEMA_ID FName(TEXT("GameLobby"))
 
-#define LOBBY_LOBBYNAME FName(TEXT("LobbyName"))
-#define LOBBY_GAMEMODE FName(TEXT("GameMode"))
-
-#define LOBBY_SESSIONID FName(TEXT("SessionId"))
+#define LOBBY_SERVER_NAME FName(TEXT("ServerName"))
+#define LOBBY_MODE_NAME FName(TEXT("ModeName"))
+#define LOBBY_MAP_NAME FName(TEXT("MapName"))
 #define LOBBY_STATUS FName(TEXT("Status"))
+
+#define LOBBY_MEMBER_NAME FName(TEXT("Name"))
 #define LOBBY_MEMBER_TEAM FName(TEXT("Team"))
-#define LOBBY_MEMBER_PLAYERNAME FName(TEXT("PlayerName"))
-#define LOBBY_MEMBER_BISREADY FName(TEXT("bIsReady"))
+#define LOBBY_MEMBER_READY FName(TEXT("Ready"))
 #define LOBBY_MEMBER_MSG FName(TEXT("Msg"))
 
-#define TAG_Mutant_SKILL_CD FName(TEXT("Mutant.Skill.CD"))
+// GAS
+#define TAG_MUTANT_SKILL_CD FName(TEXT("Mutant.Skill.CD"))
 #define TAG_MUTANT_CHANGE_ACTIVE FName(TEXT("Mutant.Change.Active"))
 
-#define DR_HumanCharacterMain FName(TEXT("DR_HumanCharacterMain"))
-#define DR_MutantCharacterMain FName(TEXT("DR_MutantCharacterMain"))
-#define DR_EquipmentMain FName(TEXT("DR_EquipmentMain"))
-#define DR_WeaponData FName(TEXT("DR_WeaponData"))
-#define DR_MeleeData FName(TEXT("DR_MeleeData"))
-#define DR_EquipmentRecoil FName(TEXT("DR_EquipmentRecoil"))
+// 数据注册表
+#define DR_HUMAN_CHARACTER_MAIN FName(TEXT("DR_HumanCharacterMain"))
+#define DR_MUTANT_CHARACTER_MAIN FName(TEXT("DR_MutantCharacterMain"))
+#define DR_EQUIPMENT_MAIN FName(TEXT("DR_EquipmentMain"))
+#define DR_WEAPON_DATA FName(TEXT("DR_WeaponData"))
+#define DR_MELEE_DATA FName(TEXT("DR_MeleeData"))
+#define DR_EQUIPMENT_RECOIL FName(TEXT("DR_EquipmentRecoil"))

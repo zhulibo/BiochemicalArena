@@ -4,7 +4,15 @@
 #include "CommonActivatableWidget.h"
 #include "GameLayout.generated.h"
 
-enum class ELoginType : uint8;
+UENUM(BlueprintType)
+enum class EHUDState : uint8
+{
+	Playing,
+	Spectating,
+	Inactive
+};
+
+enum class ECoolLoginType : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API UGameLayout : public UCommonActivatableWidget
@@ -29,7 +37,7 @@ public:
 
 protected:
 	virtual void NativeOnInitialized() override;
-	
+
 	UPROPERTY()
 	class ABaseController* BaseController;
 	

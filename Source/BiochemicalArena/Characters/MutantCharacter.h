@@ -4,39 +4,44 @@
 #include "BaseCharacter.h"
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
+#include "Interfaces/InteractableTarget.h"
 #include "MutantCharacter.generated.h"
+
 
 UENUM(BlueprintType)
 enum class EMutantState : uint8
 {
-	Ready UMETA(DisplayName = "Ready"),
-	LightAttacking UMETA(DisplayName = "LightAttacking"),
-	HeavyAttacking UMETA(DisplayName = "HeavyAttacking"),
+	Ready,
+	LightAttacking,
+	HeavyAttacking,
 };
 
 enum class EMutantCharacterName : uint8;
+enum class ESpawnReason : uint8;
 
 UCLASS()
-class BIOCHEMICALARENA_API AMutantCharacter : public ABaseCharacter
+class BIOCHEMICALARENA_API AMutantCharacter : public ABaseCharacter, public IInteractableTarget
 {
 	GENERATED_BODY()
 
 public:
 	AMutantCharacter();
 
-	virtual void PossessedBy(AController* NewController) override;
+	virtual bool CanInteract() override;
+	virtual void OnInteract(ABaseCharacter* BaseCharacter) override;
+
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UGameplayAbilityBase> SkillAbility;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UGameplayEffect> SkillEffect;
-	// 被感染或开局被选为突变体
-	bool bSpawnByInfectOrChosen = false;
+	UPROPERTY()
+	ESpawnReason SpawnReason;
 
 	UPROPERTY()
 	EMutantCharacterName MutantCharacterName;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastDead();
+	void MulticastDead(bool bKilledByMelee);
 
 	virtual void RightHandAttackBegin();
 	virtual void RightHandAttackEnd();
@@ -55,6 +60,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void PossessedBy(AController* NewController) override;
 	virtual void UnPossessed() override;
 	virtual void Destroyed() override;
 
@@ -124,5 +130,7 @@ protected:
 	UFUNCTION()
 	void MutantReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 		AController* AttackerController, AActor* DamageCauser);
+
+	bool bSuckedDry = false;
 
 };

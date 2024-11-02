@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-// #include "BiochemicalArena/System/EOSSubsystem.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Shop.generated.h"
 
 UCLASS()
@@ -14,25 +14,23 @@ protected:
 	virtual void NativeOnInitialized() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
+	UPROPERTY()
+	UEOSSubsystem* EOSSubsystem;
+
 	UPROPERTY(meta = (BindWidget))
-	class UWrapBox* GoodsButtonContainer;
+	class UWrapBox* ItemButtonContainer;
 
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UGoodsButton> EquipmentButtonClass;
-	// void AddEquipmentButton(FOffer Offer);
-
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UGoodsButton> CharacterButtonClass;
-	// void AddCharacterButton(FOffer Offer);
-
-	void OnGoodsButtonClicked(UGoodsButton* GoodsButton);
-
-	// UPROPERTY()
-	// UEOSSubsystem* EOSSubsystem;
 	void OnQueryOffersComplete(bool bWasSuccessful);
 
-	// void OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
-	TArray<FString> Ownership;
-	void OnOwnershipComplete(bool bWasSuccessful, const TArray<FString> TempOwnership);
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UItemButton> EquipmentButtonClass;
+	void AddEquipmentButton(FOffer Offer);
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UItemButton> CharacterButtonClass;
+	void AddCharacterButton(FOffer Offer);
+
+	void OnItemButtonClicked(UItemButton* ItemButton);
+	void OnCheckoutComplete(bool bWasSuccessful, TOptional<FString> String);
 
 };

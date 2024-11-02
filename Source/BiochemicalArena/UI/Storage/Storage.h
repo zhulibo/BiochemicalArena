@@ -3,11 +3,11 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "DataRegistryId.h"
-// #include "BiochemicalArena/System/EOSSubsystem.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Storage.generated.h"
 
-#define STORAGETYPE_ALL FString(TEXT("All"))
-#define STORAGETYPE_CHARACTER FString(TEXT("Character"))
+#define STORAGE_TYPE_ALL FString(TEXT("All"))
+#define STORAGE_TYPE_CHARACTER FString(TEXT("Character"))
 
 enum class EEquipmentType : uint8;
 
@@ -20,15 +20,16 @@ protected:
 	virtual void NativeOnInitialized() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
-	// UPROPERTY()
-	// UEOSSubsystem* EOSSubsystem;
+	UPROPERTY()
+	UEOSSubsystem* EOSSubsystem;
+
+	void OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
+	void OnQueryEntitlementsComplete(bool bWasSuccessful);
+
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
 
-	TArray<FString> Ownership;
-	void OnQueryOwnershipComplete(bool bWasSuccessful, const TArray<FString> TempOwnership);
-
-	// void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
-	void InitPlayerConfig(class USaveGameSetting* SaveGameSetting);
+	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
+	void InitPlayerConfig(class USaveGameLoadout* SaveGameLoadout);
 	bool HasEquipment(FString EquipmentName);
 	bool HasHumanCharacter(FString HumanCharacterName);
 

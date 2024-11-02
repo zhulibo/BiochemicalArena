@@ -45,7 +45,7 @@ void UMutationHuman::OnCause1000Damage()
 
 void UMutationHuman::ClearDamageIcon()
 {
-	DamageIcon->SetText(FText::FromString(TEXT("")));
+	DamageIcon->SetText(FText::GetEmpty());
 }
 
 void UMutationHuman::OnDamageMulChange(float TempDamageMul)

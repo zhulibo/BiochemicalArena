@@ -7,6 +7,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
+#define LOCTEXT_NAMESPACE "ATeamDeadMatchController"
+
 void ATeamDeadMatchController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -76,6 +78,10 @@ void ATeamDeadMatchController::HandleMatchStateChange()
 	{
 		HandleMatchHasEnded();
 	}
+	else if (MatchState == MatchState::LeavingMap)
+	{
+		HandleLeavingMap();
+	}
 }
 
 void ATeamDeadMatchController::SetHUDTime()
@@ -108,8 +114,6 @@ void ATeamDeadMatchController::SetHUDTime()
 		}
 		else if (MatchState == MatchState::WaitingPostMatch)
 		{
-			// UE_LOG(LogTemp, Warning, TEXT("Match has ended"));
-			// ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
 		}
 
 		// 记录当前时间秒数
@@ -139,3 +143,5 @@ void ATeamDeadMatchController::SetHUDTeamScore(float Score, ETeam Team)
 {
 	OnTeamScoreChange.Broadcast(Score, Team);
 }
+
+#undef LOCTEXT_NAMESPACE

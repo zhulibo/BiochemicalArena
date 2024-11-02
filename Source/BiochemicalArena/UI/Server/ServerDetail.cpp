@@ -1,22 +1,21 @@
 #include "ServerDetail.h"
 
-#include <string>
-
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/PlayerControllers/MenuController.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "PlayerLineButton.h"
 #include "CommonHierarchicalScrollBox.h"
-#include "Connect.h"
-#include "Lobby.h"
-#include "ServiceManager.h"
-#include "Session.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/GameModes/GameModeType.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "BiochemicalArena/UI/Common/CommonComboBox.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
+#include "BiochemicalArena/UI/TextChat/TextChat.h"
+#include "BiochemicalArena/Utils/LibraryNotify.h"
 #include "Components/EditableTextBox.h"
+
+#define LOCTEXT_NAMESPACE "UServerDetail"
 
 void UServerDetail::NativeOnInitialized()
 {
@@ -28,90 +27,71 @@ void UServerDetail::NativeOnInitialized()
 
 	SwitchTeamButton->OnClicked().AddUObject(this, &ThisClass::OnSwitchTeamButtonClicked);
 
-	SendMsgButton->ButtonText->SetText(FText::FromString(TEXT("Send")));
-	SendMsgButton->OnClicked().AddUObject(this, &ThisClass::OnSendMsgButtonClicked);
-
 	ReadyButton->OnClicked().AddUObject(this, &ThisClass::OnReadyButtonClicked);
 	JoinServerButton->OnClicked().AddUObject(this, &ThisClass::OnJoinServerButtonClicked);
 	StartServerButton->OnClicked().AddUObject(this, &ThisClass::OnStartServerButtonClicked);
-
 	BackButton->OnClicked().AddUObject(this, &ThisClass::OnBackButtonClicked);
 
-	// EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	// if (EOSSubsystem)
-	// {
-	// 	EOSSubsystem->OnModifyLobbyMemberAttributesComplete.AddUObject(this, &ThisClass::OnModifyLobbyMemberAttributesComplete);
-	//
-	// 	EOSSubsystem->OnLobbyLeft.AddUObject(this, &ThisClass::OnLobbyLeft);
-	//
-	// 	EOSSubsystem->OnPromoteLobbyMemberComplete.AddUObject(this, &ThisClass::OnPromoteLobbyMemberComplete);
-	// }
-
-	ServiceManager = UServiceManager::GetServiceManager();
-	if (ServiceManager)
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	if (EOSSubsystem)
 	{
-		Auth = ServiceManager->GetAuth();
-	
-		Connect = ServiceManager->GetConnect();
-	
-		Lobby = ServiceManager->GetLobby();
-		if (Lobby)
-		{
-			if (!Lobby->OnUpdateLobbyComplete.IsBoundToObject(this)) Lobby->OnUpdateLobbyComplete.AddUObject(this, &ThisClass::OnUpdateLobbyComplete);
-			if (!Lobby->OnLobbyUpdateReceived.IsBoundToObject(this)) Lobby->OnLobbyUpdateReceived.AddUObject(this, &ThisClass::OnLobbyUpdateReceived);
-			if (!Lobby->OnMemberStatusReceived.IsBoundToObject(this)) Lobby->OnMemberStatusReceived.AddUObject(this, &ThisClass::OnMemberStatusReceived);
-			if (!Lobby->OnLeaveLobbyComplete.IsBoundToObject(this)) Lobby->OnLeaveLobbyComplete.AddUObject(this, &ThisClass::OnLeaveLobbyComplete);
-			if (!Lobby->OnDestroyLobbyComplete.IsBoundToObject(this)) Lobby->OnDestroyLobbyComplete.AddUObject(this, &ThisClass::OnDestroyLobbyComplete);
-		}
-		
-		Session = ServiceManager->GetSession();
-		if (Session)
-		{
-			if (!Session->OnCreateSessionComplete.IsBoundToObject(this)) Session->OnCreateSessionComplete.AddUObject(this, &ThisClass::OnCreateSessionComplete);
-		}
+		EOSSubsystem->OnLobbyMemberJoined.AddUObject(this, &ThisClass::OnLobbyMemberJoined);
+		EOSSubsystem->OnLobbyMemberLeft.AddUObject(this, &ThisClass::OnLobbyMemberLeft);
+		EOSSubsystem->OnLobbyLeaderChanged.AddUObject(this, &ThisClass::OnLobbyLeaderChanged);
+		EOSSubsystem->OnModifyLobbyAttrComplete.AddUObject(this, &ThisClass::OnModifyLobbyAttrComplete);
+		EOSSubsystem->OnLobbyAttrChanged.AddUObject(this, &ThisClass::OnLobbyAttrChanged);
+		EOSSubsystem->OnModifyLobbyMemberAttrComplete.AddUObject(this, &ThisClass::OnModifyLobbyMemberAttrComplete);
+		EOSSubsystem->OnLobbyMemberAttrChanged.AddUObject(this, &ThisClass::OnLobbyMemberAttrChanged);
+		EOSSubsystem->OnLobbyLeft.AddUObject(this, &ThisClass::OnLobbyLeft);
+		EOSSubsystem->OnLeaveLobbyComplete.AddUObject(this, &ThisClass::OnLeaveLobbyComplete);
 	}
 }
 
 UWidget* UServerDetail::NativeGetDesiredFocusTarget() const
 {
-	if (Lobby && Connect)
+	if (EOSSubsystem)
 	{
-		if (Lobby->CurLobby->LobbyOwnerUserId == Connect->ProductUserId)
+		if (EOSSubsystem->IsLobbyHost())
 		{
 			return StartServerButton;
 		}
-
-		if (Lobby->CurLobby->GetStringAttr(LOBBY_SESSIONID).IsEmpty())
+		else
 		{
-			return ReadyButton;
+			if (EOSSubsystem->GetLobbyStatus())
+			{
+				return JoinServerButton;
+			}
+			else
+			{
+				return ReadyButton;
+			}
 		}
-
-		return JoinServerButton;
 	}
-
+	
 	return SwitchTeamButton;
 }
 
 void UServerDetail::NativeConstruct()
 {
 	Super::NativeConstruct();
+	
+	TextChat->MsgContainer->ClearChildren();
 
-	SetLobbyUIAttr();
-	
-	SetLobbyUIButton();
-	
-	RefreshPlayerList();
+	SetUIAttr();
+	SetUIButton();
+	UpdatePlayerList();
+
+	bIsExitingLobby = false;
 }
 
-void UServerDetail::SetLobbyUIAttr()
+// 设置大厅属性
+void UServerDetail::SetUIAttr()
 {
-	if (Lobby == nullptr || Lobby->CurLobby == nullptr) return;
+	if (EOSSubsystem == nullptr) return;
 
-	FString ServerName = Lobby->CurLobby->GetStringAttr(LOBBY_SERVERNAME);
-	ServerNameEditableTextBox->SetText(FText::FromString(ServerName));
-	LastServerName = FText::FromString(ServerName);
+	ServerNameEditableTextBox->SetText(FText::FromString(EOSSubsystem->GetLobbyServerName()));
+	LastServerName = FText::FromString(EOSSubsystem->GetLobbyServerName());
 
-	FString ModeName = Lobby->CurLobby->GetStringAttr(LOBBY_MODENAME);
 	ModeComboBox->ClearOptions();
 	for (int32 j = 0; j < static_cast<int32>(ECoolGameMode::MAX); ++j)
 	{
@@ -119,26 +99,139 @@ void UServerDetail::SetLobbyUIAttr()
 		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 		ModeComboBox->AddOption(EnumValue);
 	}
-	if (!ModeName.IsEmpty())
+	ModeComboBox->SetSelectedOption(EOSSubsystem->GetLobbyModeName());
+
+	GetWorld()->GetTimerManager().SetTimerForNextTick([this]() {
+		MapComboBox->SetSelectedOption(EOSSubsystem->GetLobbyMapName());
+	});
+}
+
+void UServerDetail::SetUIButton()
+{
+	if (EOSSubsystem == nullptr) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("SetUIButton"));
+	if (EOSSubsystem->IsLobbyHost())
 	{
-		ModeComboBox->SetSelectedOption(ModeName);
+		ServerNameEditableTextBox->SetIsReadOnly(false);
+		ModeComboBox->SetIsEnabled(true);
+		MapComboBox->SetIsEnabled(true);
+
+		// TODO 焦点在要禁用的按钮上时不好处理，暂时不禁用
+		// ReadyButton->SetIsEnabled(false);
+		// JoinServerButton->SetIsEnabled(false);
+		// StartServerButton->SetIsEnabled(true);
+	}
+	else
+	{
+		ServerNameEditableTextBox->SetIsReadOnly(true);
+		ModeComboBox->SetIsEnabled(false);
+		MapComboBox->SetIsEnabled(false);
+
+		// ReadyButton->SetIsEnabled(!EOSSubsystem->GetLobbyStatus());
+		// JoinServerButton->SetIsEnabled(EOSSubsystem->GetLobbyStatus());
+		// StartServerButton->SetIsEnabled(false);
+	}
+}
+
+// 更新玩家列表
+void UServerDetail::UpdatePlayerList()
+{
+	if (PlayerLineButtonClass == nullptr || Team1Container == nullptr || Team2Container == nullptr
+		|| EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr
+		|| GetWorld()->bIsTearingDown) return;
+
+	// 记录焦点所在位置
+	UCommonHierarchicalScrollBox* Container = nullptr;
+	int32 FocusWidgetIndex = 0;
+	if (Team1Container->HasFocusedDescendants())
+	{
+		Container = Team1Container;
+		FocusWidgetIndex = GetFocusPlayerIndex(Container);
+	}
+	else if (Team2Container->HasFocusedDescendants())
+	{
+		Container = Team2Container;
+		FocusWidgetIndex = GetFocusPlayerIndex(Container);
 	}
 
-	InitMapComboBox();
+	// 清空玩家列表
+	Team1Container->ClearChildren();
+	Team2Container->ClearChildren();
 
-	FString MapName = Lobby->CurLobby->GetStringAttr(LOBBY_MAPNAME);
-	if (!MapName.IsEmpty())
+	// TODO Try to use MVVM
+	// 重新生成玩家列表
+	for (auto& Member : EOSSubsystem->CurrentLobby->Members)
 	{
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this, MapName]() {
-			MapComboBox->SetSelectedOption(MapName);
-		});
+		UPlayerLineButton* PlayerLineButton = CreateWidget<UPlayerLineButton>(this, PlayerLineButtonClass);
+		if (PlayerLineButton == nullptr) continue;
+		
+		PlayerLineButton->Member = Member.Value;
+
+		FString PlayerName = EOSSubsystem->GetMemberName(Member.Value);
+		PlayerLineButton->PlayerName->SetText(FText::FromString(ULibraryCommon::ObfuscatePlayerName(PlayerName, this)));
+
+		FText Status;
+		if (EOSSubsystem->IsLobbyHost(PlayerLineButton->Member))
+		{
+			Status = LOCTEXT("Host", "Host");
+		}
+		else
+		{
+			Status = EOSSubsystem->GetMemberReady(Member.Value) ? LOCTEXT("Ready", "Ready") : FText::FromString("");
+		}
+		PlayerLineButton->Status->SetText(Status);
+
+		if (EOSSubsystem->GetMemberTeam(Member.Value) == ETeam::Team1)
+		{
+			Team1Container->AddChild(PlayerLineButton);
+		}
+		else
+		{
+			Team2Container->AddChild(PlayerLineButton);
+		}
 	}
+
+	// 重新设置焦点位置
+	if (Container && FocusWidgetIndex != 0)
+	{
+		int32 MaxIndex = Container->GetChildrenCount() - 1;
+		if (FocusWidgetIndex > MaxIndex)
+		{
+			FocusWidgetIndex = MaxIndex;
+		}
+
+		if (UWidget* FocusWidget = Container->GetChildAt(FocusWidgetIndex))
+		{
+			FocusWidget->SetFocus();
+		}
+		else
+		{
+			NativeGetDesiredFocusTarget()->SetFocus();
+		}
+	}
+}
+
+int32 UServerDetail::GetFocusPlayerIndex(UCommonHierarchicalScrollBox* Container)
+{
+	for (int i = 0; i < Container->GetChildrenCount(); ++i)
+	{
+		if (UWidget* FocusWidget = Container->GetChildAt(i))
+		{
+			if (FocusWidget->HasFocusedDescendants())
+			{
+				return i;
+			}
+		}
+	}
+
+	return 0;
 }
 
 void UServerDetail::InitMapComboBox()
 {
 	MapComboBox->ClearOptions();
-
+	
 	if (ModeComboBox->GetSelectedOption() == "Mutation")
 	{
 		for (int32 j = 0; j < static_cast<int32>(EMutationMap::MAX); ++j)
@@ -159,328 +252,250 @@ void UServerDetail::InitMapComboBox()
 	}
 }
 
-void UServerDetail::SetLobbyUIButton()
+// TODO OnLobbyMemberJoined触发两次
+// 成员加入大厅事件
+void UServerDetail::OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
 {
-	if (Lobby && Connect)
+	UE_LOG(LogTemp, Warning, TEXT("OnLobbyMemberJoined"));
+	UpdatePlayerList();
+	
+	if (EOSSubsystem)
 	{
-		if (Lobby->CurLobby->LobbyOwnerUserId == Connect->ProductUserId)
-		{
-			ServerNameEditableTextBox->SetIsReadOnly(false);
-			ModeComboBox->SetIsEnabled(true);
-			MapComboBox->SetIsEnabled(true);
-
-			ReadyButton->SetIsEnabled(false);
-			// JoinServerButton->SetIsEnabled(false);
-			StartServerButton->SetIsEnabled(true);
-		}
-		else
-		{
-			ServerNameEditableTextBox->SetIsReadOnly(true);
-			ModeComboBox->SetIsEnabled(false);
-			MapComboBox->SetIsEnabled(false);
-
-			ReadyButton->SetIsEnabled(true);
-			// JoinServerButton->SetIsEnabled(!Lobby->CurLobby->GetStringAttr(LOBBY_SESSIONID).IsEmpty());
-			StartServerButton->SetIsEnabled(false);
-		}
-
-		NativeGetDesiredFocusTarget()->SetFocus();
-	}
-}
-
-void UServerDetail::RefreshPlayerList()
-{
-	if (PlayerLineButtonClass == nullptr) return;
-
-	Team1Container->ClearChildren();
-	Team2Container->ClearChildren();
-
-	for (auto Member : Lobby->CurLobby->Members)
-	{
-		UPlayerLineButton* PlayerLineButton = CreateWidget<UPlayerLineButton>(this, PlayerLineButtonClass);
-		if (PlayerLineButton)
-		{
-			PlayerLineButton->Member = Member;
-
-			if (UServiceManager::GetLobby()->IsOwner())
-			{
-				PlayerLineButton->Status->SetText(FText::FromString(TEXT("Leader")));
-			}
-			else
-			{
-				PlayerLineButton->Status->SetText(FText::FromString(UServiceManager::GetLobby()->CurLobby->GetBoolAttr(LOBBY_MEMBER_BISREADY) ? TEXT("Ready") : TEXT("")));
-			}
-
-			Team1Container->AddChild(PlayerLineButton);
-		}
-	}
-}
-
-void UServerDetail::OnMemberStatusReceived(EOS_ProductUserId TargetUserId, EOS_ELobbyMemberStatus CurrentStatus)
-{
-	UE_LOG(LogTemp, Warning, TEXT("OnMemberStatusReceived: %d"), CurrentStatus);
-
-	if (Connect == nullptr) return;
-
-	if (TargetUserId == Connect->ProductUserId)
-	{
-		if (CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_PROMOTED)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_GREEN, TEXT("You Have been promoted to the leader!"), false);
-
-			RefreshPlayerList();
-		}
-		else if (CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_KICKED)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("Got kick!"), false);
-
-			DeactivateWidget();
-		}
-		else if (CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_CLOSED)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("Lobby has been destroyed!"), false);
-
-			DeactivateWidget();
-		}
-		else if (CurrentStatus == EOS_ELobbyMemberStatus::EOS_LMS_DISCONNECTED)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("Disconnected with lobby!"), false);
-
-			DeactivateWidget();
-		}
-	}
-	else
-	{
-		RefreshPlayerList();
+		TextChat->ShowMsg(
+			EMsgType::Join,
+			EOSSubsystem->GetMemberTeam(LobbyMemberJoined.Member), 
+			EOSSubsystem->GetMemberName(LobbyMemberJoined.Member)
+		);
 	}
 }
 
 void UServerDetail::OnServerNameCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (Text.ToString() == LastServerName.ToString()) return;
-
+	
 	LastServerName = Text;
 
-	if (Lobby)
+	if (EOSSubsystem && EOSSubsystem->IsLobbyHost())
 	{
-		std::string TempKey = TCHAR_TO_UTF8(*LOBBY_SERVERNAME.ToString());
-		std::string TempValue = TCHAR_TO_UTF8(*Text.ToString());
-
-		EOS_Lobby_AttributeData Attr;
-		Attr.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
-		Attr.Key = TempKey.c_str();
-		Attr.Value.AsUtf8 = TempValue.c_str();
-		Attr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
-
-		Lobby->UpdateLobby(Attr);
+		EOSSubsystem->ModifyLobbyAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
+			{ LOBBY_SERVER_NAME, Text.ToString() },
+		});
 	}
 }
 
 void UServerDetail::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnModeComboBoxChanged: %s %d"), *SelectedItem, SelectionType);
-
-	if (SelectionType == ESelectInfo::Direct) return;
+	UE_LOG(LogTemp, Warning, TEXT("OnModeComboBoxChanged, %s"), *SelectedItem);
 
 	InitMapComboBox();
 
-	if (Lobby)
+	if (EOSSubsystem && EOSSubsystem->IsLobbyHost())
 	{
-		std::string TempKey = TCHAR_TO_UTF8(*LOBBY_MODENAME.ToString());
-		std::string TempValue = TCHAR_TO_UTF8(*SelectedItem);
-
-		EOS_Lobby_AttributeData Attr;
-		Attr.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
-		Attr.Key = TempKey.c_str();
-		Attr.Value.AsUtf8 = TempValue.c_str();
-		Attr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
-
-		Lobby->UpdateLobby(Attr);
+		// 代码修改Mode，由赋值处处理
+		if (SelectionType != ESelectInfo::Direct)
+		{
+			MapComboBox->SetSelectedIndex(0);
+		}
 	}
 }
 
 void UServerDetail::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnMapComboBoxChanged: %s %d"), *SelectedItem, SelectionType);
+	UE_LOG(LogTemp, Warning, TEXT("OnMapComboBoxChanged, %s"), *SelectedItem);
+	// InitMapComboBox引起OnMapComboBoxChanged时，SelectedItem为空
+	if (SelectedItem.IsEmpty()) return;
 
-	if (SelectionType == ESelectInfo::Direct) return;
-
-	if (Lobby)
+	if (EOSSubsystem && EOSSubsystem->IsLobbyHost())
 	{
-		std::string TempKey = TCHAR_TO_UTF8(*LOBBY_MAPNAME.ToString());
-		std::string TempValue = TCHAR_TO_UTF8(*SelectedItem);
-
-		EOS_Lobby_AttributeData Attr;
-		Attr.ApiVersion = EOS_LOBBY_ATTRIBUTEDATA_API_LATEST;
-		Attr.Key = TempKey.c_str();
-		Attr.Value.AsUtf8 = TempValue.c_str();
-		Attr.ValueType = EOS_ELobbyAttributeType::EOS_AT_STRING;
-
-		Lobby->UpdateLobby(Attr);
+		TMap<FSchemaAttributeId, FSchemaVariant> UpdatedAttributes;
+		if (ModeComboBox->GetSelectedOption() != EOSSubsystem->GetLobbyModeName())
+		{
+			UpdatedAttributes.Add(LOBBY_MODE_NAME, ModeComboBox->GetSelectedOption());
+		}
+		if (SelectedItem != EOSSubsystem->GetLobbyMapName())
+		{
+			UpdatedAttributes.Add(LOBBY_MAP_NAME, SelectedItem);
+		}
+		if (UpdatedAttributes.Num() > 0)
+		{
+			// TODO
+			UE_LOG(LogTemp, Warning, TEXT("ModifyLobbyAttr"));
+			EOSSubsystem->ModifyLobbyAttr(UpdatedAttributes);
+		}
 	}
 }
 
 // 修改大厅属性完成事件
-void UServerDetail::OnUpdateLobbyComplete(bool bWasSuccessful)
+void UServerDetail::OnModifyLobbyAttrComplete(bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnUpdateLobbyComplete %d"), bWasSuccessful);
-
 	if (bWasSuccessful)
 	{
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Modify lobby attributes failed!"), false);
+		NOTIFY(this, C_RED, LOCTEXT("ModifyServerAttrFailed", "Modify server attributes failed!"));
 	}
 }
 
 // 大厅属性改变事件
-void UServerDetail::OnLobbyUpdateReceived()
+void UServerDetail::OnLobbyAttrChanged(const FLobbyAttributesChanged& LobbyAttributesChanged)
 {
-	if (Lobby == nullptr) return;
+	FString PlayerName = FString();
+	ETeam PlayerTeam = ETeam::NoTeam;
+	if (EOSSubsystem)
+	{
+		PlayerName = EOSSubsystem->GetMemberName(EOSSubsystem->GetLobbyHost());
+		PlayerTeam = EOSSubsystem->GetMemberTeam(EOSSubsystem->GetLobbyHost());
+	}
+	
+	for (auto& ChangedAttribute : LobbyAttributesChanged.ChangedAttributes)
+	{
+		if (ChangedAttribute.Key == LOBBY_SERVER_NAME)
+		{
+			FString ServerName = ChangedAttribute.Value.Value.GetString();
+			ServerNameEditableTextBox->SetText(FText::FromString(ServerName));
+			LastServerName = FText::FromString(ServerName);
+			
+			TextChat->ShowMsg(EMsgType::ServerNameChange, PlayerTeam, PlayerName, ServerName);
+		}
+		else if (ChangedAttribute.Key == LOBBY_MODE_NAME)
+		{
+			FString ModeName = ChangedAttribute.Value.Value.GetString();
+			ModeComboBox->SetSelectedOption(ModeName);
 
-	FString ServerName = Lobby->CurLobby->GetStringAttr(LOBBY_SERVERNAME);
-	FString ModeName = Lobby->CurLobby->GetStringAttr(LOBBY_MODENAME);
-	FString MapName = Lobby->CurLobby->GetStringAttr(LOBBY_MAPNAME);
-
-	ServerNameEditableTextBox->SetText(FText::FromString(ServerName));
-	LastServerName = FText::FromString(ServerName);
-
-	ModeComboBox->SetSelectedOption(ModeName);
-	InitMapComboBox();
-
-	GetWorld()->GetTimerManager().SetTimerForNextTick([this, MapName]() {
-		MapComboBox->SetSelectedOption(MapName);
-	});
+			TextChat->ShowMsg(EMsgType::ModeNameChange, PlayerTeam, PlayerName, ModeName);
+		}
+		else if (ChangedAttribute.Key == LOBBY_MAP_NAME)
+		{
+			// mode和map同时改变时，等待InitMapComboBox
+			FString MapName = ChangedAttribute.Value.Value.GetString();
+			GetWorld()->GetTimerManager().SetTimerForNextTick([this, MapName]() {
+				MapComboBox->SetSelectedOption(MapName);
+			});
+			
+			TextChat->ShowMsg(EMsgType::MapNameChange, PlayerTeam, PlayerName, MapName);
+		}
+		else if (ChangedAttribute.Key == LOBBY_STATUS)
+		{
+			if (EOSSubsystem&& EOSSubsystem->GetLobbyStatus() == 1)
+			{
+				TextChat->ShowMsg(EMsgType::Start, PlayerTeam, PlayerName);
+			}
+			
+			// TODO
+		}
+	}
 }
 
 void UServerDetail::OnSwitchTeamButtonClicked()
 {
-	// if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	// if (EOSSubsystem)
-	// {
-	// 	for (auto& Member : EOSSubsystem->CurrentLobby->Members)
-	// 	{
-	// 		if (Member.Value->AccountId == EOSSubsystem->AccountInfo->AccountId)
-	// 		{
-	// 			int64 Team = Member.Value->Attributes.Find(LOBBY_MEMBER_TEAM)->GetInt64();
-	// 			EOSSubsystem->ModifyLobbyMemberAttributes(TMap<FSchemaAttributeId, FSchemaVariant>{
-	// 				{ LOBBY_MEMBER_TEAM, Team == 1 ? static_cast<int64>(2) : static_cast<int64>(1) }
-	// 			});
-	// 			break;
-	// 		}
-	// 	}
-	// }
+	if (EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return;
 	
-	if (Session)
+	for (auto& Member : EOSSubsystem->CurrentLobby->Members)
 	{
-		Session->CreateSession();
+		if (EOSSubsystem->IsLocalMember(Member.Value))
+		{
+			int64 Team = EOSSubsystem->GetMemberTeam(Member.Value) == ETeam::Team1 ? 2 : 1;
+			EOSSubsystem->ModifyLobbyMemberAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
+				{ LOBBY_MEMBER_TEAM, Team }
+			});
+			break;
+		}
 	}
 }
 
 void UServerDetail::OnReadyButtonClicked()
 {
-	// if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	// if (EOSSubsystem)
-	// {
-	// 	for (auto& Member : EOSSubsystem->CurrentLobby->Members)
-	// 	{
-	// 		if (Member.Value->AccountId == EOSSubsystem->AccountInfo->AccountId)
-	// 		{
-	// 			int64 bIsReady = Member.Value->Attributes.Find(LOBBY_MEMBER_BISREADY)->GetBoolean();
-	// 			EOSSubsystem->ModifyLobbyMemberAttributes(TMap<FSchemaAttributeId, FSchemaVariant>{
-	// 				{ LOBBY_MEMBER_BISREADY, !bIsReady }
-	// 			});
-	// 			break;
-	// 		}
-	// 	}
-	// }
+	if (EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return;
 
-	if (Session)
+	for (auto& Member : EOSSubsystem->CurrentLobby->Members)
 	{
-		Session->GetSessionDetail();
+		if (EOSSubsystem->IsLocalMember(Member.Value))
+		{
+			EOSSubsystem->ModifyLobbyMemberAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
+				{ LOBBY_MEMBER_READY, !EOSSubsystem->GetMemberReady(Member.Value)}
+			});
+			break;
+		}
 	}
 }
 
-void UServerDetail::OnCreateSessionComplete(bool bWasSuccessful)
+// 修改大厅成员属性完成事件
+void UServerDetail::OnModifyLobbyMemberAttrComplete(bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnCreateSessionComplete %d"), bWasSuccessful);
-
 	if (bWasSuccessful)
 	{
-		
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Create session failed!"), false);
+		NOTIFY(this, C_RED, LOCTEXT("ModifyPlayerAttrFailed", "Modify player attribute failed!"));
+	}
+}
+
+// 大厅成员属性改变事件
+void UServerDetail::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
+{
+	if (auto LobbyAttribute = LobbyMemberAttributesChanged.ChangedAttributes.Find(LOBBY_MEMBER_MSG))
+	{
+		if (EOSSubsystem)
+		{
+			TextChat->ShowMsg(
+				EMsgType::Msg,
+				EOSSubsystem->GetMemberTeam(LobbyMemberAttributesChanged.Member),
+				EOSSubsystem->GetMemberName(LobbyMemberAttributesChanged.Member),
+				LobbyAttribute->Value.GetString()
+			);
+		}
+	}
+	else
+	{
+		UpdatePlayerList();
 	}
 }
 
 void UServerDetail::OnStartServerButtonClicked()
 {
-	GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
+	// TODO
+	// if (EOSSubsystem == nullptr || !EOSSubsystem->IsLobbyHost() || !CanStartServer()) return;
 
-	// if (CanStartServer())
-	// {
-	// 	GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
-	// }
+	UE_LOG(LogTemp, Warning, TEXT("ServerTravel ------------------------------------------"));
+	GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
 }
 
 bool UServerDetail::CanStartServer()
 {
-	if (Lobby == nullptr) return false;
-
-	if (ModeComboBox->GetSelectedOption() == "")
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("Please select Mode!"), false);
-
-		return false;
-	}
-	else if (ModeComboBox->GetSelectedOption() == "Mutation")
+	if (EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return false;
+	
+	if (ModeComboBox->GetSelectedOption() == "Mutation")
 	{
 		int32 ReadyPlayerNum = 0;
-
-		for (auto& Member : Lobby->CurLobby->Members)
+		for (auto& Member : EOSSubsystem->CurrentLobby->Members)
 		{
-			if (Member.GetBoolAttr(LOBBY_MEMBER_BISREADY) && Lobby->IsOwner(Member.ProductUserId))
+			if (EOSSubsystem->GetMemberReady(Member.Value) && !EOSSubsystem->IsLobbyHost(Member.Value))
 			{
 				++ReadyPlayerNum;
 			}
 		}
-
 		if (ReadyPlayerNum == 0)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("Requires at least 1 player to be ready!"), false);
-
+			NOTIFY(this, C_YELLOW, LOCTEXT("RequirePlayer", "Require at least 1 player to be ready!"));
 			return false;
 		}
 	}
 	else if (ModeComboBox->GetSelectedOption() == "TeamDeadMatch")
 	{
-		ETeam TeamOfLeader = ETeam::NoTeam;
-
-		for (auto& Member : Lobby->CurLobby->Members)
+		ETeam HostTeam = EOSSubsystem->GetMemberTeam(EOSSubsystem->GetLobbyHost());
+		
+		if (HostTeam == ETeam::NoTeam)
 		{
-			if (Lobby->IsOwner(Member.ProductUserId))
-			{
-				TeamOfLeader = Member.GetIntAttr(LOBBY_MEMBER_TEAM) == 1 ? ETeam::Team1 : ETeam::Team2;
-				break;
-			}
-		}
-
-		if (TeamOfLeader == ETeam::NoTeam)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("Leader's team was not found!"), false);
-
+			NOTIFY(this, C_YELLOW, LOCTEXT("HostTeamNotFound", "Host's team was not found!"));
 			return false;
 		}
 
 		bool bAnotherTeamHasPlayerReady = false;
-
-		int32 AnotherTeamNum = TeamOfLeader == ETeam::Team1 ? 1 : 2;
-		for (auto& Member : Lobby->CurLobby->Members)
+		for (auto& Member : EOSSubsystem->CurrentLobby->Members)
 		{
-			if (Member.GetIntAttr(LOBBY_MEMBER_TEAM) == AnotherTeamNum && Member.GetBoolAttr(LOBBY_MEMBER_BISREADY))
+			if (EOSSubsystem->GetMemberTeam(Member.Value) != HostTeam && EOSSubsystem->GetMemberReady(Member.Value))
 			{
 				bAnotherTeamHasPlayerReady = true;
 				break;
@@ -489,81 +504,99 @@ bool UServerDetail::CanStartServer()
 
 		if (!bAnotherTeamHasPlayerReady)
 		{
-			FString Msg = FString::Printf(TEXT("Requires at least 1 player to be ready in team %s!"), AnotherTeamNum == 1 ? TEXT("1") : TEXT("2"));
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, Msg, false);
-
+			NOTIFY(this, C_YELLOW, FText::Format(LOCTEXT("RequirePlayerAtTeam", "Require at least 1 player to be ready in team {0}!"), FText::AsNumber(HostTeam == ETeam::Team1 ? 1 : 2)));
 			return false;
 		}
 	}
-
-	if (MapComboBox->GetSelectedOption() == "")
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_YELLOW, TEXT("Please select Map!"), false);
-
-		return false;
-	}
-
+	
 	return true;
 }
 
 void UServerDetail::OnJoinServerButtonClicked()
 {
+	// TODO
+	// if (EOSSubsystem == nullptr || EOSSubsystem->IsLobbyHost()) return;
+	
 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
 	if (MenuController)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ClientTravel---------------------------------------------------------"));
+		FString Url;
+		EOSSubsystem->GetResolvedConnectString(Url);
+		UE_LOG(LogTemp, Warning, TEXT("ClientTravel ------------------------------------------"));
+		MenuController->ClientTravel(Url, ETravelType::TRAVEL_Absolute);
+	}
+}
 
-		// TODO Need implement p2p, see SocketSubsystemEOS plugin
-		MenuController->ClientTravel("EOS:0002facb7b3f43a58ea43cf91b88d1ad:GameNetDriver:26", ETravelType::TRAVEL_Absolute);
+// 大厅房主改变事件
+void UServerDetail::OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnLobbyLeaderChanged"));
+	SetUIButton();
+	
+	UpdatePlayerList();
+	
+	if (EOSSubsystem)
+	{
+		TextChat->ShowMsg(
+			EMsgType::HostChange,
+			EOSSubsystem->GetMemberTeam(LobbyLeaderChanged.Leader),
+			EOSSubsystem->GetMemberName(LobbyLeaderChanged.Leader)
+		);
 	}
 }
 
 // 离开大厅
 void UServerDetail::OnBackButtonClicked()
 {
-	if (Lobby == nullptr) return;
+	if (EOSSubsystem)
+	{
+		bIsExitingLobby = true;
 
-	if (UServiceManager::GetLobby()->IsOwner() && UServiceManager::GetLobby()->CurLobby->Members.Num() <= 1)
-	{
-		Lobby->DestroyLobby();
-	}
-	else
-	{
-		Lobby->LeaveLobby();
+		EOSSubsystem->LeaveLobby();
 	}
 }
 
 // 离开大厅完成事件
 void UServerDetail::OnLeaveLobbyComplete(bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnLeaveLobbyComplete %d"), bWasSuccessful);
-
 	if (bWasSuccessful)
 	{
-		DeactivateWidget();
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Leave lobby failed!"), false);
+		NOTIFY(this, C_RED, LOCTEXT("LeaveServerFailed", "Leave server failed!"));
 	}
 }
 
-// 销毁大厅完成事件
-void UServerDetail::OnDestroyLobbyComplete(bool bWasSuccessful)
+// 成员离开大厅事件
+void UServerDetail::OnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnDestroyLobbyComplete %d"), bWasSuccessful);
+	UpdatePlayerList();
 
-	if (bWasSuccessful)
+	if (EOSSubsystem)
 	{
-		DeactivateWidget();
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_RED, TEXT("Destroy lobby failed!"), false);
+		TextChat->ShowMsg(
+			EMsgType::Left,
+			EOSSubsystem->GetMemberTeam(LobbyMemberLeft.Member),
+			EOSSubsystem->GetMemberName(LobbyMemberLeft.Member)
+		);
 	}
 }
 
-void UServerDetail::OnSendMsgButtonClicked()
+// 被踢出大厅事件
+void UServerDetail::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnSendMsgButtonClicked"));
+	UE_LOG(LogTemp, Warning, TEXT("OnLobbyLeft"));
+	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
+	if (MenuController)
+	{
+		MenuController->ServerStack->RemoveWidget(*MenuController->ServerStack->GetActiveWidget());
+	}
+
+	if (!bIsExitingLobby)
+	{
+		NOTIFY(this, C_YELLOW, LOCTEXT("Gotkicked", "Got kicked!"));
+	}
 }
+
+#undef LOCTEXT_NAMESPACE

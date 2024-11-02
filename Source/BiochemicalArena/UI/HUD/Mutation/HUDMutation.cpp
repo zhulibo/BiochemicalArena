@@ -4,6 +4,7 @@
 #include "MutationMutant.h"
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/UI/GameLayout.h"
 #include "Components/DynamicEntryBox.h"
 
 void UHUDMutation::NativeOnInitialized()
@@ -19,6 +20,7 @@ void UHUDMutation::NativeOnInitialized()
 	if (AMutationController* MutationController = Cast<AMutationController>(GetOwningPlayer()))
 	{
 		MutationController->OnTeamChange.AddUObject(this, &ThisClass::OnTeamChange);
+		MutationController->OnHUDStateChange.AddUObject(this, &ThisClass::OnHUDStateChange);
 	}
 }
 
@@ -26,12 +28,22 @@ void UHUDMutation::OnTeamChange(ETeam Team)
 {
 	if (Team == ETeam::Team1)
 	{
+		EntryBox_MutationHuman->Reset();
 		EntryBox_MutationMutant->Reset();
 		MutationHuman = Cast<UMutationHuman>(EntryBox_MutationHuman->CreateEntry());
 	}
 	else if (Team == ETeam::Team2)
 	{
 		EntryBox_MutationHuman->Reset();
+		EntryBox_MutationMutant->Reset();
 		MutationMutant = Cast<UMutationMutant>(EntryBox_MutationMutant->CreateEntry());
+	}
+}
+
+void UHUDMutation::OnHUDStateChange(EHUDState HUDState)
+{
+	if (HUDState == EHUDState::Spectating)
+	{
+		EntryBox_MutationMutant->Reset();
 	}
 }

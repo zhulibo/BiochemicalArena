@@ -6,9 +6,7 @@
 #include "BiochemicalArena/System/Storage/SaveGameSetting.h"
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "Components/ComboBoxString.h"
-#include "GameFramework/GameUserSettings.h"
 #include "Input/CommonUIInputTypes.h"
-#include "Internationalization/Culture.h"
 
 void UTabGame::NativeOnInitialized()
 {
@@ -27,17 +25,24 @@ void UTabGame::NativeOnInitialized()
 	LanguageComboBox->AddOption("en");
 	LanguageComboBox->AddOption("zh");
 	LanguageComboBox->AddOption("ja");
-
+	
+	ObfuscatePlayerNameComboBox->AddOption("on");
+	ObfuscatePlayerNameComboBox->AddOption("off");
+	ObfuscateTextChatComboBox->AddOption("on");
+	ObfuscateTextChatComboBox->AddOption("off");
+	
 	SetUISavedValue();
 	
 	LanguageComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnLanguageChanged);
+	ObfuscatePlayerNameComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnObfuscatePlayerNameChanged);
+	ObfuscateTextChatComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnObfuscateTextChatChanged);
 
 	SetDefaultHandle = RegisterUIActionBinding(FBindUIActionArgs(SetDefaultData, true, FSimpleDelegate::CreateUObject(this, &ThisClass::SetDefault)));
 }
 
 UWidget* UTabGame::NativeGetDesiredFocusTarget() const
 {
-	return Super::NativeGetDesiredFocusTarget();
+	return LanguageComboBox;
 }
 
 void UTabGame::OnTabButtonHovered(int Index)
@@ -59,18 +64,41 @@ void UTabGame::SetUISavedValue()
 		{
 			LanguageComboBox->SetSelectedOption(StorageSubsystem->CacheSetting->Language);
 		}
+		
+		ObfuscatePlayerNameComboBox->SetSelectedOption(StorageSubsystem->CacheSetting->ObfuscatePlayerName ? "on" : "off");
+		ObfuscateTextChatComboBox->SetSelectedOption(StorageSubsystem->CacheSetting->ObfuscateTextChat ? "on" : "off");
 	}
 }
 
 void UTabGame::OnLanguageChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	FInternationalization::Get().SetCurrentCulture(SelectedItem);
-	
+
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem && StorageSubsystem->CacheSetting)
 	{
 		StorageSubsystem->CacheSetting->Language = SelectedItem;
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
+	}
+}
+
+void UTabGame::OnObfuscatePlayerNameChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem && StorageSubsystem->CacheSetting)
+	{
+		StorageSubsystem->CacheSetting->ObfuscatePlayerName = SelectedItem == "on";
+		StorageSubsystem->SaveSetting();
+	}
+}
+
+void UTabGame::OnObfuscateTextChatChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+{
+	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
+	if (StorageSubsystem && StorageSubsystem->CacheSetting)
+	{
+		StorageSubsystem->CacheSetting->ObfuscateTextChat = SelectedItem == "on";
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -82,9 +110,13 @@ void UTabGame::SetDefault()
 		if (StorageSubsystem && StorageSubsystem->CacheSetting)
 		{
 			LanguageComboBox->SetSelectedOption(DefaultConfig->Language);
+			ObfuscatePlayerNameComboBox->SetSelectedOption(DefaultConfig->ObfuscatePlayerName ? "on" : "off");
+			ObfuscateTextChatComboBox->SetSelectedOption(DefaultConfig->ObfuscateTextChat ? "on" : "off");
 
 			StorageSubsystem->CacheSetting->Language = DefaultConfig->Language;
-			StorageSubsystem->Save();
+			StorageSubsystem->CacheSetting->ObfuscatePlayerName = DefaultConfig->ObfuscatePlayerName;
+			StorageSubsystem->CacheSetting->ObfuscateTextChat = DefaultConfig->ObfuscateTextChat;
+			StorageSubsystem->SaveSetting();
 		}
 	}
 }

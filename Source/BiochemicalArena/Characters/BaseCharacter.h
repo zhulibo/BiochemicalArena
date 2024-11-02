@@ -4,14 +4,12 @@
 #include "AbilitySystemInterface.h"
 #include "GameplayEffectTypes.h"
 #include "GameFramework/Character.h"
-#include "Interfaces/CrosshairInterface.h"
 #include "BaseCharacter.generated.h"
 
 enum class ECommonInputType : uint8;
-struct FBag;
 
 UCLASS()
-class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter, public ICrosshairInterface, public IAbilitySystemInterface
+class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -22,8 +20,6 @@ public:
 	virtual void OnControllerReady() {}
 
 	bool HasInitMeshCollision = false;
-
-	virtual void PossessedBy(AController* NewController) override;
 	void InitAbilityActorInfo();
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	class UAttributeSetBase* GetAttributeSetBase();
@@ -41,8 +37,6 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSetHealth(float TempHealth, AController* AttackerController);
 
-	bool bIsImmune = false;
-
 	UPROPERTY()
 	FColor BloodColor;
 	UPROPERTY(EditAnywhere)
@@ -55,11 +49,8 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
-
-	UFUNCTION()
-	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
-		FVector NormalImpulse, const FHitResult& Hit);
 
 	UPROPERTY()
 	class UBAAbilitySystemComponent* AbilitySystemComponent;
@@ -96,6 +87,13 @@ protected:
 	UPROPERTY()
 	class ABaseController* BaseController;
 
+	UFUNCTION()
+	void OnInputMethodChanged(ECommonInputType TempCommonInputType);
+
+	UFUNCTION()
+	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
+		FVector NormalImpulse, const FHitResult& Hit);
+
 	void PollSetMeshCollision();
 
 	UPROPERTY(Replicated)
@@ -105,11 +103,6 @@ protected:
 	void CalcAimPitch();
 
 	void PollInit();
-
-	UPROPERTY()
-	ECommonInputType CommonInputType;
-	UFUNCTION()
-	void OnInputMethodChanged(ECommonInputType TempCommonInputType);
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<class UInputBase> InputBase;
@@ -121,6 +114,12 @@ protected:
 	void CrouchButtonReleased(const FInputActionValue& Value);
 	void CrouchControllerButtonPressed(const FInputActionValue& Value);
 
+	void InteractStarted(const FInputActionValue& Value);
+	void InteractOngoing(const FInputActionValue& Value);
+	void InteractTriggered(const FInputActionValue& Value);
+	void InteractCompleted(const FInputActionValue& Value);
+	void InteractCanceled(const FInputActionValue& Value);
+
 	void ScoreboardButtonPressed(const FInputActionValue& Value);
 	void ScoreboardButtonReleased(const FInputActionValue& Value);
 	void PauseMenuButtonPressed(const FInputActionValue& Value);
@@ -129,6 +128,8 @@ protected:
 	void RadialMenuButtonReleased(const FInputActionValue& Value);
 	void RadialMenuChangeButtonPressed(const FInputActionValue& Value);
 	void RadialMenuSelect(const FInputActionValue& Value);
+
+	void TextChat(const FInputActionValue& Value);
 	
 	void OnMaxHealthChanged(const FOnAttributeChangeData& Data);
 	void OnHealthChanged(const FOnAttributeChangeData& Data);
@@ -141,6 +142,10 @@ protected:
 	void MulticastPlayOuchSound(float DamageRate);
 
 	bool bIsDead = false;
+
+	UPROPERTY()
+	AActor* InteractActor;
+	void TraceInteractActor(FHitResult& OutHit);
 
 public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }

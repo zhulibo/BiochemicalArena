@@ -10,6 +10,7 @@ void AMutationPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 	DOREPLIFETIME(ThisClass, Team);
 	DOREPLIFETIME(ThisClass, Rage);
+	DOREPLIFETIME(ThisClass, bKilledByMelee);
 }
 
 void AMutationPlayerState::BeginPlay()
@@ -17,11 +18,13 @@ void AMutationPlayerState::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AMutationPlayerState::InitData()
+void AMutationPlayerState::Reset()
 {
-	Super::InitData();
+	Super::Reset();
 
 	SetRage(0.f);
+
+	bKilledByMelee = false;
 }
 
 void AMutationPlayerState::SetTeam(ETeam TempTeam)
@@ -43,6 +46,9 @@ void AMutationPlayerState::OnRep_Team()
 	if (MutationController && MutationController->IsLocalController())
 	{
 		MutationController->OnTeamChange.Broadcast(Team);
+
+		// OnControllerReady > InitHUD依赖于Team，OnRep_Team后主动调一下InitHUD。
+		MutationController->InitHUD();
 	}
 }
 

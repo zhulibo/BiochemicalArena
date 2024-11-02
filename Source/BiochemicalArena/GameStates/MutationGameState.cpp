@@ -2,6 +2,7 @@
 
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
+#include "BiochemicalArena/PlayerStates/MutationPlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "Net/UnrealNetwork.h"
 
@@ -68,6 +69,29 @@ void AMutationGameState::RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam
 	CalcDamageMul();
 
 	SetHUDTeamNum(GetTeam(Team).Num(), Team);
+}
+
+void AMutationGameState::EndRoundIfAllBeKilledByMelee()
+{
+	if (MutationMode == nullptr) MutationMode = Cast<AMutationMode>(GetWorld()->GetAuthGameMode());
+	if (MutationMode == nullptr) return;
+
+	bool bAllKilledByMelee = true;
+	for (int i = 0; i < Team2.Num(); ++i)
+	{
+		if (AMutationPlayerState* MutationPlayerState = Cast<AMutationPlayerState>(Team2[i]))
+		{
+			if (MutationPlayerState->bKilledByMelee == false)
+			{
+				bAllKilledByMelee = false;
+				break;
+			}
+		}
+	}
+	if (bAllKilledByMelee)
+	{
+		MutationMode->EndRound();
+	}
 }
 
 void AMutationGameState::CalcDamageMul()

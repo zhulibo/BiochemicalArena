@@ -31,6 +31,16 @@ protected:
 	UFUNCTION()
 	void OnLanguageChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
+	UPROPERTY(meta = (BindWidget))
+	UComboBoxString* ObfuscatePlayerNameComboBox;
+	UFUNCTION()
+	void OnObfuscatePlayerNameChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
+	UPROPERTY(meta = (BindWidget))
+	UComboBoxString* ObfuscateTextChatComboBox;
+	UFUNCTION()
+	void OnObfuscateTextChatChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
+
 	UPROPERTY(EditAnywhere)
 	FDataTableRowHandle SetDefaultData;
 	FUIActionBindingHandle SetDefaultHandle;

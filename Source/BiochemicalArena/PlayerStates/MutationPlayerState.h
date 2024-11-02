@@ -16,11 +16,13 @@ public:
 	
 	void SetRage(float TempRage);
 
+	UPROPERTY(Replicated)
+	bool bKilledByMelee = false;
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
-
-	virtual void InitData() override;
+	virtual void Reset() override;
 
 	UPROPERTY()
 	class AMutationController* MutationController;

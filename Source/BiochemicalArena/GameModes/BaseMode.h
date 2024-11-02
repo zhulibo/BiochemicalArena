@@ -24,13 +24,15 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void OnPostLogin(AController* NewPlayer) override;
+
+	virtual void Logout(AController* Exiting) override;
+	virtual void HandleLeavingMap() override;
 
 	UPROPERTY()
 	class ABaseGameState* BaseGameState;
 
 	void SpawnHumanCharacter(AController* Controller);
-	void SpawnMutantCharacter(AController* Controller, bool bSpawnByInfectOrChosen = false,
-		FVector Location = FVector::ZeroVector, FRotator ActorRotation = FRotator::ZeroRotator, FRotator ViewRotation = FRotator::ZeroRotator);
 
 	TArray<class APlayerStart*> Team1PlayerStarts;
 	TArray<APlayerStart*> Team2PlayerStarts;

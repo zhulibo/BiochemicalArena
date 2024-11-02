@@ -6,10 +6,11 @@ UDefaultConfig::UDefaultConfig()
 {
 	// 设置默认背包
 	FBag Bag;
-	Bag.Primary = "AK47";
-	Bag.Secondary = "Glock17";
-	Bag.Melee = "Kukri";
-	Bag.Throwing = "Grenade";
+	Bag.Primary = DefaultPrimary;
+	Bag.Secondary = DefaultSecondary;
+	Bag.Melee = DefaultMelee;
+	Bag.Throwing = DefaultThrowing;
+	
 	for (int32 i = 0; i < 4; ++i)
 	{
 		Bags.Add(Bag);

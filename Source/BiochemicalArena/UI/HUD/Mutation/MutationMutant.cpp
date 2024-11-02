@@ -23,9 +23,6 @@ void UMutationMutant::NativeOnInitialized()
 
 	SkillButton->OnClicked().AddUObject(this, &ThisClass::OnSkillButtonClicked);
 
-	// 禁用按钮，这些HUD上的按钮图标只是为了展示，实际功能由增强输入处理
-	// SkillButton->SetIsEnabled(false);
-
 	// CooldownTag = FGameplayTag::RequestGameplayTag(TAG_Mutant_SKILL_CD);
 }
 
@@ -53,7 +50,7 @@ void UMutationMutant::OnSkillChange(bool bIsShow)
 	SkillBox->SetVisibility(bIsShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
-// TODO 验证通过UI接受事件可行性
+// TODO 验证通过UI接受事件可行性，将CommonUI与增强输入结合使用。
 void UMutationMutant::OnSkillButtonClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnSkillButtonClicked"));

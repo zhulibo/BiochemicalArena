@@ -7,7 +7,7 @@
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 
-#define LOCTEXT_NAMESPACE "BiochemicalArena"
+#define LOCTEXT_NAMESPACE "USettingTab"
 
 void USettingTab::NativeOnInitialized()
 {

@@ -28,6 +28,7 @@
 #include "Data/CharacterSound.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Data/InputBase.h"
+#include "Interfaces/InteractableTarget.h"
 #include "Net/UnrealNetwork.h"
 
 ABaseCharacter::ABaseCharacter()
@@ -37,6 +38,7 @@ ABaseCharacter::ABaseCharacter()
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECC_Blood, ECollisionResponse::ECR_Ignore);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh(), "Head");
@@ -48,7 +50,7 @@ ABaseCharacter::ABaseCharacter()
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(GetMesh(), "Head");
 	OverheadWidget->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // TODO 垂直向上
-	
+
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->bCanWalkOffLedgesWhenCrouching = true;
 	GetCharacterMovement()->SetCrouchedHalfHeight(50.f);
@@ -56,6 +58,7 @@ ABaseCharacter::ABaseCharacter()
 	GetCharacterMovement()->AirControlBoostMultiplier = 1;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Blood, ECollisionResponse::ECR_Ignore);
 }
 
 void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -98,18 +101,15 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	if (InputBase == nullptr) return;
 
-	APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	if (PlayerController)
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-		if (Subsystem)
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(InputBase->BaseMappingContext, 0);
 		}
 	}
 
-	UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent);
-	if (EnhancedInputComponent)
+	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedInputComponent->BindAction(InputBase->MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
 		EnhancedInputComponent->BindAction(InputBase->LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
@@ -118,8 +118,14 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(InputBase->CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
 		EnhancedInputComponent->BindAction(InputBase->CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
 		EnhancedInputComponent->BindAction(InputBase->CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
+		
+		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Started, this, &ThisClass::InteractStarted);
+		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Ongoing, this, &ThisClass::InteractOngoing);
+		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Triggered, this, &ThisClass::InteractTriggered);
+		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Completed, this, &ThisClass::InteractCompleted);
+		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Canceled, this, &ThisClass::InteractCanceled);
 
-		EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Started, this, &ThisClass::ScoreboardButtonPressed);
+		EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
 		EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
 		EnhancedInputComponent->BindAction(InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
 
@@ -127,6 +133,8 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(InputBase->RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
 		EnhancedInputComponent->BindAction(InputBase->RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChangeButtonPressed);
 		EnhancedInputComponent->BindAction(InputBase->RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
+
+		EnhancedInputComponent->BindAction(InputBase->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
 	}
 }
 
@@ -152,10 +160,10 @@ void ABaseCharacter::PollSetMeshCollision()
 			switch (BasePlayerState->GetTeam())
 			{
 			case ETeam::Team1:
-				GetMesh()->SetCollisionObjectType(ECC_Team1SkeletalMesh);
+				GetMesh()->SetCollisionObjectType(ECC_TEAM1_MESH);
 				break;
 			case ETeam::Team2:
-				GetMesh()->SetCollisionObjectType(ECC_Team2SkeletalMesh);
+				GetMesh()->SetCollisionObjectType(ECC_TEAM2_MESH);
 				break;
 			}
 
@@ -175,7 +183,7 @@ void ABaseCharacter::CalcAimPitch()
 
 	AimPitch = ControllerPitch;
 
-	// 本地存在Controller，覆盖掉网络复制的值，避免延迟
+	// 本地覆盖掉网络复制的值，避免延迟
 	if (IsLocallyControlled())
 	{
 		AimPitch = GetViewRotation().Pitch;
@@ -250,6 +258,12 @@ void ABaseCharacter::OnRep_PlayerState()
 	InitAbilityActorInfo();
 
 	OnAbilitySystemComponentInit();
+}
+
+// 输入设备类型改变
+void ABaseCharacter::OnInputMethodChanged(ECommonInputType TempCommonInputType)
+{
+	UE_LOG(LogTemp, Warning, TEXT("OnInputMethodChanged: %d"), TempCommonInputType);
 }
 
 void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
@@ -339,14 +353,6 @@ float ABaseCharacter::GetJumpZVelocity()
 	return AttributeSetBase ? AttributeSetBase->GetJumpZVelocity() : 0.f;
 }
 
-// 输入设备类型改变
-void ABaseCharacter::OnInputMethodChanged(ECommonInputType TempCommonInputType)
-{
-	UE_LOG(LogTemp, Warning, TEXT("OnInputMethodChanged: %d"), TempCommonInputType);
-
-	CommonInputType = TempCommonInputType;
-}
-
 // 根据地形播放不同脚步声
 void ABaseCharacter::PlayFootstepSound()
 {
@@ -387,6 +393,7 @@ void ABaseCharacter::PlayFootstepSound()
 
 void ABaseCharacter::FellOutOfWorld(const UDamageType& DmgType)
 {
+	UE_LOG(LogTemp, Warning, TEXT("FellOutOfWorld"));
 	UGameplayStatics::ApplyDamage(this, GetHealth(), BaseController, this, UDamageTypeFall::StaticClass());
 }
 
@@ -429,16 +436,18 @@ void ABaseCharacter::JumpButtonPressed(const FInputActionValue& Value)
 // 键鼠为长按蹲
 void ABaseCharacter::CrouchButtonPressed(const FInputActionValue& Value)
 {
-	if (GetCharacterMovement()->IsFalling()) return;
-
-	Crouch();
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		Crouch();
+	}
 }
 
 void ABaseCharacter::CrouchButtonReleased(const FInputActionValue& Value)
 {
-	if (GetCharacterMovement()->IsFalling()) return;
-
-	UnCrouch();
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		UnCrouch();
+	}
 }
 
 // 手柄为切换蹲
@@ -453,6 +462,131 @@ void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Valu
 	else
 	{
 		Crouch();
+	}
+}
+
+void ABaseCharacter::TraceInteractActor(FHitResult& OutHit)
+{
+	FVector2D ViewportSize;
+	GEngine->GameViewport->GetViewportSize(ViewportSize);
+
+	FVector2D CrosshairLocation(ViewportSize.X / 2.f, ViewportSize.Y / 2.f);
+	FVector Position;
+	FVector Direction;
+	bool bScreenToWorld = UGameplayStatics::DeprojectScreenToWorld(
+		UGameplayStatics::GetPlayerController(this, 0),
+		CrosshairLocation, Position, Direction
+	);
+
+	if (bScreenToWorld)
+	{
+		FVector Start = Position;
+		FVector End = Position + Direction * 160.f;
+
+		DrawDebugLine(GetWorld(), Start, End, C_YELLOW, true);
+		
+		FCollisionQueryParams CollisionQueryParams;
+		CollisionQueryParams.AddIgnoredActor(this);
+		GetWorld()->SweepSingleByChannel(
+			OutHit,
+			Start,
+			End,
+			FQuat::Identity,
+			ECollisionChannel::ECC_Visibility,
+			FCollisionShape::MakeSphere(10.f),
+			CollisionQueryParams
+		);
+	}
+}
+
+void ABaseCharacter::InteractStarted(const FInputActionValue& Value)
+{
+	FHitResult OutHit;
+	TraceInteractActor(OutHit);
+	if (OutHit.bBlockingHit)
+	{
+		if (IInteractableTarget* Target = Cast<IInteractableTarget>(OutHit.GetActor()))
+		{
+			if (Target->CanInteract())
+			{
+				InteractActor = OutHit.GetActor();
+
+				if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+				if (BaseController)
+				{
+					BaseController->OnInteractStarted.Broadcast();
+				}
+
+				return;
+			}
+		}
+	}
+
+	InteractActor = nullptr;
+}
+
+void ABaseCharacter::InteractOngoing(const FInputActionValue& Value)
+{
+	if (InteractActor != nullptr)
+	{
+		FHitResult OutHit;
+		TraceInteractActor(OutHit);
+		if (OutHit.bBlockingHit)
+		{
+			if (InteractActor == OutHit.GetActor())
+			{
+				if (IInteractableTarget* Target = Cast<IInteractableTarget>(OutHit.GetActor()))
+				{
+					UE_LOG(LogTemp, Warning, TEXT("InteractActor == OutHit.GetActor()"));
+					if (Target->CanInteract())
+					{
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	// 目标改变停止交互
+	InteractActor = nullptr;
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->OnInteractEnded.Broadcast();
+	}
+}
+
+void ABaseCharacter::InteractTriggered(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController && InteractActor)
+	{
+		if (IInteractableTarget* Target = Cast<IInteractableTarget>(InteractActor))
+		{
+			Target->OnInteract(this);
+		}
+	}
+}
+
+void ABaseCharacter::InteractCompleted(const FInputActionValue& Value)
+{
+	InteractActor = nullptr;
+
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->OnInteractEnded.Broadcast();
+	}
+}
+
+void ABaseCharacter::InteractCanceled(const FInputActionValue& Value)
+{
+	InteractActor = nullptr;
+
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->OnInteractEnded.Broadcast();
 	}
 }
 
@@ -518,6 +652,25 @@ void ABaseCharacter::RadialMenuSelect(const FInputActionValue& Value)
 	if (BaseController)
 	{
 		BaseController->SelectRadialMenu.Broadcast(AxisVector.X, AxisVector.Y);
+	}
+}
+
+void ABaseCharacter::TextChat(const FInputActionValue& Value)
+{
+	// TODO 手柄暂未处理
+	if (UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController()))
+	{
+		if (CommonInputSubsystem->GetCurrentInputType() != ECommonInputType::MouseAndKeyboard)
+		{
+			return;
+		}
+	}
+
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		BaseController->FocusUI();
+		BaseController->ShowTextChat.Broadcast();
 	}
 }
 

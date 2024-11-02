@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
-#include "Lobby.h"
+#include "Online/Lobbies.h"
 #include "PlayerLineButton.generated.h"
 
-struct FCoolLobbyMember;
+using namespace UE::Online;
 
 UCLASS()
 class BIOCHEMICALARENA_API UPlayerLineButton : public UCommonButtonBase
@@ -13,16 +13,10 @@ class BIOCHEMICALARENA_API UPlayerLineButton : public UCommonButtonBase
 	GENERATED_BODY()
 
 public:
-	FCoolLobbyMember Member;
+	TSharedPtr<const FLobbyMember> Member;
 
 	UPROPERTY()
-	class UServiceManager* ServiceManager;
-	UPROPERTY()
-	class UAuth* Auth;
-	UPROPERTY()
-	class UConnect* Connect;
-	UPROPERTY()
-	class ULobby* Lobby;
+	class UEOSSubsystem* EOSSubsystem;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;
@@ -39,12 +33,12 @@ protected:
 	class UCommonButton* PromotePlayerButton;
 	UFUNCTION()
 	void OnPromotePlayerButtonClicked();
-	void OnPromoteMemberComplete(bool bWasSuccessful);
+	void OnPromoteLobbyMemberComplete(bool bWasSuccessful);
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* KickPlayerButton;
 	UFUNCTION()
 	void OnKickPlayerButtonClicked();
-	void OnKickMemberComplete(bool bWasSuccessful);
+	void OnKickLobbyMemberComplete(bool bWasSuccessful);
 
 };

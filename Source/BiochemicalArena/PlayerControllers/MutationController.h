@@ -14,6 +14,7 @@ DECLARE_MULTICAST_DELEGATE(FOnCause1000Damage);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnSkillChange, bool bIsShow);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnRageChange, float Rage);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDamageMulChange, float DamageMul);
+DECLARE_MULTICAST_DELEGATE(FOnImmune);
 
 UCLASS()
 class BIOCHEMICALARENA_API AMutationController : public ABaseController
@@ -31,14 +32,15 @@ public:
 	FOnSkillChange OnSkillChange;
 	FOnRageChange OnRageChange;
 	FOnDamageMulChange OnDamageMulChange;
-
+	FOnImmune OnImmune;
+	
 	virtual void InitHUD() override;
 	virtual void SetHUDHealth(float Health) override;
 	void SetHUDTeamNum(int32 TeamNum, ETeam Team);
 	void ShowHUDSkill(bool bIsShow);
 	void SetHUDRage(float UpdateRageUI);
 	void SetHUDDamageMul(float DamageMul);
-	
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;

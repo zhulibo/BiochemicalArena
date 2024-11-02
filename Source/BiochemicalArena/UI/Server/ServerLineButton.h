@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
-#include "Lobby.h"
 #include "ServerLineButton.generated.h"
 
 using namespace UE::Online;
@@ -13,7 +12,7 @@ class BIOCHEMICALARENA_API UServerLineButton : public UCommonButtonBase
 	GENERATED_BODY()
 
 public:
-	TSharedPtr<FCoolLobby> Lobby;
+	TSharedPtr<const struct FLobby> Lobby;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Server;
@@ -23,6 +22,8 @@ public:
 	UCommonTextBlock* Map;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Player;
+	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* Status;
 	UPROPERTY(meta = (BindWidget))
 	UCommonTextBlock* Ping;
 

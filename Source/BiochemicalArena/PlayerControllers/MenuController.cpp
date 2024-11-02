@@ -1,10 +1,18 @@
 #include "MenuController.h"
+
+#include "BiochemicalArena/System/PlayerSubsystem.h"
 #include "BiochemicalArena/UI/MenuLayout.h"
 #include "Blueprint/UserWidget.h"
 
 void AMenuController::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (UPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UPlayerSubsystem>(GetLocalPlayer()))
+	{
+		PlayerSubsystem->AddNotifyLayout();
+		PlayerSubsystem->ShowLoginNotify();
+	}
 
 	AddMenuLayout();
 }

@@ -32,11 +32,9 @@ void ATeamDeadMatchGameState::Tick(float DeltaTime)
 
 void ATeamDeadMatchGameState::WatchGameState()
 {
-	if (TeamDeadMatchMode == nullptr) TeamDeadMatchMode = Cast<ATeamDeadMatchMode>(GetWorld()->GetAuthGameMode());
-	if (TeamDeadMatchMode == nullptr) return;
-
 	// 监视比赛状态
-	if (TeamDeadMatchMode->bWatchMatchState)
+	if (TeamDeadMatchMode == nullptr) TeamDeadMatchMode = Cast<ATeamDeadMatchMode>(GetWorld()->GetAuthGameMode());
+	if (TeamDeadMatchMode && TeamDeadMatchMode->bWatchMatchState)
 	{
 		if (Team1.IsEmpty() || Team2.IsEmpty())
 		{

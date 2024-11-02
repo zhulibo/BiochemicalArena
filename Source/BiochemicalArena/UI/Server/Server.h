@@ -2,11 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-// #include "BiochemicalArena/System/EOSSubsystem.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Server.generated.h"
-
-struct FLobbiesAttr;
-struct FCoolLobby;
 
 UCLASS()
 class BIOCHEMICALARENA_API UServer : public UCommonActivatableWidget
@@ -16,18 +13,13 @@ class BIOCHEMICALARENA_API UServer : public UCommonActivatableWidget
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeOnActivated() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	class AMenuController* MenuController;
-	// UPROPERTY()
-	// UEOSSubsystem* EOSSubsystem;
 	UPROPERTY()
-	class UServiceManager* ServiceManager;
-	UPROPERTY()
-	class ULobby* Lobby;
-	UPROPERTY()
-	class UP2P* P2P;
+	UEOSSubsystem* EOSSubsystem;
 
 	// 创建大厅
 	UPROPERTY(meta = (BindWidget))
@@ -48,8 +40,6 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonComboBox* MapComboBox;
-	UFUNCTION()
-	void OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* RefreshServerButton;
@@ -58,7 +48,7 @@ protected:
 	class UCommonHierarchicalScrollBox* ServerLineButtonContainer;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UServerLineButton> ServerLineButtonClass;
-	void OnFindLobbiesComplete(bool bWasSuccessful, TArray<TSharedPtr<FCoolLobby>> FoundLobbies);
+	void OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies);
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* ResetServerButton;
@@ -73,11 +63,13 @@ protected:
 	void OnPageNextButtonClicked();
 
 	// 加入大厅
-	void OnServerLineButtonClicked(UServerLineButton* ServerLineButton, int32 Index);
+	void OnServerLineButtonClicked(class UServerLineButton* ServerLineButton);
 	void OnJoinLobbyComplete(bool bWasSuccessful);
+	void OnLobbyJoined(const FLobbyJoined& LobbyJoined);
+	void GoToServerDetail();
 
 	// 邀请
-	void OnLobbyInvitationAdded();
-	void OnUILobbyJoinRequested();
-
+	void OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded);
+	void OnUILobbyJoinRequested(const FUILobbyJoinRequested& FuiLobbyJoinRequested);
+	
 };

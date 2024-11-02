@@ -21,6 +21,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void OnPostLogin(AController* NewPlayer) override;
 
 	UPROPERTY()
 	class ATeamDeadMatchGameState* TeamDeadMatchGameState;
@@ -38,7 +39,7 @@ protected:
 
 	virtual void OnMatchStateSet() override;
 	virtual void HandleMatchHasStarted() override;
-	virtual void OnPostLogin(AController* NewPlayer) override;
+	void HandleSpawn(AController* Controller);
 
 public:
 	FORCEINLINE float GetWarmupTime() const { return WarmupTime; }

@@ -7,6 +7,7 @@ bool AGameplayCue_MutantTankSkill::WhileActive_Implementation(AActor* MyTarget, 
 	if (MutantTank == nullptr) MutantTank = Cast<AMutantTank>(MyTarget);
 	if (MutantTank)
 	{
+		
 		// 更改皮肤颜色
 		UMaterialInstanceDynamic* DynamicMaterial = Cast<UMaterialInstanceDynamic>(MutantTank->GetMesh()->GetMaterial(0));
 		if (DynamicMaterial == nullptr)
@@ -15,6 +16,7 @@ bool AGameplayCue_MutantTankSkill::WhileActive_Implementation(AActor* MyTarget, 
 		}
 		if (DynamicMaterial)
 		{
+			// TODO 有时不生效
 			DynamicMaterial->SetScalarParameterValue(TEXT("SkinColorLerp"), 1.f);
 		}
 	}

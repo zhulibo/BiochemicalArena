@@ -20,7 +20,7 @@ public:
 	UCommonBorder* Crosshair_B;
 
 protected:
-	virtual void NativeConstruct() override;
+	virtual void NativeOnInitialized() override;
 
 	UPROPERTY()
 	class UCanvasPanelSlot* Crosshair_L_Slot;

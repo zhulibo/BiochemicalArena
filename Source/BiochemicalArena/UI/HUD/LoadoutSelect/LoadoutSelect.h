@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "LoadoutSelect.generated.h"
 
 UCLASS()

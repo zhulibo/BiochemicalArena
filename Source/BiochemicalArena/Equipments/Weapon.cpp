@@ -35,7 +35,7 @@ void AWeapon::InitData()
 		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
 
 		{
-			FDataRegistryId DataRegistryId(DR_WeaponData, FName(EnumValue));
+			FDataRegistryId DataRegistryId(DR_WEAPON_DATA, FName(EnumValue));
 			if (const FWeaponData* WeaponData = DRSubsystem->GetCachedItem<FWeaponData>(DataRegistryId))
 			{
 				AimingFOVMul = WeaponData->AimingFOVMul;
@@ -52,7 +52,7 @@ void AWeapon::InitData()
 		}
 
 		{
-			FDataRegistryId DataRegistryId(DR_EquipmentRecoil, FName(EnumValue));
+			FDataRegistryId DataRegistryId(DR_EQUIPMENT_RECOIL, FName(EnumValue));
 			if (const FEquipmentRecoil* EquipmentData = DRSubsystem->GetCachedItem<FEquipmentRecoil>(DataRegistryId))
 			{
 				RecoilMaxVert = EquipmentData->RecoilMaxVert;

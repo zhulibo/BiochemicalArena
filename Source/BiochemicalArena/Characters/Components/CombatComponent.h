@@ -167,8 +167,10 @@ protected:
 	void LocalDropEquipment(EEquipmentType EquipmentType);
 
 	// 销毁
+	UFUNCTION(Server, Reliable)
+	void ServerDestroyEquipments();
 	UFUNCTION()
-	void DestroyEquipments();
+	void LocalDestroyEquipments();
 
 	// 近战攻击
 	void MeleeAttack(ECombatState CombatStateToSet);

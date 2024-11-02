@@ -3,5 +3,4 @@
 UDamageTypeEquipment::UDamageTypeEquipment()
 {
 	DamageType = EDamageCauserType::Equipment;
-	CauserName = "Equipment";
 }

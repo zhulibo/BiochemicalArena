@@ -83,3 +83,8 @@ void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* Attack
 {
 	OnAddKillLog.Broadcast(AttackerState, CauserName, DamagedState);
 }
+
+void ABaseGameState::MulticastSendMsg_Implementation(const EMsgType MsgType, const ETeam Team, const FString& PlayerName, const FString& Msg)
+{
+	OnReceiveMsg.Broadcast(MsgType, Team, PlayerName, Msg);
+}

@@ -3,5 +3,4 @@
 UDamageTypeFall::UDamageTypeFall()
 {
 	DamageType = EDamageCauserType::Fall;
-	CauserName = "Fall";
 }

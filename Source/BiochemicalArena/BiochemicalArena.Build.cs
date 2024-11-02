@@ -16,6 +16,8 @@ public class BiochemicalArena : ModuleRules
 				"Engine",
 				"InputCore",
 				"EnhancedInput",
+				"OnlineServicesInterface", 
+				"CoreOnline",
 				"CommonInput",
 				"Niagara",
 				"GameplayAbilities",
@@ -32,7 +34,6 @@ public class BiochemicalArena : ModuleRules
 				"UMG",
 				"CommonUI",
 				"RHI",
-				"CommonOnlineServices",
 			}
 		);
 

@@ -4,9 +4,9 @@
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "Components/CanvasPanelSlot.h"
 
-void UCrosshair::NativeConstruct()
+void UCrosshair::NativeOnInitialized()
 {
-	Super::NativeConstruct();
+	Super::NativeOnInitialized();
 
 	Crosshair_L_Slot = Cast<UCanvasPanelSlot>(Crosshair_L->Slot);
 	Crosshair_R_Slot = Cast<UCanvasPanelSlot>(Crosshair_R->Slot);

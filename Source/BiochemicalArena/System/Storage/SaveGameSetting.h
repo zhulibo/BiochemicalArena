@@ -6,7 +6,6 @@
 
 enum class EMutantCharacterName : uint8;
 enum class EHumanCharacterName : uint8;
-struct FBag;
 
 UCLASS()
 class BIOCHEMICALARENA_API USaveGameSetting : public USaveGame
@@ -18,20 +17,15 @@ public:
 
 	UPROPERTY()
 	int32 Version = 1;
-	
-	UPROPERTY()
-	TArray<FBag> Bags;
-	UPROPERTY()
-	int32 CurLoadoutIndex;
-
-	UPROPERTY()
-	EHumanCharacterName HumanCharacterName;
-	UPROPERTY()
-	EMutantCharacterName MutantCharacterName;
 
 	UPROPERTY()
 	FString Language;
 	
+	UPROPERTY()
+	bool ObfuscatePlayerName;
+	UPROPERTY()
+	bool ObfuscateTextChat;
+
 	UPROPERTY()
 	float MouseSensitivity;
 	UPROPERTY()

@@ -10,7 +10,7 @@
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 
-#define LOCTEXT_NAMESPACE "BiochemicalArena"
+#define LOCTEXT_NAMESPACE "URadialMenuContainer"
 
 void URadialMenuContainer::NativeOnInitialized()
 {
@@ -46,6 +46,7 @@ void URadialMenuContainer::ShowRadialMenu(bool bIsShow)
 // 显示轮盘
 void URadialMenuContainer::ShowRadialMenuInternal()
 {
+	// Action设为了长按，且ETriggerEvent::Triggered，会频繁触发
 	if (GetVisibility() == ESlateVisibility::Visible) return;
 
 	HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn());
@@ -256,9 +257,9 @@ void URadialMenuContainer::OnTeamChange(ETeam Team)
 void URadialMenuContainer::SetHumanRadialMenuText()
 {
 	RadialMenuEquipment->Item1->SetText(LOCTEXT("Primary", "Primary"));
-	RadialMenuEquipment->Item1->SetText(LOCTEXT("Secondary", "Secondary"));
-	RadialMenuEquipment->Item1->SetText(LOCTEXT("Melee", "Melee"));
-	RadialMenuEquipment->Item1->SetText(LOCTEXT("Throwing", "Throwing"));
+	RadialMenuEquipment->Item2->SetText(LOCTEXT("Secondary", "Secondary"));
+	RadialMenuEquipment->Item3->SetText(LOCTEXT("Melee", "Melee"));
+	RadialMenuEquipment->Item4->SetText(LOCTEXT("Throwing", "Throwing"));
 	RadialMenuEquipment->Item5->SetText(FText::FromString(TEXT("-1")));
 	RadialMenuEquipment->Item6->SetText(FText::FromString(TEXT("-1")));
 	RadialMenuEquipment->Item7->SetText(FText::FromString(TEXT("-1")));

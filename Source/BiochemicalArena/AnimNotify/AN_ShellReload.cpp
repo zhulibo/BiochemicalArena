@@ -23,7 +23,7 @@ void UAN_ShellReload::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase
 			LastTriggerTime = FPlatformTime::Seconds();
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("--------------------- %d"), HumanCharacter->GetLocalRole());
+		UE_LOG(LogTemp, Warning, TEXT("------------------------------------------ %d"), HumanCharacter->GetLocalRole());
 
 		HumanCharacter->GetCombatComponent()->ShellReload();
 	}

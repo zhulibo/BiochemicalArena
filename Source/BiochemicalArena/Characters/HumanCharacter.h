@@ -28,11 +28,16 @@ public:
 	void SwapMeleeEquipmentButtonPressed();
 	void SwapThrowingEquipmentButtonPressed();
 
+	void TrySwitchLoadout();
+	UPROPERTY()
+	bool bCanSwitchLoadout = true;
+
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastTeamDeadMatchDead();
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastMutationDead();
+	void MulticastMutationDead(bool bNeedSpawn);
 
+	bool bIsImmune = false;
 	void GetInfect(AMutantCharacter* AttackerCharacter, ABaseController* AttackerController, EMutantState MutantState);
 
 protected:
@@ -68,9 +73,10 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerDetectOverlappingEquipment();
 
+	void ApplyLoadout();
 	UFUNCTION(Server, Reliable)
-	void ServerSetDefaultEquipment(const FString& PrimaryName,
-		const FString& SecondaryName, const FString& MeleeName, const FString& ThrowingName);
+	void ServerSpawnEquipments(const FString& PrimaryName, const FString& SecondaryName,
+		const FString& MeleeName, const FString& ThrowingName);
 	FString GetEquipmentName(int32 CurLoadoutIndex, EEquipmentType EquipmentType);
 
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimaryEquipment)
@@ -93,6 +99,7 @@ protected:
 	UFUNCTION()
 	void HumanReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 		AController* AttackerController, AActor* DamageCauser);
+	void HandleDead();
 
 public:
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; }

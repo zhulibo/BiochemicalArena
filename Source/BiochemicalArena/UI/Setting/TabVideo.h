@@ -4,6 +4,7 @@
 #include "CommonActivatableWidget.h"
 #include "TabVideo.generated.h"
 
+// TODO FullscreenMode无法保存，退出游戏后会自动恢复默认
 UCLASS()
 class BIOCHEMICALARENA_API UTabVideo : public UCommonActivatableWidget
 {
@@ -28,6 +29,13 @@ protected:
 	void OnTabButtonHovered(int Index);
 
 	UPROPERTY(meta = (BindWidget))
+	class UAnalogSlider* BrightnessAnalogSlider;
+	UPROPERTY(meta = (BindWidget))
+	class UCommonTextBlock* Brightness;
+	UFUNCTION()
+	void OnBrightnessChanged(float Value);
+
+	UPROPERTY(meta = (BindWidget))
 	class UComboBoxString* WindowModeComboBox;
 	UFUNCTION()
 	void OnWindowModeChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
@@ -38,13 +46,6 @@ protected:
 	UComboBoxString* ScreenResolutionComboBox;
 	UFUNCTION()
 	void OnScreenResolutionChanged(FString SelectedItem, ESelectInfo::Type SelectionType);
-
-	UPROPERTY(meta = (BindWidget))
-	class UAnalogSlider* BrightnessAnalogSlider;
-	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* Brightness;
-	UFUNCTION()
-	void OnBrightnessChanged(float Value);
 
 	UPROPERTY(EditAnywhere)
 	FDataTableRowHandle SetDefaultData;

@@ -12,7 +12,6 @@
 #include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
-#include "BiochemicalArena/System/Storage/SaveGameSetting.h"
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "BiochemicalArena/UI/HUD/Mutation/HUDMutation.h"
@@ -20,7 +19,11 @@
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "BiochemicalArena/Abilities/GameplayAbility_ChangeMutant.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/System/Storage/SaveGameLoadout.h"
 #include "BiochemicalArena/UI/GameLayout.h"
+#include "BiochemicalArena/Utils/LibraryNotify.h"
+
+#define LOCTEXT_NAMESPACE "UMutantSelect"
 
 void UMutantSelect::NativeOnInitialized()
 {
@@ -34,7 +37,7 @@ void UMutantSelect::NativeOnInitialized()
 
 	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
 	{
-		if (UDataRegistry* DataRegistry = DRSubsystem->GetRegistryForType(DR_MutantCharacterMain))
+		if (UDataRegistry* DataRegistry = DRSubsystem->GetRegistryForType(DR_MUTANT_CHARACTER_MAIN))
 		{
 			const UScriptStruct* OutStruct;
 			DataRegistry->GetAllCachedItems(MutantCharacterMain, OutStruct);
@@ -92,10 +95,10 @@ void UMutantSelect::OnMutantSelectButtonClicked(EMutantCharacterName MutantChara
 
 	// 保存到文件
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
-	if (StorageSubsystem && StorageSubsystem->CacheSetting)
+	if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 	{
-		StorageSubsystem->CacheSetting->MutantCharacterName = MutantCharacterName;
-		StorageSubsystem->Save();
+		StorageSubsystem->CacheLoadout->MutantCharacterName = MutantCharacterName;
+		StorageSubsystem->SaveLoadout();
 	}
 
 	// 切换角色
@@ -120,12 +123,12 @@ void UMutantSelect::OnMutantSelectButtonClicked(EMutantCharacterName MutantChara
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.f, C_GREEN, TEXT("Mutant change will apply in the next round!"), false);
+			NOTIFY(this, C_GREEN, LOCTEXT("MutantChangeApply", "Mutant change will apply in the next round"));
 		}
 	}
 	else
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, C_GREEN, TEXT("Mutant change have saved!"), false);
+		NOTIFY(this, C_GREEN, LOCTEXT("MutantChangeSave", "Mutant change have saved"));
 	}
 
 	CloseMenu(true);
@@ -152,3 +155,5 @@ void UMutantSelect::CloseMenu(bool bClosePauseMenu)
 		}
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

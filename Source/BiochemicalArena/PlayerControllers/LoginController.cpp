@@ -1,10 +1,18 @@
 #include "LoginController.h"
+
+#include "BiochemicalArena/System/PlayerSubsystem.h"
 #include "BiochemicalArena/UI/LoginLayout.h"
 #include "Blueprint/UserWidget.h"
 
 void ALoginController::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (UPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UPlayerSubsystem>(GetLocalPlayer()))
+	{
+		PlayerSubsystem->AddNotifyLayout();
+		PlayerSubsystem->ShowLoginNotify();
+	}
 
 	AddLoginLayout();
 }

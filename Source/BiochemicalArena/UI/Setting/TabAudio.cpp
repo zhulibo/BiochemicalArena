@@ -83,7 +83,7 @@ void UTabAudio::OnMasterVolumeChanged(float Value)
 	{
 		StorageSubsystem->SetAudio(Value / 100.f, ESoundClassType::Master);
 		StorageSubsystem->CacheSetting->MasterVolume = Value / 100.f;
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -96,7 +96,7 @@ void UTabAudio::OnEffectsVolumeChanged(float Value)
 	{
 		StorageSubsystem->SetAudio(Value / 100.f, ESoundClassType::Effects);
 		StorageSubsystem->CacheSetting->EffectsVolume = Value / 100.f;
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -109,7 +109,7 @@ void UTabAudio::OnMusicVolumeChanged(float Value)
 	{
 		StorageSubsystem->SetAudio(Value / 100.f, ESoundClassType::Music);
 		StorageSubsystem->CacheSetting->MusicVolume = Value / 100.f;
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -122,7 +122,7 @@ void UTabAudio::OnDialogueVolumeChanged(float Value)
 	{
 		StorageSubsystem->SetAudio(Value / 100.f, ESoundClassType::Dialogue);
 		StorageSubsystem->CacheSetting->DialogueVolume = Value / 100.f;
-		StorageSubsystem->Save();
+		StorageSubsystem->SaveSetting();
 	}
 }
 
@@ -149,7 +149,7 @@ void UTabAudio::SetDefault()
 			StorageSubsystem->CacheSetting->EffectsVolume = DefaultConfig->EffectsVolume;
 			StorageSubsystem->CacheSetting->MusicVolume = DefaultConfig->MusicVolume;
 			StorageSubsystem->CacheSetting->DialogueVolume = DefaultConfig->DialogueVolume;
-			StorageSubsystem->Save();
+			StorageSubsystem->SaveSetting();
 		}
 	}
 }
