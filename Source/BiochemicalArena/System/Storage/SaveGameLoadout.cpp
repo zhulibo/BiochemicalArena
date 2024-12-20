@@ -8,8 +8,8 @@ USaveGameLoadout::USaveGameLoadout()
 
 	if (DefaultConfig == nullptr) return;
 
-	Bags = DefaultConfig->Bags;
-	CurLoadoutIndex = DefaultConfig->CurLoadoutIndex;
+	Loadouts = DefaultConfig->Loadouts;
+	LoadoutIndex = DefaultConfig->LoadoutIndex;
 
 	HumanCharacterName = DefaultConfig->HumanCharacterName;
 	MutantCharacterName = DefaultConfig->MutantCharacterName;

@@ -2,9 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "CommonButtonBase.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "ServerLineButton.generated.h"
-
-using namespace UE::Online;
 
 UCLASS()
 class BIOCHEMICALARENA_API UServerLineButton : public UCommonButtonBase
@@ -12,7 +11,7 @@ class BIOCHEMICALARENA_API UServerLineButton : public UCommonButtonBase
 	GENERATED_BODY()
 
 public:
-	TSharedPtr<const struct FLobby> Lobby;
+	TSharedPtr<const FLobby> Lobby;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Server;

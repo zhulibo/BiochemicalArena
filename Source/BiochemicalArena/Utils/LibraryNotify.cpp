@@ -5,12 +5,12 @@
 
 void ULibraryNotify::ShowNotify(const UObject* Context, const FColor DisplayColor, const FText& Msg)
 {
-	if (Context && Context->GetWorld() && !Context->GetWorld()->bIsTearingDown)
+	if (Context && Context->GetWorld())
 	{
 		if (UPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UPlayerSubsystem>(Context->GetWorld()->GetFirstLocalPlayerFromController()))
 		{
 			PlayerSubsystem->ShowNotify(DisplayColor, Msg);
-			
+
 			return;
 		}
 	}

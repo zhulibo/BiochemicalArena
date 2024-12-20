@@ -14,13 +14,14 @@
 #include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
-#include "BiochemicalArena/UI/HUD/Mutation/HUDMutation.h"
+#include "BiochemicalArena/UI/HUD/Mutation/MutationContainer.h"
 #include "Components/ScrollBoxSlot.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
-#include "BiochemicalArena/Abilities/GameplayAbility_ChangeMutant.h"
+#include "BiochemicalArena/Abilities/Mutant/GameplayAbility_MutantChange.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/System/Storage/SaveGameLoadout.h"
 #include "BiochemicalArena/UI/GameLayout.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "BiochemicalArena/Utils/LibraryNotify.h"
 
 #define LOCTEXT_NAMESPACE "UMutantSelect"
@@ -35,28 +36,28 @@ void UMutantSelect::NativeOnInitialized()
 		MutationGameState->OnRoundEnded.AddUObject(this, &ThisClass::OnRoundEnded);
 	}
 
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	if (UDataRegistry* DataRegistry = UDataRegistrySubsystem::Get()->GetRegistryForType(DR_MUTANT_CHARACTER_MAIN))
 	{
-		if (UDataRegistry* DataRegistry = DRSubsystem->GetRegistryForType(DR_MUTANT_CHARACTER_MAIN))
+		const UScriptStruct* OutStruct;
+		DataRegistry->GetAllCachedItems(MutantCharacterMain, OutStruct);
+
+		for (const TPair<FDataRegistryId, const uint8*>& Pair : MutantCharacterMain)
 		{
-			const UScriptStruct* OutStruct;
-			DataRegistry->GetAllCachedItems(MutantCharacterMain, OutStruct);
+			FMutantCharacterMain ItemValue = *reinterpret_cast<const FMutantCharacterMain*>(Pair.Value);
 
-			for (const TPair<FDataRegistryId, const uint8*>& Pair : MutantCharacterMain)
+			if (UMutantSelectButton* MutantSelectButton = CreateWidget<UMutantSelectButton>(this, MutantSelectButtonClass))
 			{
-				FMutantCharacterMain ItemValue = *reinterpret_cast<const FMutantCharacterMain*>(Pair.Value);
+				FText CharacterNameText = FText();
+				FString MutantCharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(ItemValue.MutantCharacterName));
+				FText::FindText(CULTURE_MUTANT, MutantCharacterName, CharacterNameText);
+				MutantSelectButton->CharacterNameText->SetText(CharacterNameText);
 
-				UMutantSelectButton* MutantSelectButton = CreateWidget<UMutantSelectButton>(this, MutantSelectButtonClass);
-				if (MutantSelectButton)
-				{
-					MutantSelectButton->CharacterNameText->SetText(FText::FromName(Pair.Key.ItemName));
-					MutantSelectButton->CharacterDescText->SetText(FText::FromString(ItemValue.Desc));
+				MutantSelectButton->CharacterDescText->SetText(FText::FromString(ItemValue.Desc));
 
-					MutantSelectButton->OnClicked().AddUObject(this, &ThisClass::OnMutantSelectButtonClicked, ItemValue.MutantCharacterName);
+				MutantSelectButton->OnClicked().AddUObject(this, &ThisClass::OnMutantSelectButtonClicked, ItemValue.MutantCharacterName);
 
-					UScrollBoxSlot* NewSlot = Cast<UScrollBoxSlot>(MutantSelectButtonContainer->AddChild(MutantSelectButton));
-					if (NewSlot) NewSlot->SetPadding(FMargin(10, 0, 10, 0));
-				}
+				UScrollBoxSlot* NewSlot = Cast<UScrollBoxSlot>(MutantSelectButtonContainer->AddChild(MutantSelectButton));
+				if (NewSlot) NewSlot->SetPadding(FMargin(10, 0, 10, 0));
 			}
 		}
 	}
@@ -66,8 +67,7 @@ UWidget* UMutantSelect::NativeGetDesiredFocusTarget() const
 {
 	if (AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn()))
 	{
-		FString EnumValue = UEnum::GetValueAsString(MutantCharacter->MutantCharacterName);
-		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(MutantCharacter->MutantCharacterName));
 
 		for (int i = 0; i < MutantSelectButtonContainer->GetChildrenCount(); ++i)
 		{
@@ -98,7 +98,7 @@ void UMutantSelect::OnMutantSelectButtonClicked(EMutantCharacterName MutantChara
 	if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 	{
 		StorageSubsystem->CacheLoadout->MutantCharacterName = MutantCharacterName;
-		StorageSubsystem->SaveLoadout();
+		StorageSubsystem->SaveLoadouts();
 	}
 
 	// 切换角色
@@ -115,7 +115,7 @@ void UMutantSelect::OnMutantSelectButtonClicked(EMutantCharacterName MutantChara
 			if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 			if (AssetSubsystem && AssetSubsystem->MutantCommon)
 			{
-				if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AssetSubsystem->MutantCommon->ChangeMutantAbility))
+				if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AssetSubsystem->MutantCommon->MutantChangeAbility))
 				{
 					AbilitySystemComponent->CancelAbility(Spec->Ability);
 				}
@@ -149,7 +149,7 @@ void UMutantSelect::CloseMenu(bool bClosePauseMenu)
 	{
 		DeactivateWidget();
 
-		if (bClosePauseMenu)
+		if (bClosePauseMenu && BaseController->GameLayout)
 		{
 			BaseController->GameLayout->MenuStack->RemoveWidget(*BaseController->GameLayout->MenuStack->GetActiveWidget());
 		}

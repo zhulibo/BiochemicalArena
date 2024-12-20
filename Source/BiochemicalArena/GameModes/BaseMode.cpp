@@ -10,8 +10,11 @@
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/System/EOSSubsystem.h"
 #include "BiochemicalArena/UI/TextChat/TextChat.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "GameFramework/PlayerStart.h"
+#include "Online/SchemaTypes.h"
 
 ABaseMode::ABaseMode()
 {
@@ -22,6 +25,8 @@ void ABaseMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
+	
 	LevelStartTime = GetWorld()->GetTimeSeconds();
 }
 
@@ -35,7 +40,7 @@ void ABaseMode::OnPostLogin(AController* NewPlayer)
 	Super::OnPostLogin(NewPlayer);
 
 	UE_LOG(LogTemp, Warning, TEXT("OnPostLogin ------------------------------------------"));
-	
+
 	if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
 	if (BaseGameState == nullptr) return;
 
@@ -50,13 +55,17 @@ void ABaseMode::Logout(AController* Exiting)
 	Super::Logout(Exiting);
 
 	UE_LOG(LogTemp, Warning, TEXT("Logout ------------------------------------------"));
-	
-	if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
-	if (BaseGameState == nullptr) return;
 
-	if (ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Exiting->PlayerState))
+	if (MatchState != MatchState::LeavingMap)
 	{
-		BaseGameState->MulticastSendMsg(EMsgType::Left, BasePlayerState->GetTeam(), BasePlayerState->GetPlayerName());
+		if (ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Exiting->PlayerState))
+		{
+			if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
+			if (BaseGameState)
+			{
+				BaseGameState->MulticastSendMsg(EMsgType::Left, BasePlayerState->GetTeam(), BasePlayerState->GetPlayerName());
+			}
+		}
 	}
 
 	// 所有客户端退出后，再让服务端退出。
@@ -65,7 +74,7 @@ void ABaseMode::Logout(AController* Exiting)
 		if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("HandleLeavingMap ------------------------------------------"));
-			PlayerController->ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
+			PlayerController->ClientTravel(MAP_MENU, ETravelType::TRAVEL_Absolute);
 		}
 	}
 }
@@ -75,14 +84,14 @@ void ABaseMode::HandleLeavingMap()
 {
 	Super::HandleLeavingMap();
 
-	// ABaseMode::Logout 中服务端退出失败，强制服务端退出。
+	// 游戏结束服务端退出，或ABaseMode::Logout 中服务端退出失败，强制服务端退出。
 	FTimerHandle TimerHandle;
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindWeakLambda(this, [this]() {
 		if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
 		{
 			UE_LOG(LogTemp, Warning, TEXT("HandleLeavingMap ------------------------------------------"));
-			PlayerController->ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
+			PlayerController->ClientTravel(MAP_MENU, ETravelType::TRAVEL_Absolute);
 		}
 	});
 	GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 1.f, false);
@@ -98,19 +107,15 @@ void ABaseMode::SpawnHumanCharacter(AController* Controller)
 	ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Controller->PlayerState);
 	if (BasePlayerState)
 	{
-		FString EnumValue = UEnum::GetValueAsString(BasePlayerState->GetHumanCharacterName());
-		CharacterName = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		CharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(BasePlayerState->GetHumanCharacterName()));
 	}
 
 	// 获取角色类
-	TObjectPtr<UClass> CharacterClass;
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	TSubclassOf<AHumanCharacter> CharacterClass;
+	FDataRegistryId DataRegistryId(DR_HUMAN_CHARACTER_MAIN, FName(CharacterName));
+	if (const FHumanCharacterMain* HumanCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
 	{
-		FDataRegistryId DataRegistryId(DR_HUMAN_CHARACTER_MAIN, FName(CharacterName));
-		if (const FHumanCharacterMain* HumanCharacterMain = DRSubsystem->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
-		{
-			CharacterClass = HumanCharacterMain->HumanCharacterClass;
-		}
+		CharacterClass = HumanCharacterMain->HumanCharacterClass;
 	}
 	if (CharacterClass == nullptr) return;
 
@@ -183,10 +188,10 @@ void ABaseMode::AssignTeam(AController* Controller, ETeam Team)
 
 	if (ABasePlayerState* BasePlayerState = Controller->GetPlayerState<ABasePlayerState>())
 	{
-		BaseGameState->AddToTeam(BasePlayerState, Team);
+		BaseGameState->AddToPlayerStates(BasePlayerState, Team);
 		BasePlayerState->SetTeam(Team);
 
-		BaseGameState->RemoveFromTeam(BasePlayerState, Team == ETeam::Team1 ? ETeam::Team2 : ETeam::Team1);
+		BaseGameState->RemoveFromPlayerStates(BasePlayerState, Team == ETeam::Team1 ? ETeam::Team2 : ETeam::Team1);
 	}
 }
 
@@ -202,15 +207,13 @@ void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser
 		case EDamageCauserType::Equipment:
 			if (AEquipment* CauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner()))
 			{
-				CauserName = UEnum::GetValueAsString(CauserEquipment->GetEquipmentName());
-				CauserName = CauserName.Right(CauserName.Len() - CauserName.Find("::") - 2);
+				CauserName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
 			}
 			break;
 		case EDamageCauserType::Melee:
 			if (AEquipment* CauserEquipment = Cast<AEquipment>(DamageCauser))
 			{
-				CauserName = UEnum::GetValueAsString(CauserEquipment->GetEquipmentName());
-				CauserName = CauserName.Right(CauserName.Len() - CauserName.Find("::") - 2);
+				CauserName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
 			}
 			break;
 		case EDamageCauserType::MutantInfect:
@@ -229,5 +232,16 @@ void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser
 	if (BaseGameState)
 	{
 		BaseGameState->MulticastAddKillLog(AttackerState, CauserName, DamagedState);
+	}
+}
+
+// 修改大厅状态
+void ABaseMode::ChangeLobbyStatus(int64 Status)
+{
+	if (EOSSubsystem && Status > 0)
+	{
+		EOSSubsystem->ModifyLobbyAttr(TMap<UE::Online::FSchemaAttributeId, UE::Online::FSchemaVariant>{
+			{LOBBY_STATUS, Status},
+		});
 	}
 }

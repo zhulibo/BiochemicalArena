@@ -70,8 +70,7 @@ void UStorageSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 // 创建Setting
 void UStorageSubsystem::CreateSaveGameSetting()
 {
-	USaveGameSetting* SaveGameSetting = Cast<USaveGameSetting>(UGameplayStatics::CreateSaveGameObject(USaveGameSetting::StaticClass()));
-	if (SaveGameSetting)
+	if (USaveGameSetting* SaveGameSetting = Cast<USaveGameSetting>(UGameplayStatics::CreateSaveGameObject(USaveGameSetting::StaticClass())))
 	{
 		// 保存Setting至缓存
 		CacheSetting = SaveGameSetting;
@@ -87,8 +86,7 @@ void UStorageSubsystem::CreateSaveGameSetting()
 // 创建Loadout
 void UStorageSubsystem::CreateSaveGameLoadout()
 {
-	USaveGameLoadout* SaveGameLoadout = Cast<USaveGameLoadout>(UGameplayStatics::CreateSaveGameObject(USaveGameLoadout::StaticClass()));
-	if (SaveGameLoadout)
+	if (USaveGameLoadout* SaveGameLoadout = Cast<USaveGameLoadout>(UGameplayStatics::CreateSaveGameObject(USaveGameLoadout::StaticClass())))
 	{
 		// 保存Loadout至缓存
 		CacheLoadout = SaveGameLoadout;
@@ -130,7 +128,7 @@ void UStorageSubsystem::SaveSettingToCloud()
 }
 
 // 保存Loadout
-void UStorageSubsystem::SaveLoadout()
+void UStorageSubsystem::SaveLoadouts()
 {
 	if (CacheLoadout)
 	{
@@ -170,7 +168,7 @@ void UStorageSubsystem::OnWriteFileComplete(bool bWasSuccessful)
 void UStorageSubsystem::ApplySetting()
 {
 	if (CacheSetting == nullptr) return;
-
+	
 	// 设置语言
 	FInternationalization::Get().SetCurrentCulture(CacheSetting->Language);
 	

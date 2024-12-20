@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
+#include "DataRegistryId.h"
 #include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Shop.generated.h"
 
@@ -17,6 +18,9 @@ protected:
 	UPROPERTY()
 	UEOSSubsystem* EOSSubsystem;
 
+	TMap<FDataRegistryId, const uint8*> HumanCharacterMains;
+	TMap<FDataRegistryId, const uint8*> EquipmentMains;
+
 	UPROPERTY(meta = (BindWidget))
 	class UWrapBox* ItemButtonContainer;
 
@@ -24,11 +28,11 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UItemButton> EquipmentButtonClass;
-	void AddEquipmentButton(FOffer Offer);
+	void AddEquipmentButton(const FOffer& Offer);
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UItemButton> CharacterButtonClass;
-	void AddCharacterButton(FOffer Offer);
+	void AddCharacterButton(const FOffer& Offer);
 
 	void OnItemButtonClicked(UItemButton* ItemButton);
 	void OnCheckoutComplete(bool bWasSuccessful, TOptional<FString> String);

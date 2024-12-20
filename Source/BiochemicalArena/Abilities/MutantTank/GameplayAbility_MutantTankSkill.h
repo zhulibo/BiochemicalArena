@@ -4,7 +4,6 @@
 #include "BiochemicalArena/Abilities/GameplayAbilityBase.h"
 #include "GameplayAbility_MutantTankSkill.generated.h"
 
-// TODO CD 周期 按等级无效
 UCLASS()
 class BIOCHEMICALARENA_API UGameplayAbility_MutantTankSkill : public UGameplayAbilityBase
 {

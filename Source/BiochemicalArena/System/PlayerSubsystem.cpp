@@ -62,7 +62,7 @@ void UPlayerSubsystem::OnLoginComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		LevelTravel("/Game/Maps/UI_Menu");
+		LevelTravel(MAP_MENU);
 	}
 	else
 	{
@@ -84,13 +84,13 @@ void UPlayerSubsystem::OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthL
 	{
 		bShowNotify_NotLoggedIn = true;
 	
-		LevelTravel("/Game/Maps/UI_Login");
+		LevelTravel(MAP_LOGIN);
 	}
 	else if (AuthLoginStatusChanged.LoginStatus == ELoginStatus::UsingLocalProfile)
 	{
 		bShowNotify_UsingLocalProfile = true;
 	
-		LevelTravel("/Game/Maps/UI_Login");
+		LevelTravel(MAP_LOGIN);
 	}
 }
 
@@ -109,12 +109,12 @@ void UPlayerSubsystem::ShowLoginNotify()
 {
 	if (bShowNotify_LoggedIn)
 	{
-		NOTIFY(this, C_GREEN, LOCTEXT("LoginStatusChanged_LoggedIn", "Login status changed: LoggedIn!"));
+		NOTIFY(this, C_GREEN, LOCTEXT("LoginStatusChanged_LoggedIn", "Login status changed: LoggedIn"));
 		bShowNotify_LoggedIn = false;
 	}
 	if (bShowNotify_LoggedInReducedFunctionality)
 	{
-		NOTIFY(this, C_WHITE, LOCTEXT("LoginStatusChanged_LoggedInReducedFunctionality", "Login status changed: LoggedInReducedFunctionality!"));
+		NOTIFY(this, C_WHITE, LOCTEXT("LoginStatusChanged_LoggedInReducedFunctionality", "Login status changed: LoggedInReducedFunctionality"));
 		bShowNotify_LoggedInReducedFunctionality = false;
 	}
 	if (bShowNotify_NotLoggedIn)
@@ -127,6 +127,20 @@ void UPlayerSubsystem::ShowLoginNotify()
 		NOTIFY(this, C_YELLOW, LOCTEXT("LoginStatusChanged_UsingLocalProfile", "Login status changed: UsingLocalProfile!"));
 		bShowNotify_UsingLocalProfile = false;
 	}
+}
+
+void UPlayerSubsystem::SetIsDead()
+{
+	IsDead = true;
+
+	// IsDead状态只需持续很短时间
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::SetIsAlive, 0.02f);
+}
+
+void UPlayerSubsystem::SetIsAlive()
+{
+	IsDead = false;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -15,7 +15,7 @@ void UTabControl::NativeOnInitialized()
 
 	// 绑定提示信息切换菜单
 	TArray<UWidget*> Tabs = SettingLeft->GetAllChildren();
-	for (int i = 0; i < Tabs.Num(); i++)
+	for (int i = 0; i < Tabs.Num(); ++i)
 	{
 		if (UCommonButtonBase* TabButton = Cast<UCommonButtonBase>(Tabs[i]))
 		{
@@ -33,6 +33,12 @@ void UTabControl::NativeOnInitialized()
 	ControllerAimAssistSlowdownComboBox->AddOption("on");
 	ControllerAimAssistSlowdownComboBox->AddOption("off");
 
+	// TODO 辅助瞄准
+	MouseAimAssistSteeringComboBox->SetIsEnabled(false);
+	MouseAimAssistSlowdownComboBox->SetIsEnabled(false);
+	ControllerAimAssistSteeringComboBox->SetIsEnabled(false);
+	ControllerAimAssistSlowdownComboBox->SetIsEnabled(false);
+	
 	SetUISavedValue();
 
 	MouseSensitivityAnalogSlider->OnValueChanged.AddUniqueDynamic(this, &ThisClass::OnMouseSensitivityChanged);
@@ -51,7 +57,7 @@ void UTabControl::NativeConstruct()
 
 	// 默认隐藏所有提示信息
 	TArray<UWidget*> Contents = SettingRight->GetAllChildren();
-	for (int i = 0; i < Contents.Num(); i++)
+	for (int i = 0; i < Contents.Num(); ++i)
 	{
 		Contents[i]->SetVisibility(ESlateVisibility::Collapsed);
 	}
@@ -65,7 +71,7 @@ UWidget* UTabControl::NativeGetDesiredFocusTarget() const
 void UTabControl::OnTabButtonHovered(int Index)
 {
 	TArray<UWidget*> Contents = SettingRight->GetAllChildren();
-	for (int i = 0; i < Contents.Num(); i++)
+	for (int i = 0; i < Contents.Num(); ++i)
 	{
 		Contents[i]->SetVisibility(i == Index ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}

@@ -26,8 +26,10 @@ protected:
 	UPROPERTY()
 	class ATeamDeadMatchGameState* TeamDeadMatchGameState;
 
+	float MatchEndTime = 0.f;
+
 	UPROPERTY(EditAnywhere)
-	float WarmupTime = 5.f;
+	float WarmupTime = 10.f;
 	UPROPERTY(EditAnywhere)
 	float MatchTime = 600.f;
 	UPROPERTY(EditAnywhere)
@@ -40,6 +42,9 @@ protected:
 	virtual void OnMatchStateSet() override;
 	virtual void HandleMatchHasStarted() override;
 	void HandleSpawn(AController* Controller);
+
+	FTimerHandle ChangeLobbyStatusTimerHandle;
+	void HandleChangeLobbyStatus();
 
 public:
 	FORCEINLINE float GetWarmupTime() const { return WarmupTime; }

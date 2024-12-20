@@ -87,8 +87,6 @@ protected:
 	class ABaseMode* BaseMode;
 	UPROPERTY()
 	class ABaseGameState* BaseGameState;
-	UPROPERTY()
-	class ABaseCharacter* BaseCharacter;
 
 	float ServerClientDeltaTime = 0.f; // Diff between client and server WORLD TIME, not network delay.
 	void HandleServerClientDeltaTime();

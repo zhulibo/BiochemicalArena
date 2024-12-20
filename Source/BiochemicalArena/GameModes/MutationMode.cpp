@@ -3,6 +3,7 @@
 #include "DataRegistrySubsystem.h"
 #include "EngineUtils.h"
 #include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/Abilities/AttributeSetBase.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/MutantCharacter.h"
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
@@ -15,16 +16,30 @@
 #include "BiochemicalArena/Equipments/Projectiles/ProjectileBullet.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "BiochemicalArena/System/DevSetting.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "GameFramework/PlayerStart.h"
 
 namespace MatchState
 {
-	const FName PostRound = FName("PostRound");
+	const FName PostRound = TEXT("PostRound");
 }
 
 void AMutationMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (GetWorld()->WorldType == EWorldType::PIE)
+	{
+		if (GetDefault<UDevSetting>()->bUseDevSettings)
+		{
+			TotalRound = GetDefault<UDevSetting>()->TotalRound;
+			WarmupTime = GetDefault<UDevSetting>()->WarmupTime;
+			RoundTime = GetDefault<UDevSetting>()->RoundTime;
+			MutateTime = GetDefault<UDevSetting>()->MutateTime;
+			PostRoundTime = GetDefault<UDevSetting>()->PostRoundTime;
+			CooldownTime = GetDefault<UDevSetting>()->CooldownTime;
+		}
+	}
 
 	MutationGameState = GetGameState<AMutationGameState>();
 }
@@ -70,7 +85,7 @@ void AMutationMode::Tick(float DeltaSeconds)
 	// 比赛后
 	else if (MatchState == MatchState::WaitingPostMatch)
 	{
-		CountdownTime = RoundEndTime + PostRoundTime + CooldownTime - GetWorld()->GetTimeSeconds();
+		CountdownTime = MatchEndTime + CooldownTime - GetWorld()->GetTimeSeconds();
 		if (CountdownTime <= 0.f)
 		{
 			StartToLeaveMap();
@@ -102,6 +117,12 @@ void AMutationMode::EndRound()
 	// 对局时间结束时结束监视对局状态
 	bWatchRoundState = false;
 
+	if (MutationGameState == nullptr) MutationGameState = GetGameState<AMutationGameState>();
+	if (MutationGameState)
+	{
+		MutationGameState->bCanSpectate = false;
+	}
+
 	// 清除生成补给箱定时器
 	GetWorldTimerManager().ClearTimer(SpawnPickupTimerHandle);
 
@@ -115,6 +136,8 @@ void AMutationMode::StartNextRound()
 	CurrentRound++;
 	RoundStartTime = GetWorld()->GetTimeSeconds();
 	SetMatchState(MatchState::InProgress);
+
+	ChangeLobbyStatus(CurrentRound);
 }
 
 // 结束比赛
@@ -123,12 +146,15 @@ void AMutationMode::EndMatch()
 	if (bIsEndingMatch) return;
 	bIsEndingMatch = true;
 
-	// 比赛时间结束时结束监视比赛状态
+	// 比赛结束时结束监视对局和比赛状态
+	bWatchRoundState = false;
 	bWatchMatchState = false;
 
 	// 清除生成补给箱定时器
 	GetWorldTimerManager().ClearTimer(SpawnPickupTimerHandle);
 
+	MatchEndTime = GetWorld()->GetTimeSeconds();
+	
 	Super::EndMatch();
 }
 
@@ -211,46 +237,61 @@ void AMutationMode::RoundStartMutate()
 	if (MutationGameState == nullptr) MutationGameState = GetGameState<AMutationGameState>();
 	if (MutationGameState == nullptr) return;
 
-	TArray<ABasePlayerState*> Team1 = MutationGameState->GetTeam(ETeam::Team1);
+	TArray<ABasePlayerState*> Team1 = MutationGameState->GetPlayerStates(ETeam::Team1);
 
-	int32 MutateHumanNum = 1;
-	if (Team1.Num() >= 8 && Team1.Num() <= 14)
+	int32 MutateNum;
+	if (Team1.Num() <= 6)
 	{
-		MutateHumanNum = 2;
+		MutateNum = 1;
+	}
+	else if (Team1.Num() >= 7 && Team1.Num() <= 14)
+	{
+		MutateNum = 2;
 	}
 	else if (Team1.Num() >= 15 && Team1.Num() <= 18)
 	{
-		MutateHumanNum = 3;
+		MutateNum = 3;
+	}
+	else
+	{
+		MutateNum = 4;
 	}
 
-	for (int i = 0; i < MutateHumanNum; ++i)
+	for (int i = 0; i < MutateNum; ++i)
 	{
 		int32 RandomIndex = FMath::RandRange(0, Team1.Num() - 1);
-		
+
 #if UE_EDITOR
 		RandomIndex = GetDefault<UDevSetting>()->MutateClientIndex;
 
 		if (RandomIndex > Team1.Num() - 1)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 20.f, C_RED, TEXT("MutateClientIndex too Big!"), false);
 			RandomIndex = Team1.Num() - 1;
 		}
 #endif
 
 		if (ABasePlayerState* BasePlayerState = Team1[RandomIndex])
 		{
+			// 初始突变体拥有最高等级
+			if (BasePlayerState->GetAttributeSetBase())
+			{
+				BasePlayerState->GetAttributeSetBase()->SetCharacterLevel(3.f);
+			}
+
 			if (AController* Controller = Cast<AController>(BasePlayerState->GetOwner()))
 			{
-				Mutate(Controller->GetCharacter(), Controller, ESpawnReason::RoundStart);
+				Mutate(Controller->GetCharacter(), Controller, ESpawnMutantReason::RoundStart);
 			}
 		}
 	}
 	// 突变后开始监视对局状态
 	bWatchRoundState = true;
 
+	MutationGameState->bCanSpectate = true;
+
 	// 定时生成补给箱
 	// GetWorldTimerManager().SetTimer(SpawnPickupTimerHandle, this, &ThisClass::SpawnPickups, 5.f, false);
-	GetWorldTimerManager().SetTimer(SpawnPickupTimerHandle, this, &ThisClass::SpawnPickups, 40.f, true);
+	GetWorldTimerManager().SetTimer(SpawnPickupTimerHandle, this, &ThisClass::SpawnPickups, 40.f, true, 35.f);
 }
 
 // 人类受到伤害
@@ -291,13 +332,14 @@ void AMutationMode::HumanReceiveDamage(AHumanCharacter* DamagedCharacter, ABaseC
 		// 人类死亡后突变
 		if (const UDamageTypeBase* DamageTypeBase = Cast<UDamageTypeBase>(DamageType))
 		{
-			if (DamageTypeBase->DamageType != EDamageCauserType::MutantDamage)
+			if (DamageTypeBase->DamageType == EDamageCauserType::MutantDamage)
 			{
-				DamagedCharacter->MulticastMutationDead(true);
+				Mutate(DamagedCharacter, DamagedController, ESpawnMutantReason::MutantDamage);
 				return;
 			}
 		}
-		Mutate(DamagedCharacter, DamagedController, ESpawnReason::MutantDamage);
+		// 延迟重生
+		DamagedCharacter->MulticastMutationDead(true);
 	}
 }
 
@@ -322,25 +364,26 @@ void AMutationMode::GetInfect(AHumanCharacter* DamagedCharacter, ABaseController
 	AddKillLog(AttackerState, AttackerCharacter, GetDefault<UDamageTypeMutantInfect>(), DamagedState);
 
 	// 人类感染后突变
-	Mutate(DamagedCharacter, DamagedController, ESpawnReason::Infect);
+	Mutate(DamagedCharacter, DamagedController, ESpawnMutantReason::MutantInfect);
 }
 
 // 人类突变为突变体
-void AMutationMode::Mutate(ACharacter* Character, AController* Controller, ESpawnReason SpawnReason)
+void AMutationMode::Mutate(ACharacter* Character, AController* Controller, ESpawnMutantReason SpawnMutantReason)
 {
 	if (AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(Character))
 	{
 		// 记录当前角色的位置和旋转
 		FVector Location = HumanCharacter->GetActorLocation();
 		FRotator ActorRotation = Character->GetActorRotation();
-
+		FRotator ViewRotation = Character->GetViewRotation();
+		
 		// 人类死亡
 		HumanCharacter->MulticastMutationDead(false);
 		HumanCharacter->Destroy();
 
 		// 重生为突变体
 		AssignTeam(Controller, ETeam::Team2);
-		SpawnMutantCharacter(Controller, SpawnReason, Location, ActorRotation);
+		SpawnMutantCharacter(Controller, SpawnMutantReason, Location, ActorRotation, ViewRotation);
 	}
 }
 
@@ -352,12 +395,13 @@ void AMutationMode::SelectMutant(ACharacter* Character, AController* Controller)
 		// 记录当前角色的位置和旋转
 		FVector Location = Character->GetActorLocation();
 		FRotator ActorRotation = Character->GetActorRotation();
+		FRotator ViewRotation = Character->GetViewRotation();
 
 		// 销毁旧角色
 		Character->Destroy();
 
 		// 生成新角色
-		SpawnMutantCharacter(Controller, ESpawnReason::SelectMutant, Location, ActorRotation);
+		SpawnMutantCharacter(Controller, ESpawnMutantReason::SelectMutant, Location, ActorRotation, ViewRotation);
 	}
 }
 
@@ -435,7 +479,7 @@ void AMutationMode::MutantRespawn(ACharacter* Character, ABaseController* BaseCo
 	if (!bKilledByMelee)
 	{
 		Character->Destroy();
-		SpawnMutantCharacter(BaseController, ESpawnReason::Respawn);
+		SpawnMutantCharacter(BaseController, ESpawnMutantReason::Respawn);
 	}
 	// 被刀死不能复活，进入观察视角
 	else
@@ -445,7 +489,7 @@ void AMutationMode::MutantRespawn(ACharacter* Character, ABaseController* BaseCo
 }
 
 // 生成突变体角色
-void AMutationMode::SpawnMutantCharacter(AController* Controller, ESpawnReason SpawnReason,
+void AMutationMode::SpawnMutantCharacter(AController* Controller, ESpawnMutantReason SpawnMutantReason,
 	FVector Location, FRotator ActorRotation, FRotator ViewRotation)
 {
 	if (Controller == nullptr) return;
@@ -454,24 +498,20 @@ void AMutationMode::SpawnMutantCharacter(AController* Controller, ESpawnReason S
 	FString CharacterName;
 	if (ABasePlayerState* BasePlayerState = Cast<ABasePlayerState>(Controller->PlayerState))
 	{
-		FString EnumValue = UEnum::GetValueAsString(BasePlayerState->GetMutantCharacterName());
-		CharacterName = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		CharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(BasePlayerState->GetMutantCharacterName()));
 	}
 
 	// 获取角色类
-	TObjectPtr<UClass> CharacterClass;
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	TSubclassOf<AMutantCharacter> CharacterClass;
+	FDataRegistryId DataRegistryId(DR_MUTANT_CHARACTER_MAIN, FName(CharacterName));
+	if (const FMutantCharacterMain* MutantCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
 	{
-		FDataRegistryId DataRegistryId(DR_MUTANT_CHARACTER_MAIN, FName(CharacterName));
-		if (const FMutantCharacterMain* MutantCharacterMain = DRSubsystem->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
-		{
-			CharacterClass = MutantCharacterMain->MutantCharacterClass;
-		}
+		CharacterClass = MutantCharacterMain->MutantCharacterClass;
 	}
 	if (CharacterClass == nullptr) return;
 
 	// 如果是突变体重生，使用出生点的位置和旋转
-	if (SpawnReason == ESpawnReason::Respawn)
+	if (SpawnMutantReason == ESpawnMutantReason::Respawn)
 	{
 		AActor* StartSpot = FindCharacterPlayerStart(ETeam::Team2);
 		if (StartSpot)
@@ -491,12 +531,12 @@ void AMutationMode::SpawnMutantCharacter(AController* Controller, ESpawnReason S
 		SpawnParams
 	);
 
-	MutantCharacter->SpawnReason = SpawnReason;
+	MutantCharacter->SpawnMutantReason = SpawnMutantReason;
 
 	Controller->Possess(MutantCharacter);
 
 	// 如果是突变体重生，重置俯仰
-	if (SpawnReason == ESpawnReason::Respawn)
+	if (SpawnMutantReason == ESpawnMutantReason::Respawn)
 	{
 		Controller->ClientSetRotation(MutantCharacter->GetActorRotation());
 	}
@@ -510,7 +550,7 @@ void AMutationMode::SpawnPickups()
 	{
 		for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
 		{
-			if (It->PlayerStartTag == FName("Pickup"))
+			if (It->PlayerStartTag == TEXT("Pickup"))
 			{
 				PickupStartPoints.Add(*It);
 			}

@@ -1,6 +1,7 @@
 #include "BaseGameState.h"
 
 #include "BiochemicalArena/GameModes/MutationMode.h"
+#include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "Net/UnrealNetwork.h"
@@ -9,8 +10,9 @@ void ABaseGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ThisClass, Team1);
-	DOREPLIFETIME(ThisClass, Team2);
+	DOREPLIFETIME(ThisClass, Team1PlayerStates);
+	DOREPLIFETIME(ThisClass, Team2PlayerStates);
+	DOREPLIFETIME(ThisClass, bCanSpectate);
 }
 
 void ABaseGameState::BeginPlay()
@@ -40,40 +42,40 @@ void ABaseGameState::HandleRoundHasEnded()
 	OnRoundEnded.Broadcast();
 }
 
-void ABaseGameState::AddToTeam(ABasePlayerState* BasePlayerState, ETeam Team)
+void ABaseGameState::AddToPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team)
 {
 	switch (Team)
 	{
 	case ETeam::Team1:
-		Team1.AddUnique(BasePlayerState);
+		Team1PlayerStates.AddUnique(BasePlayerState);
 		break;
 	case ETeam::Team2:
-		Team2.AddUnique(BasePlayerState);
+		Team2PlayerStates.AddUnique(BasePlayerState);
 		break;
 	}
 }
 
-void ABaseGameState::RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam Team)
+void ABaseGameState::RemoveFromPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team)
 {
 	switch (Team)
 	{
 	case ETeam::Team1:
-		Team1.Remove(BasePlayerState);
+		Team1PlayerStates.Remove(BasePlayerState);
 		break;
 	case ETeam::Team2:
-		Team2.Remove(BasePlayerState);
+		Team2PlayerStates.Remove(BasePlayerState);
 		break;
 	}
 }
 
-TArray<ABasePlayerState*> ABaseGameState::GetTeam(ETeam Team)
+TArray<ABasePlayerState*> ABaseGameState::GetPlayerStates(ETeam Team)
 {
 	switch (Team)
 	{
 	case ETeam::Team1:
-		return Team1;
+		return Team1PlayerStates;
 	case ETeam::Team2:
-		return Team2;
+		return Team2PlayerStates;
 	default:
 		return TArray<ABasePlayerState*>();
 	}

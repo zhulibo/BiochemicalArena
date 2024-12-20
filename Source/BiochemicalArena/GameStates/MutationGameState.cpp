@@ -36,7 +36,7 @@ void AMutationGameState::WatchGameState()
 	// 监视比赛状态
 	if (MutationMode->bWatchMatchState)
 	{
-		if (Team1.Num() + Team2.Num() < 2)
+		if (Team1PlayerStates.Num() + Team2PlayerStates.Num() < 2)
 		{
 			MutationMode->EndMatch();
 		}
@@ -46,29 +46,29 @@ void AMutationGameState::WatchGameState()
 	if (MutationMode->bWatchRoundState)
 	{
 		// UE_LOG(LogTemp, Warning, TEXT("Team1.Num(): %d, Team2.Num(): %d"), Team1.Num(), Team2.Num());
-		if (Team1.IsEmpty() || Team2.IsEmpty())
+		if (Team1PlayerStates.IsEmpty() || Team2PlayerStates.IsEmpty())
 		{
 			MutationMode->EndRound();
 		}
 	}
 }
 
-void AMutationGameState::AddToTeam(ABasePlayerState* BasePlayerState, ETeam Team)
+void AMutationGameState::AddToPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team)
 {
-	Super::AddToTeam(BasePlayerState, Team);
+	Super::AddToPlayerStates(BasePlayerState, Team);
 
 	CalcDamageMul();
 
-	SetHUDTeamNum(GetTeam(Team).Num(), Team);
+	SetHUDTeamNum(GetPlayerStates(Team).Num(), Team);
 }
 
-void AMutationGameState::RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam Team)
+void AMutationGameState::RemoveFromPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team)
 {
-	Super::RemoveFromTeam(BasePlayerState, Team);
+	Super::RemoveFromPlayerStates(BasePlayerState, Team);
 
 	CalcDamageMul();
 
-	SetHUDTeamNum(GetTeam(Team).Num(), Team);
+	SetHUDTeamNum(GetPlayerStates(Team).Num(), Team);
 }
 
 void AMutationGameState::EndRoundIfAllBeKilledByMelee()
@@ -77,9 +77,9 @@ void AMutationGameState::EndRoundIfAllBeKilledByMelee()
 	if (MutationMode == nullptr) return;
 
 	bool bAllKilledByMelee = true;
-	for (int i = 0; i < Team2.Num(); ++i)
+	for (int i = 0; i < Team2PlayerStates.Num(); ++i)
 	{
-		if (AMutationPlayerState* MutationPlayerState = Cast<AMutationPlayerState>(Team2[i]))
+		if (AMutationPlayerState* MutationPlayerState = Cast<AMutationPlayerState>(Team2PlayerStates[i]))
 		{
 			if (MutationPlayerState->bKilledByMelee == false)
 			{
@@ -97,9 +97,9 @@ void AMutationGameState::EndRoundIfAllBeKilledByMelee()
 void AMutationGameState::CalcDamageMul()
 {
 	if (MatchState != MatchState::InProgress) return;
-	if (Team1.IsEmpty() || Team2.IsEmpty()) return;
+	if (Team1PlayerStates.IsEmpty() || Team2PlayerStates.IsEmpty()) return;
 
-	float PlayerMul = Team1.Num() / Team2.Num();
+	float PlayerMul = Team1PlayerStates.Num() / Team2PlayerStates.Num();
 	float TempDamageMul = 1.f;
 
 	if (PlayerMul <= .5f)
@@ -133,18 +133,18 @@ void AMutationGameState::OnRep_DamageMul()
 	}
 }
 
-void AMutationGameState::OnRep_Team1()
+void AMutationGameState::OnRep_Team1PlayerStates()
 {
-	Super::OnRep_Team1();
+	Super::OnRep_Team1PlayerStates();
 
-	SetHUDTeamNum(Team1.Num(), ETeam::Team1);
+	SetHUDTeamNum(Team1PlayerStates.Num(), ETeam::Team1);
 }
 
-void AMutationGameState::OnRep_Team2()
+void AMutationGameState::OnRep_Team2PlayerStates()
 {
-	Super::OnRep_Team2();
+	Super::OnRep_Team2PlayerStates();
 
-	SetHUDTeamNum(Team2.Num(), ETeam::Team2);
+	SetHUDTeamNum(Team2PlayerStates.Num(), ETeam::Team2);
 }
 
 void AMutationGameState::SetHUDTeamNum(int32 TeamNum, ETeam Team)

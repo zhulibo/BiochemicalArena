@@ -39,27 +39,25 @@ void USettingTab::LinkSwitcher()
 			FName TabButtonNameID = FName(*TabWidgetName.Right(TabWidgetName.Len() - 3));
 			RegisterTab(TabButtonNameID, TabButtonClass, TabContents[i], i);
 
-			UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID));
-			if (TabButton)
+			if (UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID)))
 			{
-				if (TabButtonNameID == FName(TEXT("Game")))
+				if (TabButtonNameID == TEXT("Game"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Game", "Game"));
 				}
-				if (TabButtonNameID == FName(TEXT("Control")))
+				if (TabButtonNameID == TEXT("Control"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Control", "Control"));
 				}
-				if (TabButtonNameID == FName(TEXT("Video")))
+				if (TabButtonNameID == TEXT("Video"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Video", "Video"));
 				}
-				if (TabButtonNameID == FName(TEXT("Audio")))
+				if (TabButtonNameID == TEXT("Audio"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Audio", "Audio"));
 				}
-				
-				TabButton->ButtonText->SetText(FText::FromName(TabButtonNameID));
+
 				UHorizontalBoxSlot* NewSlot = Cast<UHorizontalBoxSlot>(TabButtonContainer->AddChildToHorizontalBox(TabButton));
 				if (NewSlot) NewSlot->SetPadding(FMargin(10, 0, 10, 0));
 			}

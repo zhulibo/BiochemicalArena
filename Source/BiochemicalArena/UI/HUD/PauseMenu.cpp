@@ -1,9 +1,13 @@
 #include "PauseMenu.h"
 #include "CommonTextBlock.h"
-#include "BiochemicalArena/UI/HUD/Mutation/HUDMutation.h"
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/UI/HUD/Mutation/MutationContainer.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
+#include "BiochemicalArena/System/Data/CommonAsset.h"
 #include "BiochemicalArena/UI/GameLayout.h"
 #include "BiochemicalArena/UI/Common/CommonButton.h"
+#include "BiochemicalArena/UI/Common/ConfirmScreen.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "BiochemicalArena/UI/Setting/Setting.h"
 #include "BiochemicalArena/UI/HUD/LoadoutSelect/LoadoutSelect.h"
@@ -30,8 +34,9 @@ void UPauseMenu::NativeOnInitialized()
 	SettingButton->ButtonText->SetText(LOCTEXT("Setting", "Setting"));
 	SettingButton->OnClicked().AddUObject(this, &ThisClass::OnSettingButtonClicked);
 
-	KickButton->ButtonText->SetText(LOCTEXT("Kick", "Kick"));
-	KickButton->OnClicked().AddUObject(this, &ThisClass::OnKickButtonClicked);
+	VoteButton->ButtonText->SetText(LOCTEXT("Vote", "Vote"));
+	VoteButton->OnClicked().AddUObject(this, &ThisClass::OnVoteButtonClicked);
+	VoteButton->SetIsEnabled(false);
 
 	QuitButton->ButtonText->SetText(LOCTEXT("Quit", "Quit"));
 	QuitButton->OnClicked().AddUObject(this, &ThisClass::OnQuitButtonClicked);
@@ -60,54 +65,70 @@ void UPauseMenu::OnDeactivatedInternal()
 
 void UPauseMenu::OnLoadoutSelectClicked()
 {
-	if (LoadoutSelectClass)
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+	if (BaseController && BaseController->GameLayout)
 	{
-		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
-		if (BaseController && BaseController->GameLayout)
-		{
-			bWantToBack = false;
-		
-			BaseController->GameLayout->MenuStack->AddWidget(LoadoutSelectClass);
-		}
+		bWantToBack = false;
+
+		BaseController->GameLayout->MenuStack->AddWidget(LoadoutSelectClass);
 	}
 }
 
 void UPauseMenu::OnMutantSelectButtonClicked()
 {
-	if (MutantSelectClass)
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+	if (BaseController && BaseController->GameLayout)
 	{
-		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
-		if (BaseController && BaseController->GameLayout)
-		{
-			bWantToBack = false;
+		bWantToBack = false;
 		
-			BaseController->GameLayout->MenuStack->AddWidget(MutantSelectClass);
-		}
+		BaseController->GameLayout->MenuStack->AddWidget(MutantSelectClass);
 	}
 }
 
 void UPauseMenu::OnSettingButtonClicked()
 {
-	if (SettingClass)
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+	if (BaseController && BaseController->GameLayout)
 	{
-		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
-		if (BaseController && BaseController->GameLayout)
-		{
-			bWantToBack = false;
+		bWantToBack = false;
 		
-			BaseController->GameLayout->MenuStack->AddWidget(SettingClass);
-		}
+		BaseController->GameLayout->MenuStack->AddWidget(SettingClass);
 	}
 }
 
-void UPauseMenu::OnKickButtonClicked()
+void UPauseMenu::OnVoteButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnKickButtonClicked"));
+	UE_LOG(LogTemp, Warning, TEXT("OnVoteButtonClicked"));
 }
 
 void UPauseMenu::OnQuitButtonClicked()
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnQuitButtonClicked"));
+	UE_LOG(LogTemp, Warning, TEXT("OnQuitButtonClicked -------------------------------------------"));
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+	UAssetSubsystem* AssetSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	
+	if (BaseController && BaseController->GameLayout && AssetSubsystem && AssetSubsystem->CommonAsset)
+	{
+		FConfirmScreenComplete ResultCallback = FConfirmScreenComplete::CreateUObject(this, &ThisClass::Quit);
+		BaseController->GameLayout->ModalStack->AddWidget<UConfirmScreen>(
+			AssetSubsystem->CommonAsset->ConfirmScreenClass,
+			[ResultCallback](UConfirmScreen& Dialog) {
+				Dialog.Setup(LOCTEXT("SureToQuit", "Sure to quit?"), ResultCallback);
+			}
+		);
+	}
+}
+
+void UPauseMenu::Quit(EMsgResult MsgResult)
+{
+	if (MsgResult == EMsgResult::Confirm)
+	{
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(GetOwningPlayer());
+		if (BaseController)
+		{
+			BaseController->ClientTravel(MAP_MENU, ETravelType::TRAVEL_Absolute);
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -19,9 +19,11 @@ bool AGameplayCue_MutantGhostSkill::WhileActive_Implementation(AActor* MyTarget,
 			}
 			if (DynamicMaterial)
 			{
-				DynamicMaterial->SetScalarParameterValue(TEXT("Opacity"), 0.1f);
+				DynamicMaterial->SetScalarParameterValue(TEXT("Opacity"), 0.02f);
 			}
 		}
+		
+		MutantGhost->ShowOverheadWidget(false);
 	}
 
 	return Super::WhileActive_Implementation(MyTarget, Parameters);
@@ -45,6 +47,8 @@ bool AGameplayCue_MutantGhostSkill::OnRemove_Implementation(AActor* MyTarget, co
 				DynamicMaterial->SetScalarParameterValue(TEXT("Opacity"), 1.f);
 			}
 		}
+		
+		MutantGhost->ShowOverheadWidget(true);
 	}
 
 	return Super::OnRemove_Implementation(MyTarget, Parameters);

@@ -18,10 +18,12 @@ class BIOCHEMICALARENA_API UAttributeSetBase : public UAttributeSet
 
 public:
 	UAttributeSetBase();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue)const  override;
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	UPROPERTY(ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
@@ -60,5 +62,7 @@ protected:
 	virtual void OnRep_CharacterLevel(const FGameplayAttributeData& OldCharacterLevel);
 	UFUNCTION()
 	virtual void OnRep_JumpZVelocity(const FGameplayAttributeData& OldJumpZVelocity);
+
+	void ClampAttr(const FGameplayAttribute& Attribute, float& NewValue) const;
 
 };

@@ -11,6 +11,14 @@ class BIOCHEMICALARENA_API UMutantCommon : public UDataAsset
 
 public:
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UGameplayAbilityBase> ChangeMutantAbility;
+	TSubclassOf<class UGameplayAbilityBase> MutantChangeAbility;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UGameplayAbilityBase> MutantRestoreAbility;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UGameplayEffect> MutantRestoreEffect;
 
+	UPROPERTY(EditAnywhere)
+	UMaterialInterface* MI_Overlay_Dead;
+	
 };

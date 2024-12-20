@@ -90,7 +90,7 @@ public:
 
 	// Lobby
 	TSharedPtr<const FLobby> CurrentLobby;
-	FName LocalLobbyName = FName(TEXT("LocalLobbyName"));
+	FName LocalLobbyName = TEXT("LocalLobbyName");
 	void CreateLobby();
 	FOnCreateLobbyComplete OnCreateLobbyComplete;
 	void FindLobbies(FString LobbyName, FString GameMode, FString MapName);

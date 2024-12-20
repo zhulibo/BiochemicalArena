@@ -47,8 +47,9 @@ protected:
 	virtual void OnAttackCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	UFUNCTION(Server, Reliable)
+	void ServerApplyDamage(AActor* OtherActor, AHumanCharacter* InstigatorCharacter, float Damage);
 	UFUNCTION()
-	virtual void DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-		UPrimitiveComponent* OtherComp, float Damage);
+	virtual void DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, float Damage);
 
 };

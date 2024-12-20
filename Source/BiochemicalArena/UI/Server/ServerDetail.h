@@ -21,10 +21,10 @@ protected:
 	UEOSSubsystem* EOSSubsystem;
 
 	void SetUIAttr();
-	void InitMapComboBox();
-	void SetUIButton();
+	void SetUIButtonState();
 	void UpdatePlayerList();
-	int32 GetFocusPlayerIndex(class UCommonHierarchicalScrollBox* Container);
+	void InitMapComboBox();
+	int32 GetFocusedPlayerIndex(class UCommonHierarchicalScrollBox* Container);
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* Team1Container;

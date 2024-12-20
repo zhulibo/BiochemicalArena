@@ -37,6 +37,8 @@ protected:
 	float Rage = 0.f;
 	UFUNCTION()
 	void OnRep_Rage();
+	void ApplyLevelUpEffect();
+	void SetHUDRage();
 
 public:
 	FORCEINLINE float GetRage() const { return Rage; }

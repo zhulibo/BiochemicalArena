@@ -12,12 +12,22 @@
 #define C_WHITE FColor(255, 255, 255, 255)
 #define C_GREY FColor(120, 120, 120, 255)
 
-// 角色碰撞
+// 地图
+#define MAP_LOGIN FString(TEXT("/Game/Maps/UI_Login"))
+#define MAP_MENU FString(TEXT("/Game/Maps/UI_Menu"))
+
+// 模式
+#define ALL FString(TEXT("All"))
+#define MUTATION FString(TEXT("Mutation"))
+#define TEAM_DEAD_MATCH FString(TEXT("TeamDeadMatch"))
+#define MELEE FString(TEXT("Melee"))
+
+// 角色碰撞通道
 #define ECC_TEAM1_MESH ECollisionChannel::ECC_GameTraceChannel1
 #define ECC_TEAM2_MESH ECollisionChannel::ECC_GameTraceChannel2
 #define ECC_Blood ECollisionChannel::ECC_GameTraceChannel3
 
-// 大厅
+// EOS大厅属性
 #define LOBBY_SCHEMA_ID FName(TEXT("GameLobby"))
 
 #define LOBBY_SERVER_NAME FName(TEXT("ServerName"))
@@ -41,3 +51,9 @@
 #define DR_WEAPON_DATA FName(TEXT("DR_WeaponData"))
 #define DR_MELEE_DATA FName(TEXT("DR_MeleeData"))
 #define DR_EQUIPMENT_RECOIL FName(TEXT("DR_EquipmentRecoil"))
+
+// 多语言
+#define CULTURE_HUMAN FString(TEXT("Human"))
+#define CULTURE_MUTANT FString(TEXT("Mutant"))
+#define CULTURE_EQUIPMENT FString(TEXT("Equipment"))
+#define CULTURE_EQUIPMENT_TYPE FString(TEXT("EquipmentType"))

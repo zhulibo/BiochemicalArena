@@ -18,7 +18,7 @@ enum class EEquipmentName : uint8 // 装备名字
 
 	Grenade,
 
-	NONE
+	None
 };
 
 UENUM(BlueprintType)
@@ -29,18 +29,20 @@ enum class EEquipmentCate : uint8 // 装备种类（武器自身属性）
 	Melee,
 	Throwing,
 
-	NONE
+	None
 };
 
 UENUM(BlueprintType)
-enum class EEquipmentType : uint8 // 装备类型（装备的位置，共4个位置，未来扩充至8个）
+enum class EEquipmentType : uint8 // 装备类型（装备的位置）
 {
 	Primary,
 	Secondary,
 	Melee,
 	Throwing,
+	// Tool,
+	// Tonic,
 
-	NONE
+	None
 };
 
 UENUM(BlueprintType)
@@ -56,20 +58,28 @@ struct FEquipmentMain : public FTableRowBase
 {
 	GENERATED_BODY()
 
+	// EquipmentName用作id
 	UPROPERTY(EditAnywhere)
-	EEquipmentName EquipmentName = EEquipmentName::NONE;
+	EEquipmentName EquipmentName = EEquipmentName::None;
 
 	UPROPERTY(EditAnywhere)
-	EEquipmentName EquipmentParentName = EEquipmentName::NONE;
+	EEquipmentName EquipmentParentName = EEquipmentName::None;
 
 	UPROPERTY(EditAnywhere)
-	EEquipmentCate EquipmentCate = EEquipmentCate::NONE;
+	EEquipmentCate EquipmentCate = EEquipmentCate::None;
 
 	UPROPERTY(EditAnywhere)
-	EEquipmentType EquipmentType = EEquipmentType::NONE;
+	EEquipmentType EquipmentType = EEquipmentType::None;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AEquipment> EquipmentClass;
+	TSubclassOf<class AEquipment> EquipmentClass; // TODO TSoftClassPtr
+
+	/**
+	 * Must be same as the OfferId in dev portal,
+	 * Used to determine button type in the UShop::OnQueryOffersComplete.
+	 */
+	UPROPERTY(EditAnywhere)
+	FString OfferId;
 
 	/**
 	 * Must be same as the audience item ID in dev portal,
@@ -86,7 +96,7 @@ struct FWeaponData : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	EEquipmentName EquipmentName = EEquipmentName::NONE;
+	EEquipmentName EquipmentName = EEquipmentName::None;
 
 	UPROPERTY(EditAnywhere)
 	int32 MaxCarriedAmmo = 0;
@@ -122,7 +132,7 @@ struct FMeleeData : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	EEquipmentName EquipmentName = EEquipmentName::NONE;
+	EEquipmentName EquipmentName = EEquipmentName::None;
 
 	UPROPERTY(EditAnywhere)
 	float LightAttackDamage = 0.f;
@@ -140,7 +150,7 @@ struct FEquipmentRecoil : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	EEquipmentName EquipmentName = EEquipmentName::NONE;
+	EEquipmentName EquipmentName = EEquipmentName::None;
 
 	UPROPERTY(EditAnywhere)
 	float RecoilMaxVert = 0.f;

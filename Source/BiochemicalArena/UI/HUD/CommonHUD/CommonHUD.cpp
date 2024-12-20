@@ -57,7 +57,7 @@ void UCommonHUD::OnKillStreakChange(int Num)
 
 void UCommonHUD::OnAddKillLog(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState)
 {
-	if (AttackerState == nullptr || DamagedState == nullptr || GetWorld()->bIsTearingDown) return;
+	if (AttackerState == nullptr || DamagedState == nullptr) return;
 
 	if (KillLogContainer && KillLogLineClass)
 	{

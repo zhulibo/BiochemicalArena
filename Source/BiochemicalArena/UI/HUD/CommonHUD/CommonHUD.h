@@ -12,7 +12,7 @@ class BIOCHEMICALARENA_API UCommonHUD : public UCommonUserWidget
 
 protected:
 	virtual void NativeOnInitialized() override;
-	
+
 	UPROPERTY()
 	class ABasePlayerState* LocalPlayerState;
 	

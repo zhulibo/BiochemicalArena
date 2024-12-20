@@ -4,6 +4,8 @@
 #include "CommonActivatableWidget.h"
 #include "PauseMenu.generated.h"
 
+enum class EMsgResult : uint8;
+
 UCLASS()
 class BIOCHEMICALARENA_API UPauseMenu : public UCommonActivatableWidget
 {
@@ -40,11 +42,12 @@ protected:
 	void OnSettingButtonClicked();
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonButton* KickButton;
-	void OnKickButtonClicked();
+	UCommonButton* VoteButton;
+	void OnVoteButtonClicked();
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* QuitButton;
 	void OnQuitButtonClicked();
+	void Quit(EMsgResult MsgResult);
 
 };

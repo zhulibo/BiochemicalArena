@@ -14,7 +14,9 @@ public:
 	class UInputMappingContext* SpectatorMappingContext;
 
 	UPROPERTY(EditAnywhere)
-	class UInputAction* ViewNextAction;
+	class UInputAction* SwitchPerspectiveAction;
+	UPROPERTY(EditAnywhere)
+	UInputAction* ViewNextAction;
 	UPROPERTY(EditAnywhere)
 	UInputAction* ViewPrevAction;
 

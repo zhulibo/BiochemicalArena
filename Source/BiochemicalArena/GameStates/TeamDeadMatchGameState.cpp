@@ -14,8 +14,8 @@ void ATeamDeadMatchGameState::GetLifetimeReplicatedProps(TArray<FLifetimePropert
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(ThisClass, Team1);
-	DOREPLIFETIME(ThisClass, Team2);
+	DOREPLIFETIME(ThisClass, Team1PlayerStates);
+	DOREPLIFETIME(ThisClass, Team2PlayerStates);
 	DOREPLIFETIME(ThisClass, Team1Score);
 	DOREPLIFETIME(ThisClass, Team2Score);
 }
@@ -36,7 +36,7 @@ void ATeamDeadMatchGameState::WatchGameState()
 	if (TeamDeadMatchMode == nullptr) TeamDeadMatchMode = Cast<ATeamDeadMatchMode>(GetWorld()->GetAuthGameMode());
 	if (TeamDeadMatchMode && TeamDeadMatchMode->bWatchMatchState)
 	{
-		if (Team1.IsEmpty() || Team2.IsEmpty())
+		if (Team1PlayerStates.IsEmpty() || Team2PlayerStates.IsEmpty())
 		{
 			TeamDeadMatchMode->EndMatch();
 		}

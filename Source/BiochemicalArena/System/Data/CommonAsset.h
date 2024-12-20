@@ -13,4 +13,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UNotifyLayout> NotifyLayoutClass;
 
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UConfirmScreen> ConfirmScreenClass;
+
 };

@@ -38,7 +38,7 @@ void UGameplayAbility_MutantTankSkill::ActivateAbility(const FGameplayAbilitySpe
 				{
 					Duration = ActiveSkillEffect->Spec.Duration;
 				}
-
+				
 				Task = UAbilityTask_MutantTankSkill::CreateTask(this, Duration);
 				Task->OnSkillEnd.AddDynamic(this, &ThisClass::OnSkillEnd);
 				Task->ReadyForActivation();

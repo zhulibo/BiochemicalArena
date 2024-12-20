@@ -19,8 +19,6 @@ class BIOCHEMICALARENA_API ABasePlayerState : public APlayerState, public IAbili
 public:
 	ABasePlayerState();
 
-	virtual void Reset() override;
-
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	class UAttributeSetBase* GetAttributeSetBase();
 	float GetMaxHealth();
@@ -37,6 +35,8 @@ public:
 	UFUNCTION()
 	void SetMutantCharacterName(EMutantCharacterName Name);
 
+	void InitOverheadWidget();
+
 	virtual void AddDamage(float TempDamage);
 	void AddDefeat();
 	void ResetKillStreak();
@@ -46,6 +46,8 @@ public:
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
+	virtual void Reset() override;
+	virtual void Destroyed() override;
 
 	virtual void InitData();
 
@@ -76,7 +78,6 @@ protected:
 	ETeam Team;
 	UFUNCTION()
 	virtual void OnRep_Team();
-	void InitOverheadWidget();
 
 	UPROPERTY(ReplicatedUsing = OnRep_Damage)
 	float Damage;
@@ -98,7 +99,6 @@ public:
 	FORCEINLINE ETeam GetTeam() const { return Team; }
 	FORCEINLINE EHumanCharacterName GetHumanCharacterName() const { return HumanCharacterName; }
 	FORCEINLINE EMutantCharacterName GetMutantCharacterName() const { return MutantCharacterName; }
-
 	FORCEINLINE float GetDamage() const { return Damage; }
 	FORCEINLINE float GetDefeat() const { return Defeat; }
 

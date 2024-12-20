@@ -4,6 +4,7 @@
 #include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
 #include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "BiochemicalArena/Characters/MutantAnimInstance.h"
+#include "BiochemicalArena/Characters/Components/OverheadWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 AMutantGhost::AMutantGhost()
@@ -68,4 +69,12 @@ void AMutantGhost::OnAbilitySystemComponentInit()
 void AMutantGhost::OnJumpZVelocityChanged(const FOnAttributeChangeData& Data)
 {
 	GetCharacterMovement()->JumpZVelocity = Data.NewValue;
+}
+
+void AMutantGhost::ShowOverheadWidget(bool bIsShow)
+{
+	if (OverheadWidgetClass)
+	{
+		OverheadWidgetClass->ShowOverheadWidget(bIsShow);
+	}
 }

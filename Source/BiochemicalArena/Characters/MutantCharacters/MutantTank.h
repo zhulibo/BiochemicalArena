@@ -12,6 +12,9 @@ class BIOCHEMICALARENA_API AMutantTank : public AMutantCharacter
 public:
 	AMutantTank();
 
+	UPROPERTY(EditAnywhere)
+	UMaterialInterface* MI_Overlay_Skill;
+	
 protected:
 	virtual void BeginPlay() override;
 
@@ -24,5 +27,6 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
 	virtual void OnLeftHandCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult) override;
+	
 
 };

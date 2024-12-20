@@ -256,10 +256,19 @@ void URadialMenuContainer::OnTeamChange(ETeam Team)
 
 void URadialMenuContainer::SetHumanRadialMenuText()
 {
-	RadialMenuEquipment->Item1->SetText(LOCTEXT("Primary", "Primary"));
-	RadialMenuEquipment->Item2->SetText(LOCTEXT("Secondary", "Secondary"));
-	RadialMenuEquipment->Item3->SetText(LOCTEXT("Melee", "Melee"));
-	RadialMenuEquipment->Item4->SetText(LOCTEXT("Throwing", "Throwing"));
+	FText Item1Text = FText();
+	FText Item2Text = FText();
+	FText Item3Text = FText();
+	FText Item4Text = FText();
+	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Primary"), Item1Text);
+	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Secondary"), Item2Text);
+	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Melee"), Item3Text);
+	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Throwing"), Item4Text);
+
+	RadialMenuEquipment->Item1->SetText(Item1Text);
+	RadialMenuEquipment->Item2->SetText(Item2Text);
+	RadialMenuEquipment->Item3->SetText(Item3Text);
+	RadialMenuEquipment->Item4->SetText(Item4Text);
 	RadialMenuEquipment->Item5->SetText(FText::FromString(TEXT("-1")));
 	RadialMenuEquipment->Item6->SetText(FText::FromString(TEXT("-1")));
 	RadialMenuEquipment->Item7->SetText(FText::FromString(TEXT("-1")));

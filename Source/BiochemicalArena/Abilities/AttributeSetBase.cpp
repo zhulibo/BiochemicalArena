@@ -18,16 +18,41 @@ void UAttributeSetBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION_NOTIFY(UAttributeSetBase, JumpZVelocity, COND_None, REPNOTIFY_Always);
 }
 
+void UAttributeSetBase::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
+{
+	Super::PreAttributeBaseChange(Attribute, NewValue);
+
+	ClampAttr(Attribute, NewValue);
+}
+
 void UAttributeSetBase::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
+
+	ClampAttr(Attribute, NewValue);
 }
 
 void UAttributeSetBase::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
-	// UE_LOG(LogTemp, Warning, TEXT("PostAttributeChange %s %f %f"), *Attribute.AttributeName, OldValue, NewValue);
+	// if (Attribute == GetHealthAttribute())
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("Health OldValue %f NewValue %f"), OldValue, NewValue);
+	// }
+
+	// if (Attribute == GetMaxHealthAttribute())
+	// {
+	// 	UE_LOG(LogTemp, Warning, TEXT("MaxHealth OldValue %f NewValue %f"), OldValue, NewValue);
+	// }
+}
+
+void UAttributeSetBase::ClampAttr(const FGameplayAttribute& Attribute, float& NewValue) const
+{
+	if (Attribute == GetHealthAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+	}
 }
 
 void UAttributeSetBase::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)

@@ -31,16 +31,18 @@ public:
 	UCommonActivatableWidgetStack* ModalStack;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UHUDMutation> HUDMutationClass;
+	TSubclassOf<class UMutationContainer> MutationContainerClass;
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UHUDTeamDeadMatch> HUDTeamDeadMatchClass;
+	TSubclassOf<class UMeleeContainer> MeleeContainerClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<class UTeamDeadMatchContainer> TeamDeadMatchContainerClass;
 
 protected:
 	virtual void NativeOnInitialized() override;
 
 	UPROPERTY()
 	class ABaseController* BaseController;
-	
+
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UPauseMenu> PauseMenuClass;
 	void ShowPauseMenu();

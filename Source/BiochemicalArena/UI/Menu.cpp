@@ -1,11 +1,15 @@
 #include "Menu.h"
 #include "MenuLayout.h"
 #include "BiochemicalArena/PlayerControllers/MenuController.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
+#include "BiochemicalArena/System/Data/CommonAsset.h"
 #include "Common/CommonButton.h"
 #include "BiochemicalArena/UI/Setting/Setting.h"
-#include "Common/ConfirmScreen.h"
+#include "BiochemicalArena/UI/Common/ConfirmScreen.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
+
+#define LOCTEXT_NAMESPACE "UMenu"
 
 void UMenu::NativeOnInitialized()
 {
@@ -30,13 +34,15 @@ void UMenu::OnSettingButtonClicked()
 void UMenu::OnQuitButtonClicked()
 {
 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
-	if (MenuController && MenuController->MenuLayout && ConfirmScreenClass)
+	UAssetSubsystem* AssetSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+
+	if (MenuController && MenuController->MenuLayout && AssetSubsystem && AssetSubsystem->CommonAsset)
 	{
 		FConfirmScreenComplete ResultCallback = FConfirmScreenComplete::CreateUObject(this, &ThisClass::Quit);
 		MenuController->MenuLayout->ModalStack->AddWidget<UConfirmScreen>(
-			ConfirmScreenClass,
+			AssetSubsystem->CommonAsset->ConfirmScreenClass,
 			[ResultCallback](UConfirmScreen& Dialog) {
-				Dialog.Setup(FText::FromString("Sure to quit?"), ResultCallback);
+				Dialog.Setup(LOCTEXT("SureToQuit", "Sure to quit?"), ResultCallback);
 			}
 		);
 	}
@@ -50,3 +56,5 @@ void UMenu::Quit(EMsgResult MsgResult)
 		UKismetSystemLibrary::QuitGame(this, PlayerController, EQuitPreference::Quit, false);
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

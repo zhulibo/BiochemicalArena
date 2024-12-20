@@ -17,11 +17,11 @@ public:
 
 	UPROPERTY()
 	int32 Version = 1;
-	
+
 	UPROPERTY()
-	TArray<struct FBag> Bags;
+	TArray<struct FLoadout> Loadouts;
 	UPROPERTY()
-	int32 CurLoadoutIndex;
+	int32 LoadoutIndex;
 
 	UPROPERTY()
 	EHumanCharacterName HumanCharacterName;

@@ -20,7 +20,9 @@ protected:
 
 	UPROPERTY()
 	class AMutantCharacter* MutantCharacter;
-
+	UPROPERTY()
+	class UPlayerSubsystem* PlayerSubsystem;
+	
 	UPROPERTY(BlueprintReadOnly)
 	float Speed;
 	UPROPERTY(BlueprintReadOnly)
@@ -39,5 +41,5 @@ protected:
 	FRotator Spine_02_Rotator;
 	UPROPERTY(BlueprintReadOnly)
 	FRotator Spine_03_Rotator;
-
+	
 };

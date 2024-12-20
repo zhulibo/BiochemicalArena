@@ -23,7 +23,7 @@ public:
 	UPROPERTY()
 	class USaveGameLoadout* CacheLoadout;
 	void SaveSetting();
-	void SaveLoadout();
+	void SaveLoadouts();
 
 	void ApplySetting();
 	void SetAudio(float Value, ESoundClassType SoundClassType);

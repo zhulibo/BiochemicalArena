@@ -14,6 +14,7 @@ public:
 	
 	static FString GetFormatTime(int32 CountdownTime);
 	static FString GetNowFormatTime();
+	static FString GetEnumValue(const FString& EnumValue);
 	
 	static FColor GetProgressColor(double Value, double InRangeA, double InRangeB, FColor InColor, FColor OutColor);
 

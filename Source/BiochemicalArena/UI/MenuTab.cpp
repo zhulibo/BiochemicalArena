@@ -38,22 +38,21 @@ void UMenuTab::LinkSwitcher()
 			FName TabButtonNameID = FName(TabContents[i]->GetName());
 			RegisterTab(TabButtonNameID, TabButtonClass, TabContents[i], i);
 
-			UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID));
-			if (TabButton)
+			if (UCommonButton* TabButton = Cast<UCommonButton>(GetTabButtonBaseByID(TabButtonNameID)))
 			{
-				if (TabButtonNameID == FName(TEXT("Server")))
+				if (TabButtonNameID == TEXT("Server"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Server", "Server"));
 				}
-				if (TabButtonNameID == FName(TEXT("Storage")))
+				if (TabButtonNameID == TEXT("Storage"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Storage", "Storage"));
 				}
-				if (TabButtonNameID == FName(TEXT("Shop")))
+				if (TabButtonNameID == TEXT("Shop"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Shop", "Shop"));
 				}
-				if (TabButtonNameID == FName(TEXT("Dev")))
+				if (TabButtonNameID == TEXT("Dev"))
 				{
 					TabButton->ButtonText->SetText(LOCTEXT("Dev", "Dev"));
 				}

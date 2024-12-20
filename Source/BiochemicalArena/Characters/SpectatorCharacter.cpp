@@ -5,9 +5,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
 #include "Data/InputBase.h"
 #include "Data/InputSpectator.h"
-#include "GameFramework/GameMode.h"
 
 void ASpectatorCharacter::BeginPlay()
 {
@@ -17,50 +17,72 @@ void ASpectatorCharacter::BeginPlay()
 void ASpectatorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	if (InputBase == nullptr || InputSpectator == nullptr) return;
+	
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr || AssetSubsystem->InputSpectator == nullptr) return;
 	
 	if (ABaseGameState* BaseGameState = Cast<ABaseGameState>(GetWorld()->GetGameState()))
 	{
-		// 还未生成角色时会默认生成ASpectator，避免绑定输入。
-		if (BaseGameState->GetMatchState() != MatchState::EnteringMap && BaseGameState->GetMatchState() != MatchState::WaitingToStart)
-		{
-			if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-			{
-				if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-				{
-					Subsystem->AddMappingContext(InputBase->BaseMappingContext, 0);
-					Subsystem->AddMappingContext(InputSpectator->SpectatorMappingContext, 1);
-				}
-			}
+		// 第一次进入游戏生成角色前会默认生成ASpectator，避免绑定输入。
+		if (BaseGameState->bCanSpectate == false) return;
 
-			if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+		if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			{
-				EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
-				EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
-				EnhancedInputComponent->BindAction(InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
-				EnhancedInputComponent->BindAction(InputBase->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
-		
-				EnhancedInputComponent->BindAction(InputSpectator->ViewNextAction, ETriggerEvent::Triggered, this, &ThisClass::ViewNextPlayer);
-				EnhancedInputComponent->BindAction(InputSpectator->ViewPrevAction, ETriggerEvent::Triggered, this, &ThisClass::ViewPrevPlayer);
+				Subsystem->AddMappingContext(AssetSubsystem->InputBase->BaseMappingContext, 10);
+				Subsystem->AddMappingContext(AssetSubsystem->InputSpectator->SpectatorMappingContext, 20);
 			}
+		}
+
+		if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
+		{
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
+		
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputSpectator->SwitchPerspectiveAction, ETriggerEvent::Triggered, this, &ThisClass::SwitchPerspective);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputSpectator->ViewNextAction, ETriggerEvent::Triggered, this, &ThisClass::ViewNextPlayer);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputSpectator->ViewPrevAction, ETriggerEvent::Triggered, this, &ThisClass::ViewPrevPlayer);
 		}
 	}
 }
 
 void ASpectatorCharacter::Destroyed()
 {
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr || AssetSubsystem->InputSpectator == nullptr) return;
+	
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer()))
 		{
-			if (InputBase) Subsystem->RemoveMappingContext(InputBase->BaseMappingContext);
-			if (InputSpectator) Subsystem->RemoveMappingContext(InputSpectator->SpectatorMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputBase->BaseMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputSpectator->SpectatorMappingContext);
 		}
 	}
 
 	Super::Destroyed();
+}
+
+void ASpectatorCharacter::SwitchPerspective(const FInputActionValue& Value)
+{
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		if (PerspectiveType == EPerspectiveType::FirstPerson)
+		{
+			PerspectiveType = EPerspectiveType::Free;
+			BaseController->ServerViewSelf();
+		}
+		else
+		{
+			PerspectiveType = EPerspectiveType::FirstPerson;
+			BaseController->ServerViewPrevPlayer();
+		}
+	}
 }
 
 void ASpectatorCharacter::ViewPrevPlayer(const FInputActionValue& Value)
@@ -68,6 +90,7 @@ void ASpectatorCharacter::ViewPrevPlayer(const FInputActionValue& Value)
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
+		PerspectiveType = EPerspectiveType::FirstPerson;
 		BaseController->ServerViewPrevPlayer();
 	}
 }
@@ -77,6 +100,7 @@ void ASpectatorCharacter::ViewNextPlayer(const FInputActionValue& Value)
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
+		PerspectiveType = EPerspectiveType::FirstPerson;
 		BaseController->ServerViewNextPlayer();
 	}
 }

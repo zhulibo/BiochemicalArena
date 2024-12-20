@@ -50,15 +50,13 @@ void AGrenade::ExplodeDamage()
 		TArray<AActor*> IgnoreActors;
 		if (OwnerTeam == ETeam::NoTeam) SetOwnerTeam();
 		ETeam IgnoreTeam = OwnerTeam == ETeam::Team1 ? ETeam::Team2 : ETeam::Team1;
-		ABaseGameState* BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
-
-		if (BaseGameState && BaseGameState->GetTeam(IgnoreTeam).Num() > 0)
+		if (ABaseGameState* BaseGameState = GetWorld()->GetGameState<ABaseGameState>())
 		{
-			for (int32 i = 0; i < BaseGameState->GetTeam(IgnoreTeam).Num(); ++i)
+			for (int32 i = 0; i < BaseGameState->GetPlayerStates(IgnoreTeam).Num(); ++i)
 			{
-				if (BaseGameState->GetTeam(IgnoreTeam)[i])
+				if (BaseGameState->GetPlayerStates(IgnoreTeam)[i])
 				{
-					IgnoreActors.AddUnique(BaseGameState->GetTeam(IgnoreTeam)[i]->GetPawn());
+					IgnoreActors.AddUnique(BaseGameState->GetPlayerStates(IgnoreTeam)[i]->GetPawn());
 				}
 			}
 		}

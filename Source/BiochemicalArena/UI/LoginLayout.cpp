@@ -5,6 +5,8 @@
 #include "BiochemicalArena/System/EOSSubsystem.h"
 #include "BiochemicalArena/System/PlayerSubsystem.h"
 #include "Common/CommonButton.h"
+#include "Components/SizeBox.h"
+#include "Kismet/GameplayStatics.h"
 
 #define LOCTEXT_NAMESPACE "ULoginLayout"
 
@@ -17,9 +19,7 @@ void ULoginLayout::NativeOnInitialized()
 	LoginButton->OnClicked().AddUObject(this, &ThisClass::OnLoginButtonClicked, ECoolLoginType::ExchangeCode, FString(), Token);
 
 #if UE_BUILD_DEVELOPMENT
-	Login1Button->SetVisibility(ESlateVisibility::Visible);
-	Login2Button->SetVisibility(ESlateVisibility::Visible);
-	Login3Button->SetVisibility(ESlateVisibility::Visible);
+	DevContainer->SetVisibility(ESlateVisibility::Visible);
 
 	Login1Button->ButtonText->SetText(FText::FromString(TEXT("dust9923")));
 	Login1Button->OnClicked().AddUObject(this, &ThisClass::OnLoginButtonClicked, ECoolLoginType::DevAuth, FString(TEXT("127.0.0.1:2333")), FString(TEXT("dust9923")));
@@ -30,6 +30,8 @@ void ULoginLayout::NativeOnInitialized()
 	Login3Button->ButtonText->SetText(FText::FromString(TEXT("dev10002")));
 	Login3Button->OnClicked().AddUObject(this, &ThisClass::OnLoginButtonClicked, ECoolLoginType::DevAuth, FString(TEXT("127.0.0.1:2333")), FString(TEXT("dev10002")));
 #endif
+
+	QuitButton->OnClicked().AddUObject(this, &ThisClass::OnQuitButtonClicked);
 
 	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
@@ -51,8 +53,8 @@ void ULoginLayout::OnLoginButtonClicked(ECoolLoginType LoginType, FString Id, FS
 		if (UPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UPlayerSubsystem>(LoginController->GetLocalPlayer()))
 		{
 			PlayerSubsystem->Login(LoginType, Id, Token);
-
-			LoginStatus->SetText(LOCTEXT("Logging", "Logging..."));
+	
+			LoginStatus->SetText(LOCTEXT("Logging", "Logging"));
 			LoginButton->SetIsEnabled(false);
 		}
 	}
@@ -62,13 +64,19 @@ void ULoginLayout::OnLoginComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		LoginStatus->SetText(LOCTEXT("Redirecting", "Redirecting..."));
+		LoginStatus->SetText(LOCTEXT("Redirecting", "Redirecting"));
 	}
 	else
 	{
 		LoginButton->SetIsEnabled(true);
 		LoginStatus->SetText(LOCTEXT("LoginFailed", "Login failed!"));
 	}
+}
+
+void ULoginLayout::OnQuitButtonClicked()
+{
+	APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+	UKismetSystemLibrary::QuitGame(this, PlayerController, EQuitPreference::Quit, false);
 }
 
 #undef LOCTEXT_NAMESPACE

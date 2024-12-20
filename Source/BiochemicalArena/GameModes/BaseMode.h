@@ -18,8 +18,6 @@ public:
 
 	virtual void HumanReceiveDamage(class AHumanCharacter* DamagedCharacter, class ABaseController* DamagedController,
 		float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser) {}
-	virtual void MutantReceiveDamage(class AMutantCharacter* DamagedCharacter, ABaseController* DamagedController,
-	float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser) {}
 
 protected:
 	virtual void BeginPlay() override;
@@ -31,7 +29,10 @@ protected:
 
 	UPROPERTY()
 	class ABaseGameState* BaseGameState;
+	UPROPERTY()
+	class UEOSSubsystem* EOSSubsystem;
 
+	UFUNCTION()
 	void SpawnHumanCharacter(AController* Controller);
 
 	TArray<class APlayerStart*> Team1PlayerStarts;
@@ -41,4 +42,7 @@ protected:
 
 	void AddKillLog(class ABasePlayerState* AttackerState, AActor* DamageCauser, const UDamageType* DamageType, ABasePlayerState* DamagedState);
 
+	UFUNCTION()
+	void ChangeLobbyStatus(int64 Status);
+	
 };

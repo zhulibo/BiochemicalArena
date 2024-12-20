@@ -17,6 +17,9 @@ public:
 	void OnMaxHealthChange(float MaxHealth);
 	void OnHealthChange(float OldHealth, float NewHealth);
 
+	bool bIsAllowShow = true;
+	void ShowOverheadWidget(bool bIsShow);
+
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;

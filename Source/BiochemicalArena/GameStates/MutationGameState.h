@@ -12,8 +12,8 @@ class BIOCHEMICALARENA_API AMutationGameState : public ABaseGameState
 public:
 	AMutationGameState();
 
-	virtual void AddToTeam(ABasePlayerState* BasePlayerState, ETeam Team) override;
-	virtual void RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam Team) override;
+	virtual void AddToPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team) override;
+	virtual void RemoveFromPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team) override;
 	
 	void EndRoundIfAllBeKilledByMelee();
 
@@ -34,8 +34,8 @@ protected:
 	UFUNCTION()
 	void OnRep_DamageMul();
 
-	virtual void OnRep_Team1() override;
-	virtual void OnRep_Team2() override;
+	virtual void OnRep_Team1PlayerStates() override;
+	virtual void OnRep_Team2PlayerStates() override;
 
 	void SetHUDTeamNum(int32 Team1Num, ETeam Team);
 

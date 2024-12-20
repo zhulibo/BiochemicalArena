@@ -7,7 +7,6 @@
 #include "Interfaces/InteractableTarget.h"
 #include "MutantCharacter.generated.h"
 
-
 UENUM(BlueprintType)
 enum class EMutantState : uint8
 {
@@ -17,7 +16,7 @@ enum class EMutantState : uint8
 };
 
 enum class EMutantCharacterName : uint8;
-enum class ESpawnReason : uint8;
+enum class ESpawnMutantReason : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API AMutantCharacter : public ABaseCharacter, public IInteractableTarget
@@ -29,13 +28,18 @@ public:
 
 	virtual bool CanInteract() override;
 	virtual void OnInteract(ABaseCharacter* BaseCharacter) override;
+	virtual void OnInteractOnServer() override;
+	UFUNCTION()
+	void SetIsSuckedDry(bool TempBSuckedDry);
 
+	UPROPERTY()
+	ESpawnMutantReason SpawnMutantReason;
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UGameplayAbilityBase> SkillAbility;
+	TSubclassOf<class UGameplayAbilityBase> SkillAbility;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UGameplayEffect> SkillEffect;
-	UPROPERTY()
-	ESpawnReason SpawnReason;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayEffect> LevelUpEffect;
 
 	UPROPERTY()
 	EMutantCharacterName MutantCharacterName;
@@ -47,6 +51,8 @@ public:
 	virtual void RightHandAttackEnd();
 	virtual void LeftHandAttackBegin();
 	virtual void LeftHandAttackEnd();
+	UFUNCTION(Server, Reliable)
+	void ServerApplyDamage(AActor* OtherActor, float Damage);
 
 	UFUNCTION(Server, Reliable)
 	void ServerSelectMutant(EMutantCharacterName TempMutantCharacterName);
@@ -61,12 +67,12 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PossessedBy(AController* NewController) override;
-	virtual void UnPossessed() override;
 	virtual void Destroyed() override;
 
 	virtual void OnAbilitySystemComponentInit() override;
 	void OnLocalSkillCooldownTagChanged(FGameplayTag GameplayTag, int32 TagCount);
 	void OnLocalCharacterLevelChanged(const FOnAttributeChangeData& Data);
+	virtual void OnHealthChanged(const FOnAttributeChangeData& Data) override;
 
 	UPROPERTY(VisibleAnywhere)
 	UCapsuleComponent* RightHandCapsule;
@@ -86,8 +92,14 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HeavyAttackMontage;
 
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<class UInputMutant> InputMutant;
+	virtual void MoveStarted(const FInputActionValue& Value) override;
+	virtual void MoveCompleted(const FInputActionValue& Value) override;
+	UPROPERTY()
+	FTimerHandle StillTimerHandle;
+	bool bHasActivateRestoreAbility = false;
+	void ActivateRestoreAbility();
+	void EndRestoreAbility();
+
 	virtual void LightAttackButtonPressed(const FInputActionValue& Value);
 	virtual void LightAttackButtonReleased(const FInputActionValue& Value);
 	virtual void HeavyAttackButtonPressed(const FInputActionValue& Value);
@@ -130,7 +142,18 @@ protected:
 	UFUNCTION()
 	void MutantReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 		AController* AttackerController, AActor* DamageCauser);
+	void MutantRespawn(bool bKilledByMelee);
+	void RemoveMappingContext();
 
+	UPROPERTY(ReplicatedUsing = OnRep_bSuckedDry)
 	bool bSuckedDry = false;
+	UFUNCTION()
+	void OnRep_bSuckedDry();
+	void SetDeadMaterial();
+
+	UFUNCTION()
+	virtual void OnInteractMutantSuccess(AMutantCharacter* MutantCharacter) override;
+	UFUNCTION(Server, Reliable)
+	void ServerOnSuck(AMutantCharacter* MutantCharacter);
 
 };

@@ -15,6 +15,7 @@ void UMutationHuman::NativeOnInitialized()
 		MutationController->OnCarriedAmmoChange.AddUObject(this, &ThisClass::OnCarriedAmmoChange);
 		MutationController->OnCause1000Damage.AddUObject(this, &ThisClass::OnCause1000Damage);
 		MutationController->OnDamageMulChange.AddUObject(this, &ThisClass::OnDamageMulChange);
+		MutationController->OnBeImmune.AddUObject(this, &ThisClass::OnBeImmune);
 	}
 }
 
@@ -39,7 +40,7 @@ void UMutationHuman::OnCarriedAmmoChange(int32 TempCarriedAmmo)
 void UMutationHuman::OnCause1000Damage()
 {
 	DamageIcon->SetText(FText::FromString(TEXT("1000 DAMAGE")));
-	
+
 	GetWorld()->GetTimerManager().SetTimer(DamageIconTimerHandle, this, &ThisClass::ClearDamageIcon, 5.f);
 }
 
@@ -51,4 +52,11 @@ void UMutationHuman::ClearDamageIcon()
 void UMutationHuman::OnDamageMulChange(float TempDamageMul)
 {
 	DamageMul->SetText(FText::AsPercent(TempDamageMul));
+}
+
+void UMutationHuman::OnBeImmune()
+{
+	DamageIcon->SetText(FText::FromString(TEXT("Get Immunity")));
+
+	GetWorld()->GetTimerManager().SetTimer(DamageIconTimerHandle, this, &ThisClass::ClearDamageIcon, 5.f);
 }

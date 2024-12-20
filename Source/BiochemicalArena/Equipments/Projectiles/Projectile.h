@@ -23,7 +23,7 @@ public:
 	float GetImpulse(float DeclineDamage);
 
 	UPROPERTY()
-	FString OwnerName;
+	FName OwnerName;
 
 protected:
 	virtual void PostActorCreated() override;

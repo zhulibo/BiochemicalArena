@@ -206,7 +206,7 @@ void UEOSSubsystem::CreateLobby()
 	Params.MaxMembers = 18;
 	Params.JoinPolicy = ELobbyJoinPolicy::PublicAdvertised;
 	Params.Attributes.Emplace(LOBBY_SERVER_NAME, FString(TEXT("Default Name")));
-	Params.Attributes.Emplace(LOBBY_MODE_NAME, FString(TEXT("Mutation")));
+	Params.Attributes.Emplace(LOBBY_MODE_NAME, MUTATION);
 	Params.Attributes.Emplace(LOBBY_MAP_NAME, FString(TEXT("DevMutation")));
 	Params.Attributes.Emplace(LOBBY_STATUS, static_cast<int64>(0));
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_NAME, UserInfo->DisplayName);
@@ -250,7 +250,7 @@ void UEOSSubsystem::FindLobbies(FString LobbyName, FString GameMode, FString Map
 			LobbyName
 		});
 	}
-	if (GameMode != FString(TEXT("All")))
+	if (GameMode != ALL)
 	{
 		Params.Filters.Emplace(FFindLobbySearchFilter{
 			LOBBY_MODE_NAME,
@@ -258,7 +258,7 @@ void UEOSSubsystem::FindLobbies(FString LobbyName, FString GameMode, FString Map
 			GameMode
 		});
 	}
-	if (MapName != FString(TEXT("All")))
+	if (MapName != ALL)
 	{
 		Params.Filters.Emplace(FFindLobbySearchFilter{
 			LOBBY_MAP_NAME,
@@ -292,8 +292,7 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 	Params.LocalName = LocalLobbyName;
 	Params.LobbyId = Lobby->LobbyId;
 	Params.bPresenceEnabled = true;
-	Params.UserAttributes.Emplace(LOBBY_MEMBER_TEAM, static_cast<int64>(2));
-	// Params.UserAttributes.Emplace(LOBBY_MEMBER_TEAM, static_cast<int64>(FMath::RandRange(1, 2))); // TODO
+	Params.UserAttributes.Emplace(LOBBY_MEMBER_TEAM, static_cast<int64>(2)); // TODO 加入人数少的队伍
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_NAME, UserInfo->DisplayName);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_READY, false);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_MSG, FString());
@@ -946,7 +945,7 @@ void UEOSSubsystem::GetEntitlements()
 	TOnlineResult<FCommerceGetEntitlements> Result = CommercePtr->GetEntitlements(MoveTemp(Params));
 	if (Result.IsOk())
 	{
-		// TODO ProductId ?= AudienceItemId
+		// AudienceItemId == ProductId
 		Entitlements = Result.GetOkValue().Entitlements;
 	}
 	else

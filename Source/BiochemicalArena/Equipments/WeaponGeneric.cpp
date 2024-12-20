@@ -4,6 +4,7 @@
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "..\PlayerStates\TeamType.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Components/BoxComponent.h"
 #include "Data/EquipmentType.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -20,7 +21,7 @@ void AWeaponGeneric::Fire(const FVector& HitTarget, float RecoilVert, float Reco
 
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (OwnerTeam == ETeam::NoTeam) SetOwnerTeam();
-	if (MuzzleSocket == nullptr) MuzzleSocket = GetEquipmentMesh()->GetSocketByName(FName("Muzzle"));
+	if (MuzzleSocket == nullptr) MuzzleSocket = GetEquipmentMesh()->GetSocketByName(TEXT("Muzzle"));
 
 	if (HumanCharacter == nullptr || ProjectileClass == nullptr|| OwnerTeam == ETeam::NoTeam || MuzzleSocket == nullptr) return;
 
@@ -51,10 +52,7 @@ void AWeaponGeneric::Fire(const FVector& HitTarget, float RecoilVert, float Reco
 		SpawnParams
 	);
 
-	EEquipmentName TempEquipmentName = EquipmentParentName == EEquipmentName::NONE ? EquipmentName : EquipmentParentName;
-	FString EnumValue = UEnum::GetValueAsString(TempEquipmentName);
-	EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-	Projectile->OwnerName = EnumValue;
+	Projectile->OwnerName = FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(EquipmentParentName)));
 
 	switch (OwnerTeam)
 	{

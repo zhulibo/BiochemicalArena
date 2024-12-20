@@ -10,7 +10,7 @@ namespace MatchState
 	extern BIOCHEMICALARENA_API const FName PostRound;
 }
 
-enum class ESpawnReason : uint8;
+enum class ESpawnMutantReason : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API AMutationMode : public ABaseMode
@@ -34,12 +34,12 @@ public:
 	void GetInfect(AHumanCharacter* DamagedCharacter, ABaseController* DamagedController,
 		AMutantCharacter* AttackerCharacter, ABaseController* AttackerController, EMutantState MutantState);
 
-	virtual void MutantReceiveDamage(AMutantCharacter* DamagedCharacter, ABaseController* DamagedController,
-		float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser) override;
+	void MutantReceiveDamage(AMutantCharacter* DamagedCharacter, ABaseController* DamagedController,
+		float Damage, const UDamageType* DamageType, AController* AttackerController, AActor* DamageCauser);
 
 	void SelectMutant(ACharacter* Character, AController* Controller);
 	void MutantRespawn(ACharacter* Character, ABaseController* BaseController, bool bKilledByMelee);
-	void Mutate(ACharacter* Character, AController* Controller, ESpawnReason SpawnReason);
+	void Mutate(ACharacter* Character, AController* Controller, ESpawnMutantReason SpawnMutantReason);
 
 protected:
 	virtual void BeginPlay() override;
@@ -55,15 +55,16 @@ protected:
 
 	float RoundStartTime = 0.f;
 	float RoundEndTime = 0.f;
+	float MatchEndTime = 0.f;
 
 	UPROPERTY(EditAnywhere)
-	float WarmupTime = 5.f;
+	float WarmupTime = 10.f;
 	UPROPERTY(EditAnywhere)
 	float RoundTime = 180.f;
 	UPROPERTY(EditAnywhere)
 	float MutateTime = 25.f;
 	UPROPERTY(EditAnywhere)
-	float PostRoundTime = 5.f;
+	float PostRoundTime = 7.f;
 	UPROPERTY(EditAnywhere)
 	float CooldownTime = 5.f;
 
@@ -78,13 +79,15 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UGameplayEffect> ChangeMutantEffect;
 
-	void SpawnMutantCharacter(AController* Controller, ESpawnReason SpawnReason,
+	UFUNCTION()
+	void SpawnMutantCharacter(AController* Controller, ESpawnMutantReason SpawnMutantReason,
 	FVector Location = FVector::ZeroVector, FRotator ActorRotation = FRotator::ZeroRotator, FRotator ViewRotation = FRotator::ZeroRotator);
 	
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<class APickup>> PickupClasses;
 	FTimerHandle SpawnPickupTimerHandle;
 	TArray<class APlayerStart*> PickupStartPoints;
+	UFUNCTION()
 	void SpawnPickups();
 
 public:

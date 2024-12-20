@@ -1,10 +1,11 @@
 #include "Shop.h"
 #include "CommonTextBlock.h"
+#include "DataRegistrySubsystem.h"
 #include "ItemButton.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "Components/WrapBox.h"
 #include "BiochemicalArena/Equipments/Data/EquipmentType.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "BiochemicalArena/Utils/LibraryNotify.h"
 #include "Components/WrapBoxSlot.h"
 
@@ -13,6 +14,18 @@
 void UShop::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
+
+	// 获取角色和装备数据
+	if (UDataRegistry* DataRegistry = UDataRegistrySubsystem::Get()->GetRegistryForType(DR_HUMAN_CHARACTER_MAIN))
+	{
+		const UScriptStruct* OutStruct;
+		DataRegistry->GetAllCachedItems(HumanCharacterMains, OutStruct);
+	}
+	if (UDataRegistry* DataRegistry = UDataRegistrySubsystem::Get()->GetRegistryForType(DR_EQUIPMENT_MAIN))
+	{
+		const UScriptStruct* OutStruct;
+		DataRegistry->GetAllCachedItems(EquipmentMains, OutStruct);
+	}
 
 	EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
@@ -36,16 +49,18 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 	{
 		if (EOSSubsystem)
 		{
-			TArray<FOffer> Offers = EOSSubsystem->GetOffers(); // 获取商品列表
+			// 获取商品列表
+			TArray<FOffer> Offers = EOSSubsystem->GetOffers();
 
 			for (int32 i = 0; i < Offers.Num(); ++i)
 			{
+				// 判断是装备还是角色
 				bool bIsEquipment = false;
-				for (int32 j = 0; j < static_cast<int32>(EEquipmentName::NONE); ++j)
+
+				for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
 				{
-					FString EnumValue = UEnum::GetValueAsString(static_cast<EEquipmentName>(j));
-					EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-					if (EnumValue == Offers[i].Title.ToString())
+					FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
+					if (Offers[i].OfferId == ItemValue.OfferId)
 					{
 						AddEquipmentButton(Offers[i]);
 						bIsEquipment = true;
@@ -55,11 +70,10 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 
 				if (bIsEquipment) continue;
 
-				for (int32 j = 0; j < static_cast<int32>(EHumanCharacterName::NONE); ++j)
+				for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMains)
 				{
-					FString EnumValue = UEnum::GetValueAsString(static_cast<EHumanCharacterName>(j));
-					EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-					if (EnumValue == Offers[i].Title.ToString())
+					FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
+					if (Offers[i].OfferId == ItemValue.OfferId)
 					{
 						AddCharacterButton(Offers[i]);
 						break;
@@ -73,38 +87,45 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 }
 
 // 添加装备按钮
-void UShop::AddEquipmentButton(FOffer Offer)
+void UShop::AddEquipmentButton(const FOffer& Offer)
 {
-	UItemButton* EquipmentButton = CreateWidget<UItemButton>(this, EquipmentButtonClass);
-	if (EquipmentButton)
+	if (UItemButton* EquipmentButton = CreateWidget<UItemButton>(this, EquipmentButtonClass))
 	{
 		EquipmentButton->Offer = Offer;
-		EquipmentButton->ItemName->SetText(Offer.Title);
+		FText ButtonText = FText();
+		FText::FindText(CULTURE_EQUIPMENT, Offer.Title.ToString(), ButtonText);
+		EquipmentButton->ItemName->SetText(ButtonText);
 		EquipmentButton->Price->SetText(Offer.FormattedPrice);
 		EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnItemButtonClicked, EquipmentButton);
-		UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(ItemButtonContainer->AddChild(EquipmentButton));
-		if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 20));
+		if (UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(ItemButtonContainer->AddChild(EquipmentButton)))
+		{
+			NewSlot->SetPadding(FMargin(0, 0, 20, 20));
+		}
 	}
 }
 
 // 添加角色按钮
-void UShop::AddCharacterButton(FOffer Offer)
+void UShop::AddCharacterButton(const FOffer& Offer)
 {
-	UItemButton* CharacterButton = CreateWidget<UItemButton>(this, CharacterButtonClass);
-	if (CharacterButton)
+	if (UItemButton* CharacterButton = CreateWidget<UItemButton>(this, CharacterButtonClass))
 	{
 		CharacterButton->Offer = Offer;
-		CharacterButton->ItemName->SetText(Offer.Title);
+		FText ButtonText = FText();
+		FText::FindText(CULTURE_HUMAN, Offer.Title.ToString(), ButtonText);
+		CharacterButton->ItemName->SetText(ButtonText);
 		CharacterButton->Price->SetText(Offer.FormattedPrice);
 		CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnItemButtonClicked, CharacterButton);
-		UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(ItemButtonContainer->AddChild(CharacterButton));
-		if (NewSlot) NewSlot->SetPadding(FMargin(0, 0, 20, 20));
+		if (UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(ItemButtonContainer->AddChild(CharacterButton)))
+		{
+			NewSlot->SetPadding(FMargin(0, 0, 20, 20));
+		}
 	}
 }
 
 // 点击购买商品
 void UShop::OnItemButtonClicked(UItemButton* ItemButton)
 {
+	// TODO PurchaseLimit
 	if (EOSSubsystem)
 	{
 		TArray<FPurchaseOffer> Offers;
@@ -117,7 +138,7 @@ void UShop::OnCheckoutComplete(bool bWasSuccessful, TOptional<FString> String)
 {
 	if(bWasSuccessful)
 	{
-		NOTIFY(this, C_RED, LOCTEXT("CheckoutSuccess", "Buy item success!"));
+		NOTIFY(this, C_GREEN, LOCTEXT("CheckoutSuccess", "Buy item success"));
 	}
 	else
 	{

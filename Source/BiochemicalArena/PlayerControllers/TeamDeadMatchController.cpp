@@ -3,7 +3,7 @@
 #include "BiochemicalArena/GameModes/TeamDeadMatchMode.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchGameState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
-#include "BiochemicalArena/UI/HUD/TeamDeadMatch/TeamDeadMatch.h"
+#include "BiochemicalArena/UI/HUD/TeamDeadMatch/TeamDeadMatchHUD.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 

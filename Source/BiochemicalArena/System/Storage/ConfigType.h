@@ -1,19 +1,22 @@
 ﻿#pragma once
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 
 #include "ConfigType.generated.h"
 
+enum class EEquipmentName : uint8;
+
 USTRUCT(BlueprintType)
-struct FBag
+struct FLoadout
 {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FString Primary;
+	EEquipmentName Primary = EEquipmentName::None;
 	UPROPERTY()
-	FString Secondary;
+	EEquipmentName Secondary = EEquipmentName::None;
 	UPROPERTY()
-	FString Melee;
+	EEquipmentName Melee = EEquipmentName::None;
 	UPROPERTY()
-	FString Throwing;
+	EEquipmentName Throwing = EEquipmentName::None;
 
 };

@@ -1,13 +1,15 @@
 #include "BaseController.h"
 
-#include "BiochemicalArena/GameModes/MutationMode.h"
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/GameStates/MeleeGameState.h"
 #include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchGameState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "BiochemicalArena/System/PlayerSubsystem.h"
 #include "BiochemicalArena/UI/GameLayout.h"
-#include "BiochemicalArena/UI/HUD/Mutation/HUDMutation.h"
-#include "BiochemicalArena/UI/HUD/TeamDeadMatch/HUDTeamDeadMatch.h"
+#include "BiochemicalArena/UI/HUD/Mutation/MutationContainer.h"
+#include "BiochemicalArena/UI/HUD/Melee/MeleeContainer.h"
+#include "BiochemicalArena/UI/HUD/TeamDeadMatch/TeamDeadMatchContainer.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "GameFramework/PlayerState.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
@@ -44,8 +46,6 @@ void ABaseController::Tick(float DeltaSeconds)
 void ABaseController::ManualReset()
 {
 	InitHUD();
-
-	BaseCharacter = nullptr; // TODO 被销毁时自动置为nullptr
 }
 
 void ABaseController::HandleServerClientDeltaTime()
@@ -89,11 +89,15 @@ void ABaseController::AddGameLayout()
 
 		if (Cast<AMutationGameState>(GetWorld()->GetGameState()))
 		{
-			GameLayout->GameStack->AddWidget(GameLayout->HUDMutationClass);
+			GameLayout->GameStack->AddWidget(GameLayout->MutationContainerClass);
+		}
+		else if (Cast<AMeleeGameState>(GetWorld()->GetGameState()))
+		{
+			GameLayout->GameStack->AddWidget(GameLayout->MeleeContainerClass);
 		}
 		else if (Cast<ATeamDeadMatchGameState>(GetWorld()->GetGameState()))
 		{
-			GameLayout->GameStack->AddWidget(GameLayout->HUDTeamDeadMatchClass);
+			GameLayout->GameStack->AddWidget(GameLayout->TeamDeadMatchContainerClass);
 		}
 	}
 }
@@ -141,11 +145,12 @@ void ABaseController::SetPlayerPlay()
 void ABaseController::OnRep_Pawn()
 {
 	Super::OnRep_Pawn();
-	
-	if(IsInState(NAME_Spectating))
-	{
-		ServerViewNextPlayer();
-	}
+
+	// TODO 1 客户端不知道为什么切到玩家视角后可以控制俯仰 2 服务端实现自动切到玩家视角
+	// if (IsInState(NAME_Spectating))
+	// {
+	// 	ServerViewNextPlayer();
+	// }
 }
 
 void ABaseController::SetViewTarget(class AActor* NewViewTarget, FViewTargetTransitionParams TransitionParams)
@@ -181,7 +186,7 @@ void ABaseController::HandleLeavingMap()
 	if (!HasAuthority() && IsLocalController())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("HandleLeavingMap ------------------------------------------"));
-		ClientTravel("/Game/Maps/UI_Menu", ETravelType::TRAVEL_Absolute);
+		ClientTravel(MAP_MENU, ETravelType::TRAVEL_Absolute);
 	}
 }
 

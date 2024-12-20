@@ -16,7 +16,7 @@ void UTabVideo::NativeOnInitialized()
 
 	// 绑定提示信息切换菜单
 	TArray<UWidget*> Tabs = SettingLeft->GetAllChildren();
-	for (int i = 0; i < Tabs.Num(); i++)
+	for (int i = 0; i < Tabs.Num(); ++i)
 	{
 		if (UCommonButtonBase* TabButton = Cast<UCommonButtonBase>(Tabs[i]))
 		{
@@ -70,7 +70,7 @@ void UTabVideo::NativeConstruct()
 
 	// 默认隐藏所有提示信息
 	TArray<UWidget*> Contents = SettingRight->GetAllChildren();
-	for (int i = 0; i < Contents.Num(); i++)
+	for (int i = 0; i < Contents.Num(); ++i)
 	{
 		Contents[i]->SetVisibility(ESlateVisibility::Collapsed);
 	}
@@ -84,7 +84,7 @@ UWidget* UTabVideo::NativeGetDesiredFocusTarget() const
 void UTabVideo::OnTabButtonHovered(int Index)
 {
 	TArray<UWidget*> Contents = SettingRight->GetAllChildren();
-	for (int i = 0; i < Contents.Num(); i++)
+	for (int i = 0; i < Contents.Num(); ++i)
 	{
 		Contents[i]->SetVisibility(i == Index ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}

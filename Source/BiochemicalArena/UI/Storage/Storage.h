@@ -9,6 +9,10 @@
 #define STORAGE_TYPE_ALL FString(TEXT("All"))
 #define STORAGE_TYPE_CHARACTER FString(TEXT("Character"))
 
+struct FEquipmentMain;
+struct FHumanCharacterMain;
+enum class EHumanCharacterName : uint8;
+enum class EEquipmentName : uint8;
 enum class EEquipmentType : uint8;
 
 UCLASS()
@@ -18,20 +22,18 @@ class BIOCHEMICALARENA_API UStorage : public UCommonActivatableWidget
 
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeOnActivated() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
 	UEOSSubsystem* EOSSubsystem;
 
-	void OnPurchaseCompleted(const FCommerceOnPurchaseComplete& CommerceOnPurchaseComplete);
 	void OnQueryEntitlementsComplete(bool bWasSuccessful);
-
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
-
 	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
 	void InitPlayerConfig(class USaveGameLoadout* SaveGameLoadout);
-	bool HasEquipment(FString EquipmentName);
-	bool HasHumanCharacter(FString HumanCharacterName);
+	bool HasEquipment(EEquipmentName EquipmentName);
+	bool HasHumanCharacter(EHumanCharacterName HumanCharacterName);
 
 	UPROPERTY()
 	class UStorageSubsystem* StorageSubsystem;
@@ -46,26 +48,27 @@ protected:
 	void AddStorageTypeButton();
 
 	void OnStorageTypeButtonClicked(UCommonButton* CommonButton);
-	TArray<FText> FilterEquipment(FString EquipmentType);
-	TArray<FText> FilterHumanCharacter();
+	void AddEquipments(FString EquipmentType);
+	void AddHumanCharacters();
 
 	UPROPERTY(meta = (BindWidget))
 	class UWrapBox* StorageButtonContainer;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UStorageButton> EquipmentButtonClass;
-	void AddEquipmentButton(TArray<FText> EquipmentNames);
+	void AddEquipmentButton(FEquipmentMain EquipmentMain);
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UStorageButton> CharacterButtonClass;
-	void AddCharacterButton(TArray<FText> EquipmentNames);
+	void AddCharacterButton(FHumanCharacterMain HumanCharacterMain);
 
 	void OnEquipmentButtonClicked(class UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
-	class UCommonActivatableWidgetSwitcher* BagSwitcher;
-	void SaveBag(EEquipmentType EquipmentType, FString EquipmentName);
-	void SaveBagToStorage();
+	class UCommonActivatableWidgetSwitcher* LoadoutSwitcher;
+	void SaveEquipmentsToLoadouts();
 
 	void OnCharacterButtonClicked(UStorageButton* CommonButton);
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* Character;
 
+	int32 TypeIndex = 0;
+	
 };

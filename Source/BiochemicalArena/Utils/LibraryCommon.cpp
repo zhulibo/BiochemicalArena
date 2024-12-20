@@ -25,6 +25,11 @@ FString ULibraryCommon::GetNowFormatTime()
 	return  FString::Printf(TEXT("%02d:%02d:%02d"), Hour, Minute, Second);
 }
 
+FString ULibraryCommon::GetEnumValue(const FString& EnumValue)
+{
+	return EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+}
+
 FColor ULibraryCommon::GetProgressColor(double Value, double InRangeA, double InRangeB, FColor InColor, FColor OutColor)
 {
 	int32 R = UKismetMathLibrary::MapRangeClamped(Value, InRangeA, InRangeB, InColor.R, OutColor.R);
@@ -77,7 +82,6 @@ FString ULibraryCommon::ObfuscateText(FString Text)
 {
 	FString ObfuscatedString;
 
-	// 使用一个简单的替换表来替换字符，你可以根据需要进行调整
 	const TCHAR ReplacementTable[] = TEXT("!@#$%^&*()_+");
 	const int32 TableSize = UE_ARRAY_COUNT(ReplacementTable) - 1; // 去掉结尾的'\0'
 

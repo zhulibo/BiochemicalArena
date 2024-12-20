@@ -7,11 +7,11 @@ UENUM(BlueprintType)
 enum class EHumanCharacterName : uint8
 {
 	SAS,
-	PLA,
 	SEAL,
+	PLA,
 	Test,
 
-	NONE
+	None
 };
 
 UENUM(BlueprintType)
@@ -21,7 +21,7 @@ enum class EMutantCharacterName : uint8
 	Ghost,
 	Smoker,
 
-	NONE
+	None
 };
 
 USTRUCT(BlueprintType)
@@ -29,11 +29,19 @@ struct FHumanCharacterMain : public FTableRowBase
 {
 	GENERATED_BODY()
 
+	// HumanCharacterName用作id
 	UPROPERTY(EditAnywhere)
-	EHumanCharacterName HumanCharacterName = EHumanCharacterName::NONE;
+	EHumanCharacterName HumanCharacterName = EHumanCharacterName::None;
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AHumanCharacter> HumanCharacterClass;
+
+	/**
+	 * Must be same as the OfferId in dev portal,
+	 * Used to determine button type in the UShop::OnQueryOffersComplete.
+	 */
+	UPROPERTY(EditAnywhere)
+	FString OfferId;
 
 	/**
 	 * Must be same as the audience item ID in dev portal,
@@ -50,10 +58,10 @@ struct FMutantCharacterMain : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	EMutantCharacterName MutantCharacterName = EMutantCharacterName::NONE;
+	EMutantCharacterName MutantCharacterName = EMutantCharacterName::None;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AMutantCharacter> MutantCharacterClass;
+	TSubclassOf<class AMutantCharacter> MutantCharacterClass; // TODO TSoftClassPtr
 
 	UPROPERTY(EditAnywhere)
 	float LightAttackDamage = 0.f;
@@ -66,12 +74,12 @@ struct FMutantCharacterMain : public FTableRowBase
 };
 
 UENUM(BlueprintType)
-enum class ESpawnReason : uint8
+enum class ESpawnMutantReason : uint8
 {
 	// 开局随机突变
 	RoundStart,
 	// 被感染
-	Infect,
+	MutantInfect,
 	// 被突变体造成伤害
 	MutantDamage,
 	// 通过菜单选择突变体

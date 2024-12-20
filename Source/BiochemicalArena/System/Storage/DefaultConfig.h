@@ -3,7 +3,10 @@
 #include "CoreMinimal.h"
 #include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "ConfigType.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "DefaultConfig.generated.h"
+
+enum class EEquipmentName : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API UDefaultConfig : public UObject
@@ -14,16 +17,16 @@ public:
 	UDefaultConfig();
 
 	UPROPERTY()
-	FString DefaultPrimary = "AK47";
+	EEquipmentName Primary = EEquipmentName::AK47;
 	UPROPERTY()
-	FString DefaultSecondary = "Glock17";
+	EEquipmentName Secondary = EEquipmentName::Glock17;
 	UPROPERTY()
-	FString DefaultMelee = "Kukri";
+	EEquipmentName Melee = EEquipmentName::Kukri;
 	UPROPERTY()
-	FString DefaultThrowing = "Grenade";
+	EEquipmentName Throwing = EEquipmentName::Grenade;
 	UPROPERTY()
-	TArray<FBag> Bags;
-	int32 CurLoadoutIndex = 0;
+	TArray<FLoadout> Loadouts;
+	int32 LoadoutIndex = 0;
 
 	UPROPERTY()
 	EHumanCharacterName HumanCharacterName = EHumanCharacterName::SAS;
@@ -46,9 +49,9 @@ public:
 	UPROPERTY()
 	float ControllerSensitivity = 3.f;
 	UPROPERTY()
-	bool ControllerAimAssistSteering = true;
+	bool ControllerAimAssistSteering = false;
 	UPROPERTY()
-	bool ControllerAimAssistSlowdown = true;
+	bool ControllerAimAssistSlowdown = false;
 
 	EWindowMode::Type WindowMode = EWindowMode::WindowedFullscreen;
 	UPROPERTY()

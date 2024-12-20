@@ -6,6 +6,17 @@
 
 enum class ECommonInputType : uint8;
 
+UENUM(BlueprintType)
+enum class EPerspectiveType : uint8
+{
+	Free,
+	FirstPerson,
+	// TODO
+	ThirdPerson,
+
+	None
+};
+
 UCLASS()
 class BIOCHEMICALARENA_API ASpectatorCharacter : public ASpectatorPawn
 {
@@ -17,18 +28,19 @@ protected:
 	virtual void Destroyed() override;
 
 	UPROPERTY()
+	class UAssetSubsystem* AssetSubsystem;
+	UPROPERTY()
 	class ABaseController* BaseController;
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<class UInputBase> InputBase;
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<class UInputSpectator> InputSpectator;
+	
 	void ScoreboardButtonPressed(const struct FInputActionValue& Value);
 	void ScoreboardButtonReleased(const FInputActionValue& Value);
 	void PauseMenuButtonPressed(const FInputActionValue& Value);
 
 	void TextChat(const FInputActionValue& Value);
 
+	UPROPERTY()
+	EPerspectiveType PerspectiveType;
+	void SwitchPerspective(const FInputActionValue& Value);
 	void ViewPrevPlayer(const FInputActionValue& Value);
 	void ViewNextPlayer(const FInputActionValue& Value);
 

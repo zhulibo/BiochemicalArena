@@ -5,7 +5,7 @@
 #include "CharacterSound.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UCharacterSound : public UDataAsset
+class BIOCHEMICALARENA_API UCharacterSound : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 

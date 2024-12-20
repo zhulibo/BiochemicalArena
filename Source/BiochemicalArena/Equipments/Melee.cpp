@@ -28,18 +28,13 @@ void AMelee::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(EquipmentParentName));
+	FDataRegistryId DataRegistryId(DR_MELEE_DATA, FName(EnumValue));
+	if (const FMeleeData* MeleeData = UDataRegistrySubsystem::Get()->GetCachedItem<FMeleeData>(DataRegistryId))
 	{
-		FString EnumValue = UEnum::GetValueAsString(EquipmentName);
-		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-
-		FDataRegistryId DataRegistryId(DR_MELEE_DATA, FName(EnumValue));
-		if (const FMeleeData* MeleeData = DRSubsystem->GetCachedItem<FMeleeData>(DataRegistryId))
-		{
-			LightAttackDamage = MeleeData->LightAttackDamage;
-			HeavyAttackDamage = MeleeData->HeavyAttackDamage;
-			MoveSpeedMul = MeleeData->MoveSpeedMul;
-		}
+		LightAttackDamage = MeleeData->LightAttackDamage;
+		HeavyAttackDamage = MeleeData->HeavyAttackDamage;
+		MoveSpeedMul = MeleeData->MoveSpeedMul;
 	}
 
 	SetAttackCapsuleCollision();
@@ -90,7 +85,6 @@ void AMelee::SetAttackCollisionEnabled(bool bIsEnabled)
 	}
 }
 
-// TODO 不在服务端视线内有时没有碰撞
 void AMelee::OnAttackCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -112,11 +106,19 @@ void AMelee::OnAttackCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AA
 		}
 
 		DropBlood(OverlappedComponent, OtherActor, OtherComp, Damage);
-
-		if (HasAuthority())
+		
+		if (InstigatorCharacter->IsLocallyControlled())
 		{
-			UGameplayStatics::ApplyDamage(OtherActor, Damage, InstigatorCharacter->Controller, this, UDamageTypeMelee::StaticClass());
+			ServerApplyDamage(OtherActor, InstigatorCharacter, Damage);
 		}
+	}
+}
+
+void AMelee::ServerApplyDamage_Implementation(AActor* OtherActor, AHumanCharacter* InstigatorCharacter, float Damage)
+{
+	if (InstigatorCharacter)
+	{
+		UGameplayStatics::ApplyDamage(OtherActor, Damage, InstigatorCharacter->Controller, this, UDamageTypeMelee::StaticClass());
 	}
 }
 

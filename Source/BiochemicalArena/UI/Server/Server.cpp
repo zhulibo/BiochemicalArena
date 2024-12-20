@@ -10,8 +10,9 @@
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "ServerDetail.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/GameModes/GameModeType.h"
+#include "BiochemicalArena/GameModes/Data/GameModeType.h"
 #include "BiochemicalArena/UI/Common/CommonComboBox.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "BiochemicalArena/Utils/LibraryNotify.h"
 #include "Engine/UserInterfaceSettings.h"
 
@@ -20,12 +21,11 @@
 void UServer::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-	
-	ModeComboBox->AddOption(FString(TEXT("All")));
-	for (int32 j = 0; j < static_cast<int32>(ECoolGameMode::MAX); ++j)
+
+	ModeComboBox->AddOption(ALL);
+	for (int32 i = 0; i < static_cast<int32>(ECoolGameMode::None); ++i)
 	{
-		FString EnumValue = UEnum::GetValueAsString(static_cast<ECoolGameMode>(j));
-		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<ECoolGameMode>(i)));
 		ModeComboBox->AddOption(EnumValue);
 	}
 	ModeComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnModeComboBoxChanged);
@@ -87,7 +87,7 @@ void UServer::OnCreateServerButtonClicked()
 	UE_LOG(LogTemp, Warning, TEXT("OnCreateServerButtonClicked ------------------------------------------"));
 	if (EOSSubsystem)
 	{
-		CreateServerButton->ButtonText->SetText(LOCTEXT("Creating", "Creating..."));
+		CreateServerButton->ButtonText->SetText(LOCTEXT("Creating", "Creating"));
 		CreateServerButton->SetIsEnabled(false);
 
 		EOSSubsystem->CreateLobby();
@@ -113,27 +113,34 @@ void UServer::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type Sele
 {
 	MapComboBox->ClearOptions();
 
-	if (SelectedItem == "All")
+	if (SelectedItem == ALL)
 	{
-		MapComboBox->AddOption(FString(TEXT("All")));
+		MapComboBox->AddOption(ALL);
 	}
-	else if (SelectedItem == "Mutation")
+	else if (SelectedItem == MUTATION)
 	{
-		MapComboBox->AddOption(FString(TEXT("All")));
-		for (int32 j = 0; j < static_cast<int32>(EMutationMap::MAX); ++j)
+		MapComboBox->AddOption(ALL);
+		for (int32 i = 0; i < static_cast<int32>(EMutationMap::None); ++i)
 		{
-			FString EnumValue = UEnum::GetValueAsString(static_cast<EMutationMap>(j));
-			EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+			FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<EMutationMap>(i)));
 			MapComboBox->AddOption(EnumValue);
 		}
 	}
-	else if (SelectedItem == "TeamDeadMatch")
+	else if (SelectedItem == MELEE)
 	{
-		MapComboBox->AddOption(FString(TEXT("All")));
-		for (int32 j = 0; j < static_cast<int32>(ETeamDeadMatchMap::MAX); ++j)
+		MapComboBox->AddOption(ALL);
+		for (int32 i = 0; i < static_cast<int32>(EMeleeMap::None); ++i)
 		{
-			FString EnumValue = UEnum::GetValueAsString(static_cast<ETeamDeadMatchMap>(j));
-			EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+			FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<EMeleeMap>(i)));
+			MapComboBox->AddOption(EnumValue);
+		}
+	}
+	else if (SelectedItem == TEAM_DEAD_MATCH)
+	{
+		MapComboBox->AddOption(ALL);
+		for (int32 i = 0; i < static_cast<int32>(ETeamDeadMatchMap::None); ++i)
+		{
+			FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<ETeamDeadMatchMap>(i)));
 			MapComboBox->AddOption(EnumValue);
 		}
 	}
@@ -147,7 +154,7 @@ void UServer::OnRefreshServerButtonClicked()
 	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
 	if (EOSSubsystem)
 	{
-		RefreshServerButton->ButtonText->SetText(LOCTEXT("Refreshing", "Refreshing..."));
+		RefreshServerButton->ButtonText->SetText(LOCTEXT("Refreshing", "Refreshing"));
 		RefreshServerButton->SetIsEnabled(false);
 
 		EOSSubsystem->FindLobbies(
@@ -161,8 +168,6 @@ void UServer::OnRefreshServerButtonClicked()
 // 查找大厅完成事件
 void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef<const FLobby>>& Lobbies)
 {
-	if (GetWorld()->bIsTearingDown) return;
-
 	RefreshServerButton->ButtonText->SetText(LOCTEXT("Refresh", "Refresh"));
 	RefreshServerButton->SetIsEnabled(true);
 
@@ -192,11 +197,11 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 						// 游戏进度
 						int64 Status = EOSSubsystem->GetLobbyStatus();
 						int64 MaxStatus = -1;
-						if (EOSSubsystem->GetLobbyModeName() == TEXT("Mutation"))
+						if (EOSSubsystem->GetLobbyModeName() == MUTATION)
 						{
 							MaxStatus = 12;
 						}
-						else if (EOSSubsystem->GetLobbyModeName() == TEXT("TeamDeadMatch"))
+						else if (EOSSubsystem->GetLobbyModeName() == TEAM_DEAD_MATCH || EOSSubsystem->GetLobbyModeName() == MELEE)
 						{
 							MaxStatus = 6;
 						}
@@ -206,7 +211,7 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 						// TODO Ping
 						int32 Ping = -1;
 						ServerLineButton->Ping->SetText(FText::AsNumber(Ping));
-						FColor PingColor = C_WHITE;
+						FColor PingColor;
 						if (Ping < 0)
 						{
 							PingColor = C_GREY;
@@ -233,7 +238,7 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 		}
 		else
 		{
-			NOTIFY(this, C_WHITE, LOCTEXT("NoServerFound", "No server found!"));
+			NOTIFY(this, C_WHITE, LOCTEXT("NoServerFound", "No server found"));
 		}
 	}
 	else

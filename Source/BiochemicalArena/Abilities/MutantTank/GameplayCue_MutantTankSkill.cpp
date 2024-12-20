@@ -7,18 +7,8 @@ bool AGameplayCue_MutantTankSkill::WhileActive_Implementation(AActor* MyTarget, 
 	if (MutantTank == nullptr) MutantTank = Cast<AMutantTank>(MyTarget);
 	if (MutantTank)
 	{
-		
 		// 更改皮肤颜色
-		UMaterialInstanceDynamic* DynamicMaterial = Cast<UMaterialInstanceDynamic>(MutantTank->GetMesh()->GetMaterial(0));
-		if (DynamicMaterial == nullptr)
-		{
-			DynamicMaterial = MutantTank->GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
-		}
-		if (DynamicMaterial)
-		{
-			// TODO 有时不生效
-			DynamicMaterial->SetScalarParameterValue(TEXT("SkinColorLerp"), 1.f);
-		}
+		MutantTank->GetMesh()->SetOverlayMaterial(MutantTank->MI_Overlay_Skill);
 	}
 
 	return Super::WhileActive_Implementation(MyTarget, Parameters);
@@ -29,14 +19,9 @@ bool AGameplayCue_MutantTankSkill::OnRemove_Implementation(AActor* MyTarget, con
 	if (MutantTank == nullptr) MutantTank = Cast<AMutantTank>(MyTarget);
 	if (MutantTank)
 	{
-		UMaterialInstanceDynamic* DynamicMaterial = Cast<UMaterialInstanceDynamic>(MutantTank->GetMesh()->GetMaterial(0));
-		if (DynamicMaterial == nullptr)
+		if (MutantTank->GetMesh()->GetOverlayMaterial() == MutantTank->MI_Overlay_Skill)
 		{
-			DynamicMaterial = MutantTank->GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
-		}
-		if (DynamicMaterial)
-		{
-			DynamicMaterial->SetScalarParameterValue(TEXT("SkinColorLerp"), 0.f);
+			MutantTank->GetMesh()->SetOverlayMaterial(nullptr);
 		}
 	}
 

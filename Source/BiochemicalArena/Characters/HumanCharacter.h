@@ -3,20 +3,20 @@
 #include "CoreMinimal.h"
 #include "BaseCharacter.h"
 #include "MutantCharacter.h"
+#include "Interfaces/InteractableTarget.h"
 #include "HumanCharacter.generated.h"
 
+enum class EEquipmentName : uint8;
 enum class EEquipmentType : uint8;
 enum class ECombatState : uint8;
 
 UCLASS()
-class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter
+class BIOCHEMICALARENA_API AHumanCharacter : public ABaseCharacter, public IInteractableTarget
 {
 	GENERATED_BODY()
 
 public:
 	AHumanCharacter();
-
-	virtual void OnControllerReady() override;
 
 	void EquipOverlappingEquipment(class AEquipment* Equipment);
 
@@ -33,12 +33,16 @@ public:
 	bool bCanSwitchLoadout = true;
 
 	UFUNCTION(NetMulticast, Reliable)
-	void MulticastTeamDeadMatchDead();
-	UFUNCTION(NetMulticast, Reliable)
 	void MulticastMutationDead(bool bNeedSpawn);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastMeleeDead();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastTeamDeadMatchDead();
 
+	UPROPERTY(ReplicatedUsing = OnRep_bIsImmune)
 	bool bIsImmune = false;
-	void GetInfect(AMutantCharacter* AttackerCharacter, ABaseController* AttackerController, EMutantState MutantState);
+	UFUNCTION()
+	virtual void OnInteractMutantSuccess(class AMutantCharacter* MutantCharacter) override;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -47,6 +51,7 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void UnPossessed() override;
+	virtual void Destroyed() override;
 
 	UPROPERTY(VisibleAnywhere)
 	class UCombatComponent* CombatComponent;
@@ -56,12 +61,14 @@ protected:
 	class UCrosshairComponent* CrosshairComponent;
 
 	UPROPERTY()
+	class AMutationMode* MutationMode;
+	UPROPERTY()
+	class AMeleeMode* MeleeMode;
+	UPROPERTY()
 	class ATeamDeadMatchMode* TeamDeadMatchMode;
 	UPROPERTY()
-	class AMutationMode* MutationMode;
+	class AMeleeGameState* MeleeGameState;
 
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<class UInputHuman> InputHuman;
 	void AimButtonPressed(const FInputActionValue& Value);
 	void AimButtonReleased(const FInputActionValue& Value);
 	void FireButtonPressed(const FInputActionValue& Value);
@@ -73,33 +80,40 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void ServerDetectOverlappingEquipment();
 
+	virtual void OnControllerReady() override;
+
 	void ApplyLoadout();
 	UFUNCTION(Server, Reliable)
-	void ServerSpawnEquipments(const FString& PrimaryName, const FString& SecondaryName,
-		const FString& MeleeName, const FString& ThrowingName);
-	FString GetEquipmentName(int32 CurLoadoutIndex, EEquipmentType EquipmentType);
+	void ServerSpawnEquipments(EEquipmentName Primary, EEquipmentName Secondary,
+		EEquipmentName Melee, EEquipmentName Throwing);
+	EEquipmentName GetEquipmentName(int32 LoadoutIndex, EEquipmentType EquipmentType);
 
-	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimaryEquipment)
-	class AWeapon* DefaultPrimaryEquipment;
-	UPROPERTY(ReplicatedUsing = OnRep_DefaultSecondaryEquipment)
-	AWeapon* DefaultSecondaryEquipment;
-	UPROPERTY(ReplicatedUsing = OnRep_DefaultMeleeEquipment)
-	class AMelee* DefaultMeleeEquipment;
-	UPROPERTY(ReplicatedUsing = OnRep_DefaultThrowingEquipment)
-	class AThrowing* DefaultThrowingEquipment;
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimary)
+	class AWeapon* DefaultPrimary;
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultSecondary)
+	AWeapon* DefaultSecondary;
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultMelee)
+	class AMelee* DefaultMelee;
+	UPROPERTY(ReplicatedUsing = OnRep_DefaultThrowing)
+	class AThrowing* DefaultThrowing;
 	UFUNCTION()
-	void OnRep_DefaultPrimaryEquipment();
+	void OnRep_DefaultPrimary();
 	UFUNCTION()
-	void OnRep_DefaultSecondaryEquipment();
+	void OnRep_DefaultSecondary();
 	UFUNCTION()
-	void OnRep_DefaultMeleeEquipment();
+	void OnRep_DefaultMelee();
 	UFUNCTION()
-	void OnRep_DefaultThrowingEquipment();
+	void OnRep_DefaultThrowing();
 
 	UFUNCTION()
 	void HumanReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 		AController* AttackerController, AActor* DamageCauser);
 	void HandleDead();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerOnImmune(AMutantCharacter* MutantCharacter);
+	UFUNCTION()
+	void OnRep_bIsImmune();
 
 public:
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; }
@@ -107,5 +121,6 @@ public:
 	FORCEINLINE UCrosshairComponent* GetCrosshairComponent() const { return CrosshairComponent; }
 	AEquipment* GetCurrentEquipment();
 	FVector GetHitTarget() const;
+	FORCEINLINE bool IsImmune() const { return bIsImmune; }
 
 };

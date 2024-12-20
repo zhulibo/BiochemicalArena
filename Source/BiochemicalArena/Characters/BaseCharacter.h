@@ -16,11 +16,10 @@ class BIOCHEMICALARENA_API ABaseCharacter : public ACharacter, public IAbilitySy
 public:
 	ABaseCharacter();
 
-	bool bIsControllerReady = false;
-	virtual void OnControllerReady() {}
-
 	bool HasInitMeshCollision = false;
-	void InitAbilityActorInfo();
+
+	float MappingAimPitch(float TempAimPitch);
+
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	class UAttributeSetBase* GetAttributeSetBase();
 	float GetMaxHealth();
@@ -51,18 +50,16 @@ protected:
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
+	virtual void Destroyed() override;
 
 	UPROPERTY()
 	class UBAAbilitySystemComponent* AbilitySystemComponent;
 	UPROPERTY()
 	UAttributeSetBase* AttributeSetBase;
 	UPROPERTY(EditAnywhere)
-	TArray<TSubclassOf<class UGameplayAbilityBase>> StartupAbilities;
-	UPROPERTY(EditAnywhere)
-	TArray<TSubclassOf<class UGameplayEffect>> StartupEffects;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
+	TSubclassOf<class UGameplayEffect> DefaultAttrEffect;
 
+	void InitAbilityActorInfo();
 	virtual void OnAbilitySystemComponentInit();
 
 	UPROPERTY(VisibleAnywhere)
@@ -96,17 +93,20 @@ protected:
 
 	void PollSetMeshCollision();
 
+	void PollInit();
+
+	bool bIsControllerReady = false;
+	virtual void OnControllerReady();
+
 	UPROPERTY(Replicated)
 	float ControllerPitch;
 	UPROPERTY()
 	float AimPitch;
 	void CalcAimPitch();
 
-	void PollInit();
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<class UInputBase> InputBase;
-	void Move(const struct FInputActionValue& Value);
+	virtual void MoveStarted(const struct FInputActionValue& Value) {}
+	void Move(const FInputActionValue& Value);
+	virtual void MoveCompleted(const FInputActionValue& Value) {}
 	void LookMouse(const FInputActionValue& Value);
 	void LookStick(const FInputActionValue& Value);
 	void JumpButtonPressed(const FInputActionValue& Value);
@@ -117,6 +117,8 @@ protected:
 	void InteractStarted(const FInputActionValue& Value);
 	void InteractOngoing(const FInputActionValue& Value);
 	void InteractTriggered(const FInputActionValue& Value);
+	UFUNCTION(Server, Reliable)
+	void ServerInteractTriggered(AActor* TempInteractTarget);
 	void InteractCompleted(const FInputActionValue& Value);
 	void InteractCanceled(const FInputActionValue& Value);
 
@@ -132,7 +134,7 @@ protected:
 	void TextChat(const FInputActionValue& Value);
 	
 	void OnMaxHealthChanged(const FOnAttributeChangeData& Data);
-	void OnHealthChanged(const FOnAttributeChangeData& Data);
+	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
 
 	virtual void Landed(const FHitResult& Hit) override;
 	float CalcFallDamageRate();
@@ -144,8 +146,8 @@ protected:
 	bool bIsDead = false;
 
 	UPROPERTY()
-	AActor* InteractActor;
-	void TraceInteractActor(FHitResult& OutHit);
+	AActor* InteractTarget;
+	void TraceInteractTarget(FHitResult& OutHit);
 
 public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }

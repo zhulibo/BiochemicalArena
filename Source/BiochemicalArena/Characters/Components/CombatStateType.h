@@ -10,5 +10,5 @@ enum class ECombatState : uint8
 	HeavyAttacking,
 	Throwing,
 
-	MAX UMETA(Hidden)
+	None
 };

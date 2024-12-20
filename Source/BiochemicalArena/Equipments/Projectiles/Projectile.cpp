@@ -44,7 +44,7 @@ void AProjectile::SpawnTrailEffect()
 		TrailEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			TrailEffect,
 			GetRootComponent(),
-			FName(),
+			TEXT(""),
 			FVector::ZeroVector,
 			FRotator::ZeroRotator,
 			EAttachLocation::KeepRelativeOffset,
@@ -60,7 +60,7 @@ void AProjectile::SpawnTracerEffect()
 		TracerEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			TracerEffect,
 			GetRootComponent(),
-			FName(),
+			TEXT(""),
 			FVector::ZeroVector,
 			FRotator::ZeroRotator,
 			EAttachLocation::KeepRelativeOffset,
@@ -73,15 +73,12 @@ float AProjectile::GetDamage(float Distance)
 {
 	float Damage = 0.f;
 
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	FDataRegistryId DataRegistryId(DR_WEAPON_DATA, OwnerName);
+	if (const FWeaponData* WeaponData = UDataRegistrySubsystem::Get()->GetCachedItem<FWeaponData>(DataRegistryId))
 	{
-		FDataRegistryId DataRegistryId(DR_WEAPON_DATA, FName(OwnerName));
-		if (const FWeaponData* WeaponData = DRSubsystem->GetCachedItem<FWeaponData>(DataRegistryId))
+		if (UCurveFloat* DamageCurve = WeaponData->DamageCurve)
 		{
-			if (UCurveFloat* DamageCurve = WeaponData->DamageCurve)
-			{
-				Damage = DamageCurve->GetFloatValue(Distance / 100);
-			}
+			Damage = DamageCurve->GetFloatValue(Distance / 100);
 		}
 	}
 
@@ -92,19 +89,16 @@ float AProjectile::GetImpulse(float DeclineDamage)
 {
 	float Impulse = 0.f;
 
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	FDataRegistryId DataRegistryId(DR_WEAPON_DATA, OwnerName);
+	if (const FWeaponData* WeaponData = UDataRegistrySubsystem::Get()->GetCachedItem<FWeaponData>(DataRegistryId))
 	{
-		FDataRegistryId DataRegistryId(DR_WEAPON_DATA, FName(OwnerName));
-		if (const FWeaponData* WeaponData = DRSubsystem->GetCachedItem<FWeaponData>(DataRegistryId))
+		if (UCurveFloat* DamageCurve = WeaponData->DamageCurve)
 		{
-			if (UCurveFloat* DamageCurve = WeaponData->DamageCurve)
-			{
-				float MaxDamage = DamageCurve->GetFloatValue(0.f);
+			float MaxDamage = DamageCurve->GetFloatValue(0.f);
 
-				if (MaxDamage != 0)
-				{
-					Impulse = DeclineDamage / MaxDamage * WeaponData->Impulse;
-				}
+			if (MaxDamage != 0)
+			{
+				Impulse = DeclineDamage / MaxDamage * WeaponData->Impulse;
 			}
 		}
 	}

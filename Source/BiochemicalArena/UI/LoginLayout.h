@@ -20,7 +20,7 @@ protected:
 
 	UPROPERTY()
 	class ALoginController* LoginController;
-
+	
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* LoginStatus;
 	UPROPERTY(meta = (BindWidget))
@@ -30,10 +30,16 @@ protected:
 	void OnLoginComplete(bool bWasSuccessful);
 
 	UPROPERTY(meta = (BindWidget))
+	class USizeBox* DevContainer;
+	UPROPERTY(meta = (BindWidget))
 	UCommonButton* Login1Button;
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* Login2Button;
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* Login3Button;
+
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* QuitButton;
+	void OnQuitButtonClicked();
 
 };

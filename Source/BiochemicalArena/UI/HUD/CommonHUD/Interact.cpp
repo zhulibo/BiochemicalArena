@@ -34,12 +34,13 @@ void UInteract::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 void UInteract::OnInteractStarted()
 {
-	ProgressBar->SetVisibility(ESlateVisibility::Visible);
 	ProgressBar->SetPercent(0.f);
+	ProgressBar->SetVisibility(ESlateVisibility::Visible);
 }
 
 void UInteract::OnInteractEnded()
 {
 	ProgressBar->SetVisibility(ESlateVisibility::Hidden);
+	ProgressBar->SetPercent(0.f);
 }
 

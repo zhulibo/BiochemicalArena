@@ -77,6 +77,8 @@ void UOverheadWidget::SetPlayerName()
 // 判断是否显示OverheadWidget
 void UOverheadWidget::TraceOverheadWidget()
 {
+	if (!bIsAllowShow) return;
+	
 	if (LocalBaseCharacter == nullptr)
 	{
 		if (LocalBaseController == nullptr) LocalBaseController = Cast<ABaseController>(GetWorld()->GetFirstPlayerController());
@@ -105,18 +107,18 @@ void UOverheadWidget::TraceOverheadWidget()
 		if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
 		if (BaseGameState)
 		{
-			for (int32 i = 0; i < BaseGameState->GetTeam(ETeam::Team1).Num(); ++i)
+			for (int32 i = 0; i < BaseGameState->GetPlayerStates(ETeam::Team1).Num(); ++i)
 			{
-				if (BaseGameState->GetTeam(ETeam::Team1)[i])
+				if (BaseGameState->GetPlayerStates(ETeam::Team1)[i])
 				{
-					IgnoreActors.AddUnique(BaseGameState->GetTeam(ETeam::Team1)[i]->GetPawn());
+					IgnoreActors.AddUnique(BaseGameState->GetPlayerStates(ETeam::Team1)[i]->GetPawn());
 				}
 			}
-			for (int32 i = 0; i < BaseGameState->GetTeam(ETeam::Team2).Num(); ++i)
+			for (int32 i = 0; i < BaseGameState->GetPlayerStates(ETeam::Team2).Num(); ++i)
 			{
-				if (BaseGameState->GetTeam(ETeam::Team2)[i])
+				if (BaseGameState->GetPlayerStates(ETeam::Team2)[i])
 				{
-					IgnoreActors.AddUnique(BaseGameState->GetTeam(ETeam::Team2)[i]->GetPawn());
+					IgnoreActors.AddUnique(BaseGameState->GetPlayerStates(ETeam::Team2)[i]->GetPawn());
 				}
 			}
 		}
@@ -142,8 +144,6 @@ void UOverheadWidget::TraceOverheadWidget()
 
 void UOverheadWidget::InitOverheadWidget()
 {
-	if (GetWorld() == nullptr || GetWorld()->bIsTearingDown) return;
-
 	if (BaseCharacter)
 	{
 		if (BasePlayerState == nullptr) BasePlayerState = Cast<ABasePlayerState>(BaseCharacter->GetPlayerState());
@@ -160,10 +160,10 @@ void UOverheadWidget::InitOverheadWidget()
 			if (BasePlayerState->GetTeam() != ETeam::NoTeam && LocalBasePlayerState->GetTeam() != ETeam::NoTeam)
 			{
 				FColor TeamColor = BasePlayerState->GetTeam() == LocalBasePlayerState->GetTeam() ? C_BLUE : C_RED;
-				
+
 				// 设置名字颜色
 				PlayerName->SetColorAndOpacity(TeamColor);
-				
+
 				// 设置血条颜色
 				if (UMaterialInstanceDynamic* MID = HealthBar->GetDynamicMaterial())
 				{
@@ -171,7 +171,7 @@ void UOverheadWidget::InitOverheadWidget()
 						
 					if (AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(BaseCharacter))
 					{
-						if (HumanCharacter->bIsImmune)
+						if (HumanCharacter->IsImmune())
 						{
 							MID->SetVectorParameterValue(TEXT("TeamColor"), C_YELLOW);
 						}
@@ -186,10 +186,26 @@ void UOverheadWidget::InitOverheadWidget()
 
 				return;
 			}
+			else
+			{
+				// 游戏结束了关卡才加载完成GetTeam() == ETeam::NoTeam，中断循环，不然会crash（不知道什么原因）。
+				if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
+				if (BaseGameState)
+				{
+					if (BaseGameState->GetMatchState() == FName(TEXT("WaitingPostMatch"))
+						|| BaseGameState->GetMatchState() == FName(TEXT("LeavingMap")))
+					{
+						return;
+					}
+				}
+				else
+				{
+					return;
+				}
+			}
 		}
 	}
 
-	// UE_LOG(LogTemp, Warning, TEXT("SetTimerForNextTick"));
 	GetWorld()->GetTimerManager().SetTimerForNextTick([this]() {
 		InitOverheadWidget();
 	});
@@ -237,7 +253,14 @@ void UOverheadWidget::OnHealthChange(float OldHealth, float NewHealth)
 		}
 		else if (OldValue < NewValue)
 		{
-			PlayAnimationTimeRange(HealthInc, 1 - OldValue, 1 - NewValue, 1,  EUMGSequencePlayMode::Forward, PlaybackSpeed);
+			PlayAnimationTimeRange(HealthInc, OldValue, NewValue, 1,  EUMGSequencePlayMode::Forward, PlaybackSpeed);
 		}
 	}
+}
+
+void UOverheadWidget::ShowOverheadWidget(bool bIsShow)
+{
+	bIsAllowShow = bIsShow;
+
+	SetVisibility(bIsAllowShow ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
 }

@@ -7,7 +7,7 @@
 #include "PlayerLineButton.h"
 #include "CommonHierarchicalScrollBox.h"
 #include "BiochemicalArena/BiochemicalArena.h"
-#include "BiochemicalArena/GameModes/GameModeType.h"
+#include "BiochemicalArena/GameModes/Data/GameModeType.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "BiochemicalArena/UI/Common/CommonComboBox.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
@@ -78,7 +78,7 @@ void UServerDetail::NativeConstruct()
 	TextChat->MsgContainer->ClearChildren();
 
 	SetUIAttr();
-	SetUIButton();
+	SetUIButtonState();
 	UpdatePlayerList();
 
 	bIsExitingLobby = false;
@@ -93,10 +93,9 @@ void UServerDetail::SetUIAttr()
 	LastServerName = FText::FromString(EOSSubsystem->GetLobbyServerName());
 
 	ModeComboBox->ClearOptions();
-	for (int32 j = 0; j < static_cast<int32>(ECoolGameMode::MAX); ++j)
+	for (int32 i = 0; i < static_cast<int32>(ECoolGameMode::None); ++i)
 	{
-		FString EnumValue = UEnum::GetValueAsString(static_cast<ECoolGameMode>(j));
-		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+		FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<ECoolGameMode>(i)));
 		ModeComboBox->AddOption(EnumValue);
 	}
 	ModeComboBox->SetSelectedOption(EOSSubsystem->GetLobbyModeName());
@@ -106,7 +105,8 @@ void UServerDetail::SetUIAttr()
 	});
 }
 
-void UServerDetail::SetUIButton()
+// 设置按钮状态
+void UServerDetail::SetUIButtonState()
 {
 	if (EOSSubsystem == nullptr) return;
 
@@ -117,10 +117,14 @@ void UServerDetail::SetUIButton()
 		ModeComboBox->SetIsEnabled(true);
 		MapComboBox->SetIsEnabled(true);
 
-		// TODO 焦点在要禁用的按钮上时不好处理，暂时不禁用
-		// ReadyButton->SetIsEnabled(false);
-		// JoinServerButton->SetIsEnabled(false);
-		// StartServerButton->SetIsEnabled(true);
+		StartServerButton->SetIsEnabled(true);
+		if (ReadyButton->HasFocusedDescendants() || JoinServerButton->HasFocusedDescendants())
+		{
+			StartServerButton->SetFocus();
+		}
+
+		ReadyButton->SetIsEnabled(false);
+		JoinServerButton->SetIsEnabled(false);
 	}
 	else
 	{
@@ -128,9 +132,21 @@ void UServerDetail::SetUIButton()
 		ModeComboBox->SetIsEnabled(false);
 		MapComboBox->SetIsEnabled(false);
 
-		// ReadyButton->SetIsEnabled(!EOSSubsystem->GetLobbyStatus());
-		// JoinServerButton->SetIsEnabled(EOSSubsystem->GetLobbyStatus());
-		// StartServerButton->SetIsEnabled(false);
+		JoinServerButton->SetIsEnabled(EOSSubsystem->GetLobbyStatus() != 0);
+		ReadyButton->SetIsEnabled(EOSSubsystem->GetLobbyStatus() == 0);
+		if (ReadyButton->HasFocusedDescendants() || JoinServerButton->HasFocusedDescendants() || StartServerButton->HasFocusedDescendants())
+		{
+			if (EOSSubsystem->GetLobbyStatus())
+			{
+				JoinServerButton->SetFocus();
+			}
+			else
+			{
+				ReadyButton->SetFocus();
+			}
+		}
+
+		StartServerButton->SetIsEnabled(false);
 	}
 }
 
@@ -138,8 +154,7 @@ void UServerDetail::SetUIButton()
 void UServerDetail::UpdatePlayerList()
 {
 	if (PlayerLineButtonClass == nullptr || Team1Container == nullptr || Team2Container == nullptr
-		|| EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr
-		|| GetWorld()->bIsTearingDown) return;
+		|| EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return;
 
 	// 记录焦点所在位置
 	UCommonHierarchicalScrollBox* Container = nullptr;
@@ -147,12 +162,12 @@ void UServerDetail::UpdatePlayerList()
 	if (Team1Container->HasFocusedDescendants())
 	{
 		Container = Team1Container;
-		FocusWidgetIndex = GetFocusPlayerIndex(Container);
+		FocusWidgetIndex = GetFocusedPlayerIndex(Container);
 	}
 	else if (Team2Container->HasFocusedDescendants())
 	{
 		Container = Team2Container;
-		FocusWidgetIndex = GetFocusPlayerIndex(Container);
+		FocusWidgetIndex = GetFocusedPlayerIndex(Container);
 	}
 
 	// 清空玩家列表
@@ -178,7 +193,21 @@ void UServerDetail::UpdatePlayerList()
 		}
 		else
 		{
-			Status = EOSSubsystem->GetMemberReady(Member.Value) ? LOCTEXT("Ready", "Ready") : FText::FromString("");
+			if (EOSSubsystem->GetMemberReady(Member.Value))
+			{
+				if (EOSSubsystem->GetLobbyStatus())
+				{
+					Status = LOCTEXT("Playing", "Playing");
+				}
+				else
+				{
+					Status = LOCTEXT("Ready", "Ready");
+				}
+			}
+			else
+			{
+				Status = FText::FromString("");
+			}
 		}
 		PlayerLineButton->Status->SetText(Status);
 
@@ -212,7 +241,7 @@ void UServerDetail::UpdatePlayerList()
 	}
 }
 
-int32 UServerDetail::GetFocusPlayerIndex(UCommonHierarchicalScrollBox* Container)
+int32 UServerDetail::GetFocusedPlayerIndex(UCommonHierarchicalScrollBox* Container)
 {
 	for (int i = 0; i < Container->GetChildrenCount(); ++i)
 	{
@@ -231,22 +260,28 @@ int32 UServerDetail::GetFocusPlayerIndex(UCommonHierarchicalScrollBox* Container
 void UServerDetail::InitMapComboBox()
 {
 	MapComboBox->ClearOptions();
-	
-	if (ModeComboBox->GetSelectedOption() == "Mutation")
+
+	if (ModeComboBox->GetSelectedOption() == MUTATION)
 	{
-		for (int32 j = 0; j < static_cast<int32>(EMutationMap::MAX); ++j)
+		for (int32 i = 0; i < static_cast<int32>(EMutationMap::None); ++i)
 		{
-			FString EnumValue = UEnum::GetValueAsString(static_cast<EMutationMap>(j));
-			EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+			FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<EMutationMap>(i)));
 			MapComboBox->AddOption(EnumValue);
 		}
 	}
-	else if (ModeComboBox->GetSelectedOption() == "TeamDeadMatch")
+	else if (ModeComboBox->GetSelectedOption() == MELEE)
 	{
-		for (int32 j = 0; j < static_cast<int32>(ETeamDeadMatchMap::MAX); ++j)
+		for (int32 i = 0; i < static_cast<int32>(EMeleeMap::None); ++i)
 		{
-			FString EnumValue = UEnum::GetValueAsString(static_cast<ETeamDeadMatchMap>(j));
-			EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
+			FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<EMeleeMap>(i)));
+			MapComboBox->AddOption(EnumValue);
+		}
+	}
+	else if (ModeComboBox->GetSelectedOption() == TEAM_DEAD_MATCH)
+	{
+		for (int32 i = 0; i < static_cast<int32>(ETeamDeadMatchMap::None); ++i)
+		{
+			FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<ETeamDeadMatchMap>(i)));
 			MapComboBox->AddOption(EnumValue);
 		}
 	}
@@ -318,8 +353,6 @@ void UServerDetail::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type
 		}
 		if (UpdatedAttributes.Num() > 0)
 		{
-			// TODO
-			UE_LOG(LogTemp, Warning, TEXT("ModifyLobbyAttr"));
 			EOSSubsystem->ModifyLobbyAttr(UpdatedAttributes);
 		}
 	}
@@ -377,11 +410,13 @@ void UServerDetail::OnLobbyAttrChanged(const FLobbyAttributesChanged& LobbyAttri
 		}
 		else if (ChangedAttribute.Key == LOBBY_STATUS)
 		{
-			if (EOSSubsystem&& EOSSubsystem->GetLobbyStatus() == 1)
+			if (EOSSubsystem && EOSSubsystem->GetLobbyStatus() == 1)
 			{
 				TextChat->ShowMsg(EMsgType::Start, PlayerTeam, PlayerName);
+
+				SetUIButtonState();
 			}
-			
+
 			// TODO
 		}
 	}
@@ -456,17 +491,32 @@ void UServerDetail::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged
 void UServerDetail::OnStartServerButtonClicked()
 {
 	// TODO
-	// if (EOSSubsystem == nullptr || !EOSSubsystem->IsLobbyHost() || !CanStartServer()) return;
+	// if (!CanStartServer()) return;
+
+	if (EOSSubsystem && EOSSubsystem->IsLobbyHost())
+	{
+		EOSSubsystem->ModifyLobbyAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
+			{LOBBY_STATUS, static_cast<int64>(1)},
+		});
+	}
+
+	FString MapPath = "/Game/Maps/Map_" + EOSSubsystem->GetLobbyModeName() + "/" + EOSSubsystem->GetLobbyMapName() + "?listen";
 
 	UE_LOG(LogTemp, Warning, TEXT("ServerTravel ------------------------------------------"));
-	GetWorld()->ServerTravel("/Game/Maps/Dev_TeamDeadMatch?listen", ETravelType::TRAVEL_Absolute);
+	GetWorld()->ServerTravel(MapPath, ETravelType::TRAVEL_Absolute);
 }
 
 bool UServerDetail::CanStartServer()
 {
-	if (EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return false;
-	
-	if (ModeComboBox->GetSelectedOption() == "Mutation")
+	if (EOSSubsystem == nullptr || !EOSSubsystem->IsLobbyHost() || EOSSubsystem->CurrentLobby == nullptr) return false;
+
+	if (MapComboBox->GetSelectedOption().IsEmpty())
+	{
+		NOTIFY(this, C_YELLOW, LOCTEXT("NeedSelectMap", "Please select map!"));
+		return false;
+	}
+
+	if (ModeComboBox->GetSelectedOption() == MUTATION)
 	{
 		int32 ReadyPlayerNum = 0;
 		for (auto& Member : EOSSubsystem->CurrentLobby->Members)
@@ -482,7 +532,7 @@ bool UServerDetail::CanStartServer()
 			return false;
 		}
 	}
-	else if (ModeComboBox->GetSelectedOption() == "TeamDeadMatch")
+	else if (ModeComboBox->GetSelectedOption() == TEAM_DEAD_MATCH || ModeComboBox->GetSelectedOption() == MELEE)
 	{
 		ETeam HostTeam = EOSSubsystem->GetMemberTeam(EOSSubsystem->GetLobbyHost());
 		
@@ -508,15 +558,20 @@ bool UServerDetail::CanStartServer()
 			return false;
 		}
 	}
-	
+
 	return true;
 }
 
 void UServerDetail::OnJoinServerButtonClicked()
 {
-	// TODO
-	// if (EOSSubsystem == nullptr || EOSSubsystem->IsLobbyHost()) return;
-	
+	if (EOSSubsystem == nullptr || EOSSubsystem->IsLobbyHost()) return;
+
+	// 如果未准备，把状态置为已准备。
+	if (!EOSSubsystem->GetMemberReady(EOSSubsystem->GetLocalMember()))
+	{
+		OnReadyButtonClicked();
+	}
+
 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
 	if (MenuController)
 	{
@@ -531,7 +586,7 @@ void UServerDetail::OnJoinServerButtonClicked()
 void UServerDetail::OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnLobbyLeaderChanged"));
-	SetUIButton();
+	SetUIButtonState();
 	
 	UpdatePlayerList();
 	
@@ -595,7 +650,7 @@ void UServerDetail::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
 
 	if (!bIsExitingLobby)
 	{
-		NOTIFY(this, C_YELLOW, LOCTEXT("Gotkicked", "Got kicked!"));
+		NOTIFY(this, C_WHITE, LOCTEXT("GotKicked", "Got kicked!"));
 	}
 }
 

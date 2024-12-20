@@ -43,7 +43,7 @@ void URecoilComponent::TickComponent(float DeltaSeconds, ELevelTick TickType, FA
 	}
 }
 
-// 增加开火产生的后坐力
+// 开火后增加后坐力
 void URecoilComponent::IncRecoil()
 {
 	if (HumanCharacter == nullptr || HumanCharacter->GetCombatComponent() == nullptr) return;
@@ -82,7 +82,6 @@ void URecoilComponent::IncRecoil()
 
 	// 累计总垂直后坐力
 	RecoilVertTotal += RecoilVertTarget;
-
 	// 限制总垂直后坐力
 	if (RecoilVertTotal > Weapon->RecoilTotalVertLimit)
 	{
@@ -99,7 +98,6 @@ void URecoilComponent::IncRecoil()
 
 	// 累计总水平后坐力
 	RecoilHorTotal += RecoilHorTarget;
-
 	// 限制总水平后坐力
 	if (RecoilHorTotal > Weapon->RecoilTotalHorLimit) // 达到最右值
 	{
@@ -134,14 +132,15 @@ void URecoilComponent::IncRecoil()
 	RecoilHorLastTick2 = 0.f;
 }
 
-// 开火后在RecoilIncTime时间内，分多帧应用开火产生的后坐力
+// 在RecoilIncTime时间内，分多帧应用开火后产生的后坐力
 void URecoilComponent::PollApplyRecoil(float DeltaSeconds)
 {
+	if (RecoilVertTotal == 0.f && RecoilHorTotal == 0.f) return;
+
 	if (HumanCharacter == nullptr || HumanCharacter->GetCombatComponent() == nullptr) return;
 	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetCurShotEquipment();
 	if (Weapon == nullptr) return;
 
-	if (RecoilVertTotal == 0.f && RecoilHorTotal == 0.f) return;
 	if (RecoilIncCostTime >= Weapon->RecoilIncTime) return;
 
 	// UE_LOG(LogTemp, Warning, TEXT("RecoilIncCostTime %f DeltaSeconds %f"), RecoilIncCostTime, DeltaSeconds);

@@ -29,23 +29,23 @@ UWidget* ULoadoutSelect::NativeGetDesiredFocusTarget() const
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 	{
-		int32 CurLoadoutIndex = StorageSubsystem->CacheLoadout->CurLoadoutIndex;
-		if (CurLoadoutIndex > 0 && CurLoadoutIndex < LoadoutSelectButtonContainer->GetChildrenCount())
+		int32 LoadoutIndex = StorageSubsystem->CacheLoadout->LoadoutIndex;
+		if (LoadoutIndex > 0 && LoadoutIndex < LoadoutSelectButtonContainer->GetChildrenCount())
 		{
-			return LoadoutSelectButtonContainer->GetChildAt(CurLoadoutIndex);
+			return LoadoutSelectButtonContainer->GetChildAt(LoadoutIndex);
 		}
 	}
 
 	return LoadoutSelectButtonContainer->GetChildAt(0);
 }
 
-void ULoadoutSelect::OnLoadoutSelectButtonClicked(int32 CurLoadoutIndex)
+void ULoadoutSelect::OnLoadoutSelectButtonClicked(int32 LoadoutIndex)
 {
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 	{
-		StorageSubsystem->CacheLoadout->CurLoadoutIndex = CurLoadoutIndex;
-		StorageSubsystem->SaveLoadout();
+		StorageSubsystem->CacheLoadout->LoadoutIndex = LoadoutIndex;
+		StorageSubsystem->SaveLoadouts();
 
 		if (AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(GetOwningPlayerPawn()))
 		{
@@ -63,7 +63,7 @@ void ULoadoutSelect::CloseMenu(bool bClosePauseMenu)
 	{
 		DeactivateWidget();
 		
-		if (bClosePauseMenu)
+		if (bClosePauseMenu && BaseController->GameLayout)
 		{
 			BaseController->GameLayout->MenuStack->RemoveWidget(*BaseController->GameLayout->MenuStack->GetActiveWidget());
 		}

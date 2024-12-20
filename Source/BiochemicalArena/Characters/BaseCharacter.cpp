@@ -15,10 +15,10 @@
 #include "NiagaraFunctionLibrary.h"
 #include "BiochemicalArena/Abilities/AttributeSetBase.h"
 #include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
-#include "BiochemicalArena/Abilities/GameplayAbilityBase.h"
 #include "BiochemicalArena/Equipments/Data/DamageTypeFall.h"
 #include "BiochemicalArena/Equipments/Projectiles/ProjectileBullet.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
+#include "BiochemicalArena/System/PlayerSubsystem.h"
 #include "BiochemicalArena/System/Storage/SaveGameSetting.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Camera/CameraComponent.h"
@@ -41,14 +41,14 @@ ABaseCharacter::ABaseCharacter()
 	GetMesh()->SetCollisionResponseToChannel(ECC_Blood, ECollisionResponse::ECR_Ignore);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
-	CameraBoom->SetupAttachment(GetMesh(), "Head");
+	CameraBoom->SetupAttachment(GetMesh(), TEXT("CameraSocket"));
 	CameraBoom->TargetArmLength = 0.f;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
-	OverheadWidget->SetupAttachment(GetMesh(), "Head");
+	OverheadWidget->SetupAttachment(GetMesh(), TEXT("CameraSocket"));
 	OverheadWidget->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // TODO 垂直向上
 
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
@@ -73,8 +73,7 @@ void ABaseCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	// 监听输入设备类型改变
-	UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController());
-	if (CommonInputSubsystem)
+	if (UCommonInputSubsystem* CommonInputSubsystem = UCommonInputSubsystem::Get(GetWorld()->GetFirstLocalPlayerFromController()))
 	{
 		if (!CommonInputSubsystem->OnInputMethodChangedNative.IsBoundToObject(this))
 		{
@@ -99,42 +98,46 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	if (InputBase == nullptr) return;
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr) return;
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			Subsystem->AddMappingContext(InputBase->BaseMappingContext, 0);
+			// TODO 调查丢包导致失效
+			Subsystem->AddMappingContext(AssetSubsystem->InputBase->BaseMappingContext, 100);
 		}
 	}
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(InputBase->MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
-		EnhancedInputComponent->BindAction(InputBase->LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
-		EnhancedInputComponent->BindAction(InputBase->LookStickAction, ETriggerEvent::Triggered, this, &ThisClass::LookStick);
-		EnhancedInputComponent->BindAction(InputBase->JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
-		EnhancedInputComponent->BindAction(InputBase->CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
-		EnhancedInputComponent->BindAction(InputBase->CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
-		EnhancedInputComponent->BindAction(InputBase->CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->MoveAction, ETriggerEvent::Started, this, &ThisClass::MoveStarted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->MoveAction, ETriggerEvent::Completed, this, &ThisClass::MoveCompleted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->LookStickAction, ETriggerEvent::Triggered, this, &ThisClass::LookStick);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
 		
-		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Started, this, &ThisClass::InteractStarted);
-		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Ongoing, this, &ThisClass::InteractOngoing);
-		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Triggered, this, &ThisClass::InteractTriggered);
-		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Completed, this, &ThisClass::InteractCompleted);
-		EnhancedInputComponent->BindAction(InputBase->InteractAction, ETriggerEvent::Canceled, this, &ThisClass::InteractCanceled);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Started, this, &ThisClass::InteractStarted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Ongoing, this, &ThisClass::InteractOngoing);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Triggered, this, &ThisClass::InteractTriggered);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Completed, this, &ThisClass::InteractCompleted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Canceled, this, &ThisClass::InteractCanceled);
 
-		EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
-		EnhancedInputComponent->BindAction(InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
-		EnhancedInputComponent->BindAction(InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
 
-		EnhancedInputComponent->BindAction(InputBase->RadialMenuAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuButtonPressed);
-		EnhancedInputComponent->BindAction(InputBase->RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
-		EnhancedInputComponent->BindAction(InputBase->RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChangeButtonPressed);
-		EnhancedInputComponent->BindAction(InputBase->RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChangeButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
 
-		EnhancedInputComponent->BindAction(InputBase->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
 	}
 }
 
@@ -172,29 +175,43 @@ void ABaseCharacter::PollSetMeshCollision()
 	}
 }
 
+void ABaseCharacter::OnControllerReady()
+{
+}
+
 // 计算俯仰
 void ABaseCharacter::CalcAimPitch()
 {
-	// 把ControllerPitch复制到模拟端
+	// 服务端把ControllerPitch复制到客户端
 	if (HasAuthority())
 	{
-		ControllerPitch = GetViewRotation().Pitch;
+		ControllerPitch = MappingAimPitch(GetViewRotation().Pitch);
+		AimPitch = ControllerPitch;
 	}
-
-	AimPitch = ControllerPitch;
-
-	// 本地覆盖掉网络复制的值，避免延迟
-	if (IsLocallyControlled())
+	else
 	{
-		AimPitch = GetViewRotation().Pitch;
+		if (IsLocallyControlled())
+		{
+			AimPitch = MappingAimPitch(GetViewRotation().Pitch);
+		}
+		// 非本地使用服务端复制下来的ControllerPitch
+		else
+		{
+			AimPitch = ControllerPitch;
+		}
 	}
+}
 
-	if (AimPitch > 90.f)
+float ABaseCharacter::MappingAimPitch(float TempAimPitch)
+{
+	if (TempAimPitch > 90.f)
 	{
 		FVector2D InRange(360.f, 270.f);
 		FVector2D OutRange(0.f, -90.f);
-		AimPitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AimPitch);
+		TempAimPitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, TempAimPitch);
 	}
+
+	return TempAimPitch;
 }
 
 void ABaseCharacter::PollInit()
@@ -224,26 +241,10 @@ void ABaseCharacter::PossessedBy(AController* NewController)
 
 	if (AbilitySystemComponent)
 	{
-		// 赋予初始技能
-		for (TSubclassOf<UGameplayAbilityBase> StartupAbility : StartupAbilities)
-		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(StartupAbility));
-		}
-
-		// 赋予初始Effect
+		// 赋予默认值Effect
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
 		EffectContext.AddSourceObject(this);
-		for (TSubclassOf<UGameplayEffect> StartupEffect : StartupEffects)
-		{
-			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(StartupEffect, GetCharacterLevel(), EffectContext);
-			if (SpecHandle.IsValid())
-			{
-				AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
-			}
-		}
-
-		// 赋值默认AttributeSet Effect
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, GetCharacterLevel(), EffectContext);
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttrEffect, GetCharacterLevel(), EffectContext);
 		if (SpecHandle.IsValid())
 		{
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
@@ -258,6 +259,19 @@ void ABaseCharacter::OnRep_PlayerState()
 	InitAbilityActorInfo();
 
 	OnAbilitySystemComponentInit();
+}
+
+void ABaseCharacter::Destroyed()
+{
+	if (IsLocallyControlled())
+	{
+		if (UPlayerSubsystem* PlayerSubsystem = ULocalPlayer::GetSubsystem<UPlayerSubsystem>(GetWorld()->GetFirstLocalPlayerFromController()))
+		{
+			PlayerSubsystem->SetIsDead();
+		}
+	}
+
+	Super::Destroyed();
 }
 
 // 输入设备类型改变
@@ -393,8 +407,9 @@ void ABaseCharacter::PlayFootstepSound()
 
 void ABaseCharacter::FellOutOfWorld(const UDamageType& DmgType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("FellOutOfWorld"));
 	UGameplayStatics::ApplyDamage(this, GetHealth(), BaseController, this, UDamageTypeFall::StaticClass());
+
+	// Super::FellOutOfWorld(DmgType);
 }
 
 void ABaseCharacter::Move(const FInputActionValue& Value)
@@ -465,7 +480,7 @@ void ABaseCharacter::CrouchControllerButtonPressed(const FInputActionValue& Valu
 	}
 }
 
-void ABaseCharacter::TraceInteractActor(FHitResult& OutHit)
+void ABaseCharacter::TraceInteractTarget(FHitResult& OutHit)
 {
 	FVector2D ViewportSize;
 	GEngine->GameViewport->GetViewportSize(ViewportSize);
@@ -484,7 +499,7 @@ void ABaseCharacter::TraceInteractActor(FHitResult& OutHit)
 		FVector End = Position + Direction * 160.f;
 
 		DrawDebugLine(GetWorld(), Start, End, C_YELLOW, true);
-		
+
 		FCollisionQueryParams CollisionQueryParams;
 		CollisionQueryParams.AddIgnoredActor(this);
 		GetWorld()->SweepSingleByChannel(
@@ -502,14 +517,14 @@ void ABaseCharacter::TraceInteractActor(FHitResult& OutHit)
 void ABaseCharacter::InteractStarted(const FInputActionValue& Value)
 {
 	FHitResult OutHit;
-	TraceInteractActor(OutHit);
+	TraceInteractTarget(OutHit);
 	if (OutHit.bBlockingHit)
 	{
 		if (IInteractableTarget* Target = Cast<IInteractableTarget>(OutHit.GetActor()))
 		{
 			if (Target->CanInteract())
 			{
-				InteractActor = OutHit.GetActor();
+				InteractTarget = OutHit.GetActor();
 
 				if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 				if (BaseController)
@@ -522,22 +537,21 @@ void ABaseCharacter::InteractStarted(const FInputActionValue& Value)
 		}
 	}
 
-	InteractActor = nullptr;
+	InteractTarget = nullptr;
 }
 
 void ABaseCharacter::InteractOngoing(const FInputActionValue& Value)
 {
-	if (InteractActor != nullptr)
+	if (InteractTarget != nullptr)
 	{
 		FHitResult OutHit;
-		TraceInteractActor(OutHit);
+		TraceInteractTarget(OutHit);
 		if (OutHit.bBlockingHit)
 		{
-			if (InteractActor == OutHit.GetActor())
+			if (InteractTarget == OutHit.GetActor())
 			{
 				if (IInteractableTarget* Target = Cast<IInteractableTarget>(OutHit.GetActor()))
 				{
-					UE_LOG(LogTemp, Warning, TEXT("InteractActor == OutHit.GetActor()"));
 					if (Target->CanInteract())
 					{
 						return;
@@ -547,8 +561,8 @@ void ABaseCharacter::InteractOngoing(const FInputActionValue& Value)
 		}
 	}
 
-	// 目标改变停止交互
-	InteractActor = nullptr;
+	// 停止交互
+	InteractTarget = nullptr;
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
@@ -559,18 +573,29 @@ void ABaseCharacter::InteractOngoing(const FInputActionValue& Value)
 void ABaseCharacter::InteractTriggered(const FInputActionValue& Value)
 {
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	if (BaseController && InteractActor)
+	if (BaseController && InteractTarget)
 	{
-		if (IInteractableTarget* Target = Cast<IInteractableTarget>(InteractActor))
+		if (IInteractableTarget* Target = Cast<IInteractableTarget>(InteractTarget))
 		{
 			Target->OnInteract(this);
+
+			ServerInteractTriggered(InteractTarget);
 		}
+	}
+}
+
+// 在服务端通知交互目标被交互了，以便复制到所有客户端。
+void ABaseCharacter::ServerInteractTriggered_Implementation(AActor* TempInteractTarget)
+{
+	if (IInteractableTarget* Target = Cast<IInteractableTarget>(TempInteractTarget))
+	{
+		Target->OnInteractOnServer();
 	}
 }
 
 void ABaseCharacter::InteractCompleted(const FInputActionValue& Value)
 {
-	InteractActor = nullptr;
+	InteractTarget = nullptr;
 
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
@@ -581,7 +606,7 @@ void ABaseCharacter::InteractCompleted(const FInputActionValue& Value)
 
 void ABaseCharacter::InteractCanceled(const FInputActionValue& Value)
 {
-	InteractActor = nullptr;
+	InteractTarget = nullptr;
 
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)

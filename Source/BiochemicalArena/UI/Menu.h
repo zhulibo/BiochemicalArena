@@ -2,8 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
-#include "Common/ConfirmScreen.h"
 #include "Menu.generated.h"
+
+enum class EMsgResult : uint8;
 
 UCLASS()
 class BIOCHEMICALARENA_API UMenu : public UCommonActivatableWidget
@@ -24,8 +25,6 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* QuitButton;
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UConfirmScreen> ConfirmScreenClass;
 	void OnQuitButtonClicked();
 	void Quit(EMsgResult MsgResult);
 

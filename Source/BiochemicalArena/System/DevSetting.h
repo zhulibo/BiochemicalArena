@@ -14,6 +14,20 @@ public:
 	TArray<FSoftObjectPath> EditorMaps;
 	
 	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
-	int32 MutateClientIndex = 1;
+	bool bUseDevSettings = true;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	int32 TotalRound = 3;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	float WarmupTime = 3.f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	float RoundTime = 60.f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	float MutateTime = 5.f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	float PostRoundTime = 3.f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	float CooldownTime = 3.f;
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Mutation", meta=(AllowedClasses="/Script/Engine.World"))
+	int32 MutateClientIndex = 2;
 
 };

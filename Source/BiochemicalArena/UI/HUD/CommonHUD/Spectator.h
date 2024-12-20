@@ -12,7 +12,9 @@ class BIOCHEMICALARENA_API USpectator : public UCommonUserWidget
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	class UCommonButton* ViewPrevButton;
+	class UCommonButton* SwitchPerspectiveButton;
+	UPROPERTY(meta = (BindWidget))
+	UCommonButton* ViewPrevButton;
 	UPROPERTY(meta = (BindWidget))
 	UCommonButton* ViewNextButton;
 

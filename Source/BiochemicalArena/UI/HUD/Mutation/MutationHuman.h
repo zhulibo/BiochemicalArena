@@ -36,5 +36,6 @@ protected:
 	FTimerHandle DamageIconTimerHandle;
 	void ClearDamageIcon();
 	void OnDamageMulChange(float TempDamageMul);
+	void OnBeImmune();
 
 };

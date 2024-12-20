@@ -4,12 +4,19 @@
 #include "BiochemicalArena/PlayerStates/TeamDeadMatchPlayerState.h"
 #include "BiochemicalArena/GameStates/TeamDeadMatchGameState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/System/DevSetting.h"
 
 void ATeamDeadMatchMode::BeginPlay()
 {
 	Super::BeginPlay();
 
-	TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
+	if (GetWorld()->WorldType == EWorldType::PIE)
+	{
+		if (GetDefault<UDevSetting>()->bUseDevSettings)
+		{
+			WarmupTime = GetDefault<UDevSetting>()->WarmupTime;
+		}
+	}
 }
 
 void ATeamDeadMatchMode::Tick(float DeltaSeconds)
@@ -37,7 +44,7 @@ void ATeamDeadMatchMode::Tick(float DeltaSeconds)
 	// 比赛后
 	else if (MatchState == MatchState::WaitingPostMatch)
 	{
-		CountdownTime = LevelStartTime + CooldownTime + WarmupTime + MatchTime - GetWorld()->GetTimeSeconds();
+		CountdownTime = MatchEndTime + CooldownTime - GetWorld()->GetTimeSeconds();
 		if (CountdownTime <= 0.f)
 		{
 			StartToLeaveMap();
@@ -52,6 +59,14 @@ void ATeamDeadMatchMode::EndMatch()
 
 	// 比赛时间结束时结束监视比赛状态
 	bWatchMatchState = false;
+	
+	if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
+	if (TeamDeadMatchGameState)
+	{
+		TeamDeadMatchGameState->bCanSpectate = false;
+	}
+
+	MatchEndTime = GetWorld()->GetTimeSeconds();
 
 	Super::EndMatch();
 }
@@ -86,6 +101,14 @@ void ATeamDeadMatchMode::HandleMatchHasStarted()
 
 	// 角色生成后开始监视比赛状态
 	bWatchMatchState = true;
+
+	GetWorld()->GetTimerManager().SetTimer(ChangeLobbyStatusTimerHandle, this, &ThisClass::HandleChangeLobbyStatus,60.f, true);
+
+	if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
+	if (TeamDeadMatchGameState)
+	{
+		TeamDeadMatchGameState->bCanSpectate = true;
+	}
 }
 
 void ATeamDeadMatchMode::HandleSpawn(AController* Controller)
@@ -93,7 +116,8 @@ void ATeamDeadMatchMode::HandleSpawn(AController* Controller)
 	if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
 	if (TeamDeadMatchGameState)
 	{
-		ETeam Team = TeamDeadMatchGameState->GetTeam(ETeam::Team1).Num() > TeamDeadMatchGameState->GetTeam(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
+		// TODO 从EOS中获得队伍
+		ETeam Team = TeamDeadMatchGameState->GetPlayerStates(ETeam::Team1).Num() > TeamDeadMatchGameState->GetPlayerStates(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
 		AssignTeam(Controller, Team);
 	}
 
@@ -171,4 +195,11 @@ void ATeamDeadMatchMode::HumanRespawn(ACharacter* Character, AController* Contro
 
 		SpawnHumanCharacter(Controller);
 	}
+}
+
+void ATeamDeadMatchMode::HandleChangeLobbyStatus()
+{
+	float Time = GetWorld()->GetTimeSeconds() - LevelStartTime - WarmupTime;
+	int64 Minute = Time / 60 + 1;
+	ChangeLobbyStatus(Minute);
 }

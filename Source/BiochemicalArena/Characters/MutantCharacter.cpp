@@ -12,10 +12,10 @@
 #include "BiochemicalArena/Abilities/GameplayAbilityBase.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Equipments/Data/DamageTypeMutantDamage.h"
-#include "BiochemicalArena/GameModes/BaseMode.h"
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
+#include "BiochemicalArena/PlayerStates/MutationPlayerState.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Components/CapsuleComponent.h"
@@ -24,6 +24,7 @@
 #include "Data/InputMutant.h"
 #include "Data/MutantCommon.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 #define LOCTEXT_NAMESPACE "AMutantCharacter"
 
@@ -36,7 +37,7 @@ AMutantCharacter::AMutantCharacter()
 	MutantState = EMutantState::Ready;
 
 	RightHandCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("RightHandCapsule"));
-	RightHandCapsule->SetupAttachment(GetMesh(), "RightHandCapsule");
+	RightHandCapsule->SetupAttachment(GetMesh(), TEXT("RightHandCapsule"));
 	RightHandCapsule->SetGenerateOverlapEvents(true);
 	RightHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	RightHandCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -44,7 +45,7 @@ AMutantCharacter::AMutantCharacter()
 	RightHandCapsule->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnRightHandCapsuleOverlap);
 
 	LeftHandCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("LeftHandCapsule"));
-	LeftHandCapsule->SetupAttachment(GetMesh(), "LeftHandCapsule");
+	LeftHandCapsule->SetupAttachment(GetMesh(), TEXT("LeftHandCapsule"));
 	LeftHandCapsule->SetGenerateOverlapEvents(true);
 	LeftHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	LeftHandCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
@@ -55,6 +56,8 @@ AMutantCharacter::AMutantCharacter()
 void AMutantCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ThisClass, bSuckedDry);
 }
 
 void AMutantCharacter::PostInitializeComponents()
@@ -66,17 +69,12 @@ void AMutantCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(MutantCharacterName));
+	FDataRegistryId DataRegistryId(DR_MUTANT_CHARACTER_MAIN, FName(EnumValue));
+	if (const FMutantCharacterMain* MutantCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
 	{
-		FString EnumValue = UEnum::GetValueAsString(MutantCharacterName);
-		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-
-		FDataRegistryId DataRegistryId(DR_MUTANT_CHARACTER_MAIN, FName(EnumValue));
-		if (const FMutantCharacterMain* MutantCharacterMain = DRSubsystem->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
-		{
-			LightAttackDamage = MutantCharacterMain->LightAttackDamage;
-			HeavyAttackDamage = MutantCharacterMain->HeavyAttackDamage;
-		}
+		LightAttackDamage = MutantCharacterMain->LightAttackDamage;
+		HeavyAttackDamage = MutantCharacterMain->HeavyAttackDamage;
 	}
 
 	if (HasAuthority())
@@ -88,24 +86,25 @@ void AMutantCharacter::BeginPlay()
 void AMutantCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	if (InputMutant == nullptr) return;
+	
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputMutant == nullptr) return;
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			Subsystem->AddMappingContext(InputMutant->MutantMappingContext, 1);
+			Subsystem->AddMappingContext(AssetSubsystem->InputMutant->MutantMappingContext, 200);
 		}
 	}
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(InputMutant->LightAttackAction, ETriggerEvent::Started, this, &ThisClass::LightAttackButtonPressed);
-		EnhancedInputComponent->BindAction(InputMutant->LightAttackAction, ETriggerEvent::Completed, this, &ThisClass::LightAttackButtonReleased);
-		EnhancedInputComponent->BindAction(InputMutant->HeavyAttackAction, ETriggerEvent::Started, this, &ThisClass::HeavyAttackButtonPressed);
-		EnhancedInputComponent->BindAction(InputMutant->HeavyAttackAction, ETriggerEvent::Completed, this, &ThisClass::HeavyAttackButtonReleased);
-		EnhancedInputComponent->BindAction(InputMutant->SkillAction, ETriggerEvent::Triggered, this, &ThisClass::SkillButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->LightAttackAction, ETriggerEvent::Started, this, &ThisClass::LightAttackButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->LightAttackAction, ETriggerEvent::Completed, this, &ThisClass::LightAttackButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->HeavyAttackAction, ETriggerEvent::Started, this, &ThisClass::HeavyAttackButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->HeavyAttackAction, ETriggerEvent::Completed, this, &ThisClass::HeavyAttackButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->SkillAction, ETriggerEvent::Triggered, this, &ThisClass::SkillButtonPressed);
 	}
 }
 
@@ -131,11 +130,12 @@ void AMutantCharacter::PossessedBy(AController* NewController)
 		if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 		if (AssetSubsystem && AssetSubsystem->MutantCommon)
 		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->MutantCommon->ChangeMutantAbility));
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->MutantCommon->MutantChangeAbility));
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->MutantCommon->MutantRestoreAbility));
 
-			if (SpawnReason != ESpawnReason::SelectMutant)
+			if (SpawnMutantReason != ESpawnMutantReason::SelectMutant)
 			{
-				AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->MutantCommon->ChangeMutantAbility);
+				AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->MutantCommon->MutantChangeAbility);
 			}
 		}
 	}
@@ -143,21 +143,45 @@ void AMutantCharacter::PossessedBy(AController* NewController)
 
 bool AMutantCharacter::CanInteract()
 {
-	return !bSuckedDry;
+	return bIsDead && !bSuckedDry;
 }
 
 void AMutantCharacter::OnInteract(ABaseCharacter* BaseCharacter)
 {
-	if (AHumanCharacter* InteractCharacter = Cast<AHumanCharacter>(BaseCharacter))
+	if (IInteractableTarget* Interactor = Cast<IInteractableTarget>(BaseCharacter))
 	{
-		bSuckedDry = true;
+		// 交互目标本地立即响应交互事件
+		SetIsSuckedDry(bSuckedDry);
 
-		InteractCharacter->bIsImmune = true;
+		// 通知交互者交互成功
+		Interactor->OnInteractMutantSuccess(this);
+	}
+}
 
-		if (AMutationController* InteractController = Cast<AMutationController>(BaseCharacter->GetController()))
-		{
-			InteractController->OnImmune.Broadcast();
-		}
+void AMutantCharacter::OnInteractOnServer()
+{
+	SetIsSuckedDry(true);
+}
+
+void AMutantCharacter::SetIsSuckedDry(bool TempBSuckedDry)
+{
+	bSuckedDry = TempBSuckedDry;
+
+	SetDeadMaterial();
+}
+
+void AMutantCharacter::OnRep_bSuckedDry()
+{
+	SetDeadMaterial();
+}
+
+// 使皮肤变黑
+void AMutantCharacter::SetDeadMaterial()
+{
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem && AssetSubsystem->MutantCommon)
+	{
+		GetMesh()->SetOverlayMaterial(AssetSubsystem->MutantCommon->MI_Overlay_Dead);
 	}
 }
 
@@ -206,32 +230,76 @@ void AMutantCharacter::SkillButtonPressed(const FInputActionValue& Value)
 	}
 }
 
-void AMutantCharacter::UnPossessed()
-{
-	Super::UnPossessed();
-
-	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-	if (BaseController)
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer()))
-		{
-			if (InputBase) Subsystem->RemoveMappingContext(InputBase->BaseMappingContext);
-			if (InputMutant) Subsystem->RemoveMappingContext(InputMutant->MutantMappingContext);
-		}
-	}
-}
-
 void AMutantCharacter::Destroyed()
 {
 	if (AbilitySystemComponent)
 	{
-		if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(SkillAbility))
-		{
-			AbilitySystemComponent->CancelAbility(Spec->Ability);
-		}
+		AbilitySystemComponent->CancelAllAbilities();
 	}
 
 	Super::Destroyed();
+}
+
+void AMutantCharacter::MoveStarted(const FInputActionValue& Value)
+{
+	Super::MoveStarted(Value);
+
+	EndRestoreAbility();
+}
+
+void AMutantCharacter::MoveCompleted(const FInputActionValue& Value)
+{
+	Super::MoveCompleted(Value);
+
+	// 血量不满，激活回血技能。
+	if (GetHealth() < GetMaxHealth())
+	{
+		GetWorldTimerManager().SetTimer(StillTimerHandle, this, &ThisClass::ActivateRestoreAbility, 5.f);
+	}
+}
+
+void AMutantCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
+{
+	Super::OnHealthChanged(Data);
+
+	// 血量回满，结束回血技能
+	if (IsLocallyControlled() && Data.NewValue >= GetMaxHealth())
+	{
+		EndRestoreAbility();
+	}
+}
+
+// 回复血量
+void AMutantCharacter::ActivateRestoreAbility()
+{
+	if (AbilitySystemComponent)
+	{
+		bHasActivateRestoreAbility = true;
+		AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->MutantCommon->MutantRestoreAbility);
+	}
+}
+
+// 停止回复血量
+void AMutantCharacter::EndRestoreAbility()
+{
+	if (StillTimerHandle.IsValid())
+	{
+		GetWorldTimerManager().ClearTimer(StillTimerHandle);
+	}
+
+	if (bHasActivateRestoreAbility)
+	{
+		if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+		if (AbilitySystemComponent && AssetSubsystem && AssetSubsystem->MutantCommon)
+		{
+			if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AssetSubsystem->MutantCommon->MutantRestoreAbility))
+			{
+				bHasActivateRestoreAbility = false;
+
+				AbilitySystemComponent->CancelAbility(Spec->Ability);
+			}
+		}
+	}
 }
 
 void AMutantCharacter::LightAttackButtonPressed(const FInputActionValue& Value)
@@ -344,19 +412,9 @@ void AMutantCharacter::LeftHandAttackEnd()
 	LeftHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-// TODO 不在服务端视线内有时没有碰撞
 void AMutantCharacter::OnRightHandCapsuleOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// if (HasAuthority())
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("OnLeftHandCapsuleOverlap 3"));
-	// }
-	// else
-	// {
-	// 	UE_LOG(LogTemp, Warning, TEXT("OnLeftHandCapsuleOverlap 2"));
-	// }
-
 	if (!RightHandHitEnemies.Contains(OtherActor))
 	{
 		RightHandHitEnemies.Add(OtherActor);
@@ -365,18 +423,9 @@ void AMutantCharacter::OnRightHandCapsuleOverlap(UPrimitiveComponent* Overlapped
 
 		DropBlood(OverlappedComponent, OtherActor, OtherComp, Damage);
 
-		if (HasAuthority())
+		if (IsLocallyControlled())
 		{
-			// 造成伤害
-			UGameplayStatics::ApplyDamage(OtherActor, Damage, Controller, this, UDamageTypeMutantDamage::StaticClass());
-
-			// 造成感染
-			AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
-			if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-			if (HumanCharacter && BaseController)
-			{
-				HumanCharacter->GetInfect(this, BaseController, MutantState);
-			}
+			ServerApplyDamage(OtherActor, Damage);
 		}
 	}
 }
@@ -392,18 +441,33 @@ void AMutantCharacter::OnLeftHandCapsuleOverlap(UPrimitiveComponent* OverlappedC
 
 		DropBlood(OverlappedComponent, OtherActor, OtherComp, Damage);
 
-		if (HasAuthority())
+		if (IsLocallyControlled())
 		{
-			// 造成伤害
-			UGameplayStatics::ApplyDamage(OtherActor, Damage, Controller, this, UDamageTypeMutantDamage::StaticClass());
+			ServerApplyDamage(OtherActor, Damage);
+		}
+	}
+}
 
-			// 造成感染
-			AHumanCharacter* HumanCharacter = Cast<AHumanCharacter>(OtherActor);
-			if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
-			if (HumanCharacter && BaseController)
-			{
-				HumanCharacter->GetInfect(this, BaseController, MutantState);
-			}
+void AMutantCharacter::ServerApplyDamage_Implementation(AActor* OtherActor, float Damage)
+{
+	if (OtherActor == nullptr) return;
+	
+	// 判断Overlap对象不是人类退出（Human变为Mutant时，Team可能未同步到本地，会发生Overlap）。
+	AHumanCharacter* DamagedCharacter = Cast<AHumanCharacter>(OtherActor);
+	if (DamagedCharacter == nullptr) return;
+
+	// 造成伤害
+	UGameplayStatics::ApplyDamage(OtherActor, Damage, Controller, this, UDamageTypeMutantDamage::StaticClass());
+
+	// 造成感染
+	if (!DamagedCharacter->IsDead() && !DamagedCharacter->IsImmune())
+	{
+		ABaseController* DamagedController = Cast<ABaseController>(DamagedCharacter->Controller);
+		if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+		if (MutationMode == nullptr) MutationMode = GetWorld()->GetAuthGameMode<AMutationMode>();
+		if (MutationMode)
+		{
+			MutationMode->GetInfect(DamagedCharacter, DamagedController, this, BaseController, MutantState);
 		}
 	}
 }
@@ -454,13 +518,13 @@ void AMutantCharacter::MutantReceiveDamage(AActor* DamagedActor, float Damage, c
 {
 	if (bIsDead) return;
 
-	if (BaseMode == nullptr) BaseMode = GetWorld()->GetAuthGameMode<ABaseMode>();
-	if (BaseMode)
+	if (MutationMode == nullptr) MutationMode = GetWorld()->GetAuthGameMode<AMutationMode>();
+	if (MutationMode)
 	{
 		if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 		if (BaseController)
 		{
-			BaseMode->MutantReceiveDamage(this, BaseController, Damage, DamageType, AttackerController, DamageCauser);
+			MutationMode->MutantReceiveDamage(this, BaseController, Damage, DamageType, AttackerController, DamageCauser);
 		}
 	}
 }
@@ -478,23 +542,47 @@ void AMutantCharacter::MulticastDead_Implementation(bool bKilledByMelee)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetSimulatePhysics(true);
 	GetMesh()->SetEnableGravity(true);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	RightHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	LeftHandCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	FTimerHandle TimerHandle;
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindWeakLambda(this, [this, bKilledByMelee]() {
+		this->MutantRespawn(bKilledByMelee);
+	});
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, 3.f, false);
+}
+
+void AMutantCharacter::MutantRespawn(bool bKilledByMelee)
+{
+	// 移除绑定（没有写到UnPossessed里是因为，Character不销毁的话不触发本地客户端的UnPossessed）
+	RemoveMappingContext();
 
 	// 重生
 	if (HasAuthority())
 	{
-		FTimerHandle TimerHandle;
-		FTimerDelegate TimerDelegate;
-		TimerDelegate.BindWeakLambda(this, [this, bKilledByMelee]() {
-			if (MutationMode == nullptr) MutationMode = GetWorld()->GetAuthGameMode<AMutationMode>();
-			if (MutationMode)
-			{
-				MutationMode->MutantRespawn(this, BaseController, bKilledByMelee);
-			}
-		});
-		GetWorldTimerManager().SetTimer(TimerHandle, TimerDelegate, 3.f, false);
+		if (MutationMode == nullptr) MutationMode = GetWorld()->GetAuthGameMode<AMutationMode>();
+		if (MutationMode)
+		{
+			MutationMode->MutantRespawn(this, BaseController, bKilledByMelee);
+		}
+	}
+}
+
+void AMutantCharacter::RemoveMappingContext()
+{
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr || AssetSubsystem->InputMutant == nullptr) return;
+	
+	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
+	if (BaseController)
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer()))
+		{
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputBase->BaseMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputMutant->MutantMappingContext);
+		}
 	}
 }
 
@@ -521,6 +609,19 @@ void AMutantCharacter::MulticastRepel_Implementation(FVector ImpulseVector)
 	RootMotionSource->Duration = 0.1f;
 	RootMotionSource->AccumulateMode = ERootMotionAccumulateMode::Additive;
 	GetCharacterMovement()->ApplyRootMotionSource(RootMotionSource);
+}
+
+void AMutantCharacter::OnInteractMutantSuccess(AMutantCharacter* MutantCharacter)
+{
+	ServerOnSuck(MutantCharacter);
+}
+
+void AMutantCharacter::ServerOnSuck_Implementation(AMutantCharacter* MutantCharacter)
+{
+	if (AMutationPlayerState* MutationPlayerState = GetPlayerState<AMutationPlayerState>())
+	{
+		MutationPlayerState->SetRage(MutationPlayerState->GetRage() + 2000.f);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

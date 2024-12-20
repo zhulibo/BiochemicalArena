@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "5.4",
+	"EngineAssociation": "{87FD273F-4C3C-535E-FB3A-E0A0BDF2E2AF}",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -9,12 +9,6 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
-				"Engine",
-				"UMG",
-				"CommonUI",
-				"GameplayAbilities",
-				"CoreUObject",
-				"DataRegistry",
 				"DeveloperSettings"
 			]
 		},
@@ -41,11 +35,15 @@
 			"Enabled": true
 		},
 		{
-			"Name": "Chooser",
+			"Name": "OnlineServices",
 			"Enabled": true
 		},
 		{
-			"Name": "SkeletalMeshModelingTools",
+			"Name": "DataRegistry",
+			"Enabled": true
+		},
+		{
+			"Name": "Chooser",
 			"Enabled": true
 		},
 		{
@@ -55,19 +53,6 @@
 		{
 			"Name": "NiagaraFluids",
 			"Enabled": true
-		},
-		{
-			"Name": "CommonOnlineServices",
-			"Enabled": false
-		},
-		{
-			"Name": "Fab",
-			"Enabled": false,
-			"SupportedTargetPlatforms": [
-				"Win64",
-				"Mac",
-				"Linux"
-			]
 		}
 	]
 }

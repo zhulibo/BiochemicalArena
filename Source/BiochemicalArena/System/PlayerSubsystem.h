@@ -31,10 +31,14 @@ public:
 	// UMG会在关卡切换时销毁，待新关卡Viewport加载后再显示登录通知。
 	void ShowLoginNotify();
 
+	bool IsDead = false;
+	void SetIsDead();
+	void SetIsAlive();
+
 protected:
 	UPROPERTY()
 	UEOSSubsystem* EOSSubsystem;
-	
+
 	void OnLoginComplete(bool bWasSuccessful);
 	void OnLoginStatusChanged(const FAuthLoginStatusChanged& AuthLoginStatusChanged);
 	

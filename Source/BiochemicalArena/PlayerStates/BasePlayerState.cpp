@@ -5,6 +5,7 @@
 #include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
 #include "BiochemicalArena/Abilities/AttributeSetBase.h"
 #include "BiochemicalArena/Characters/Components/OverheadWidget.h"
+#include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/System/Storage/DefaultConfig.h"
 #include "BiochemicalArena/System/Storage/SaveGameLoadout.h"
@@ -60,8 +61,8 @@ void ABasePlayerState::BeginPlay()
 		{
 			if (EOSSubsystem->GetAccountId().IsValid())
 			{
-				ServerSetAccountId(FUniqueNetIdRepl(EOSSubsystem->GetAccountId()));
-			}
+				// ServerSetAccountId(FUniqueNetIdRepl(EOSSubsystem->GetAccountId()));
+			}											
 		}
 	}
 
@@ -75,13 +76,23 @@ void ABasePlayerState::Reset()
 	InitData();
 }
 
+void ABasePlayerState::Destroyed()
+{
+	// 移除PlayerState
+	if (HasAuthority())
+	{
+		if (ABaseGameState* BaseGameState = GetWorld()->GetGameState<ABaseGameState>())
+		{
+			BaseGameState->RemoveFromPlayerStates(this, Team);
+		}
+	}
+
+	Super::Destroyed();
+}
+
 // 初始化数据
 void ABasePlayerState::InitData()
 {
-	if (AttributeSetBase && GetCharacterLevel() != 2.f)
-	{
-		AttributeSetBase->SetCharacterLevel(2.f);
-	}
 }
 
 UAbilitySystemComponent* ABasePlayerState::GetAbilitySystemComponent() const
@@ -160,8 +171,10 @@ void ABasePlayerState::InitOverheadWidget()
 			{
 				if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
 				{
-					OverheadWidgetClass->InitOverheadWidget();
-					return;
+					if (IsValid(OverheadWidgetClass))
+					{
+						OverheadWidgetClass->InitOverheadWidget();
+					}
 				}
 			}
 		}
@@ -178,14 +191,17 @@ void ABasePlayerState::InitOverheadWidget()
 					{
 						if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
 						{
-							OverheadWidgetClass->InitOverheadWidget();
+							if (IsValid(OverheadWidgetClass))
+							{
+								OverheadWidgetClass->InitOverheadWidget();
+							}
 						}
 					}
 				}
 			}
-
-			return;
 		}
+		
+		return;
 	}
 
 	GetWorldTimerManager().SetTimerForNextTick([this]() {

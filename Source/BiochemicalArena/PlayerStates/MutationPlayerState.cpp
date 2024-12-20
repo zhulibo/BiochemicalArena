@@ -1,6 +1,8 @@
 #include "MutationPlayerState.h"
 
 #include "BiochemicalArena/Abilities/AttributeSetBase.h"
+#include "BiochemicalArena/Abilities/BAAbilitySystemComponent.h"
+#include "BiochemicalArena/Characters/MutantCharacter.h"
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "Net/UnrealNetwork.h"
 
@@ -86,22 +88,45 @@ void AMutationPlayerState::SetRage(float TempRage)
 
 	if (AttributeSetBase)
 	{
-		if (Rage >= 8000.f && Rage < 14000.f)
+		if (Rage >= 6000.f && Rage < 12000.f)
 		{
 			if (GetCharacterLevel() < 2.f)
 			{
 				AttributeSetBase->SetCharacterLevel(2.f);
+
+				ApplyLevelUpEffect();
 			}
 		}
-		else if (Rage >= 14000.f)
+		else if (Rage >= 12000.f)
 		{
 			if (GetCharacterLevel() < 3.f)
 			{
 				AttributeSetBase->SetCharacterLevel(3.f);
+
+				ApplyLevelUpEffect();
 			}
 		}
 	}
 
+	SetHUDRage();
+}
+
+void AMutationPlayerState::ApplyLevelUpEffect()
+{
+	if (AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetPawn()))
+	{
+		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
+		EffectContext.AddSourceObject(this);
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(MutantCharacter->LevelUpEffect, GetCharacterLevel(), EffectContext);
+		if (SpecHandle.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), AbilitySystemComponent);
+		}
+	}
+}
+
+void AMutationPlayerState::SetHUDRage()
+{
 	if (MutationController == nullptr) MutationController = Cast<AMutationController>(GetOwner());
 	if (MutationController && MutationController->IsLocalController())
 	{

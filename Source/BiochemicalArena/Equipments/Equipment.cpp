@@ -13,6 +13,7 @@
 #include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 
 AEquipment::AEquipment()
 {
@@ -57,18 +58,13 @@ void AEquipment::BeginPlay()
 
 	SetReplicateMovement(true);
 
-	if (UDataRegistrySubsystem* DRSubsystem = UDataRegistrySubsystem::Get())
+	FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(EquipmentName));
+	FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, FName(EnumValue));
+	if (const FEquipmentMain* EquipmentMain = UDataRegistrySubsystem::Get()->GetCachedItem<FEquipmentMain>(DataRegistryId))
 	{
-		FString EnumValue = UEnum::GetValueAsString(EquipmentName);
-		EnumValue = EnumValue.Right(EnumValue.Len() - EnumValue.Find("::") - 2);
-
-		FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, FName(EnumValue));
-		if (const FEquipmentMain* EquipmentMain = DRSubsystem->GetCachedItem<FEquipmentMain>(DataRegistryId))
-		{
-			EquipmentParentName = EquipmentMain->EquipmentParentName;
-			EquipmentCate = EquipmentMain->EquipmentCate;
-			EquipmentType = EquipmentMain->EquipmentType;
-		}
+		EquipmentParentName = EquipmentMain->EquipmentParentName;
+		EquipmentCate = EquipmentMain->EquipmentCate;
+		EquipmentType = EquipmentMain->EquipmentType;
 	}
 }
 

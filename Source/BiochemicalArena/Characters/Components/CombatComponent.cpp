@@ -17,6 +17,7 @@
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Sound/SoundCue.h"
 
 UCombatComponent::UCombatComponent()
@@ -258,16 +259,16 @@ void UCombatComponent::AttachToBodySocket(AEquipment* Equipment)
 	switch (Equipment->GetEquipmentType())
 	{
 	case EEquipmentType::Primary:
-		BodySocketName = FName("Shoulder_R");
+		BodySocketName = TEXT("Shoulder_R");
 		break;
 	case EEquipmentType::Secondary:
-		BodySocketName = FName("Thigh_R");
+		BodySocketName = TEXT("Thigh_R");
 		break;
 	case EEquipmentType::Melee:
-		BodySocketName = FName("Shoulder_L");
+		BodySocketName = TEXT("Shoulder_L");
 		break;
 	case EEquipmentType::Throwing:
-		BodySocketName = FName("Thigh_L");
+		BodySocketName = TEXT("Thigh_L");
 		break;
 	}
 
@@ -450,25 +451,21 @@ void UCombatComponent::FinishSwap()
 
 void UCombatComponent::AttachToRightHand(AEquipment* Equipment)
 {
-	AttachToHand(Equipment, "_R");
+	AttachToHand(Equipment, FString(TEXT("_R")));
 }
 
 void UCombatComponent::AttachToLeftHand(AEquipment* Equipment)
 {
-	AttachToHand(Equipment, "_L");
+	AttachToHand(Equipment, FString(TEXT("_L")));
 }
 
 void UCombatComponent::AttachToHand(AEquipment* Equipment, FString SocketNameSuffix)
 {
 	if (HumanCharacter == nullptr || HumanCharacter->GetMesh() == nullptr || Equipment == nullptr || SocketNameSuffix.IsEmpty()) return;
 
-	EEquipmentName TempEquipmentName = Equipment->GetEquipmentParentName() == EEquipmentName::NONE ?
-		Equipment->GetEquipmentName() : Equipment->GetEquipmentParentName();
-	FString EquipmentName = UEnum::GetValueAsString(TempEquipmentName);
-	EquipmentName = EquipmentName.Right(EquipmentName.Len() - EquipmentName.Find("::") - 2) + SocketNameSuffix;
+	FString EquipmentName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Equipment->GetEquipmentParentName())) + SocketNameSuffix;
 
-	const USkeletalMeshSocket* HandSocket = HumanCharacter->GetMesh()->GetSocketByName(*EquipmentName);
-	if (HandSocket)
+	if (const USkeletalMeshSocket* HandSocket = HumanCharacter->GetMesh()->GetSocketByName(*EquipmentName))
 	{
 		HandSocket->AttachActor(Equipment, HumanCharacter->GetMesh());
 	}
@@ -723,11 +720,11 @@ void UCombatComponent::JumpToShotgunEnd()
 	if (HumanAnimInstance == nullptr) HumanAnimInstance = Cast<UHumanAnimInstance>(HumanCharacter->GetMesh()->GetAnimInstance());
 	if (HumanAnimInstance && GetCurShotEquipment())
 	{
-		HumanAnimInstance->Montage_JumpToSection(FName("ReloadEnd"));
+		HumanAnimInstance->Montage_JumpToSection(TEXT("ReloadEnd"));
 
 		if (GetCurShotEquipment()->GetEquipmentAnimInstance())
 		{
-			GetCurShotEquipment()->GetEquipmentAnimInstance()->Montage_JumpToSection(FName("ReloadEnd"));
+			GetCurShotEquipment()->GetEquipmentAnimInstance()->Montage_JumpToSection(TEXT("ReloadEnd"));
 		}
 	}
 }

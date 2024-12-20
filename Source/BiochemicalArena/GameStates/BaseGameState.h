@@ -18,9 +18,9 @@ class BIOCHEMICALARENA_API ABaseGameState : public AGameState
 	GENERATED_BODY()
 
 public:
-	virtual void AddToTeam(ABasePlayerState* BasePlayerState, ETeam Team);
-	virtual void RemoveFromTeam(ABasePlayerState* BasePlayerState, ETeam Team);
-	TArray<ABasePlayerState*> GetTeam(ETeam Team);
+	virtual void AddToPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team);
+	virtual void RemoveFromPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team);
+	TArray<ABasePlayerState*> GetPlayerStates(ETeam Team);
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastAddKillLog(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState);
@@ -34,6 +34,9 @@ public:
 	FOnRoundStarted OnRoundStarted;
 	FOnRoundEnded OnRoundEnded;
 
+	UPROPERTY(Replicated)
+	bool bCanSpectate = false;
+
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
@@ -43,13 +46,13 @@ protected:
 	virtual void HandleMatchHasStarted() override;
 	virtual void HandleRoundHasEnded();
 
-	UPROPERTY(ReplicatedUsing = OnRep_Team1)
-	TArray<ABasePlayerState*> Team1;
-	UPROPERTY(ReplicatedUsing = OnRep_Team2)
-	TArray<ABasePlayerState*> Team2;
+	UPROPERTY(ReplicatedUsing = OnRep_Team1PlayerStates)
+	TArray<ABasePlayerState*> Team1PlayerStates;
+	UPROPERTY(ReplicatedUsing = OnRep_Team2PlayerStates)
+	TArray<ABasePlayerState*> Team2PlayerStates;
 	UFUNCTION()
-	virtual void OnRep_Team1() {}
+	virtual void OnRep_Team1PlayerStates() {}
 	UFUNCTION()
-	virtual void OnRep_Team2() {}
-	
+	virtual void OnRep_Team2PlayerStates() {}
+
 };

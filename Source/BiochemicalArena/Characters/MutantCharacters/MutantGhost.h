@@ -11,6 +11,8 @@ class BIOCHEMICALARENA_API AMutantGhost : public AMutantCharacter
 
 public:
 	AMutantGhost();
+	
+	void ShowOverheadWidget(bool bIsShow);
 
 protected:
 	virtual void BeginPlay() override;
@@ -27,5 +29,5 @@ protected:
 
 	virtual void OnAbilitySystemComponentInit() override;
 	void OnJumpZVelocityChanged(const FOnAttributeChangeData& Data);
-
+	
 };

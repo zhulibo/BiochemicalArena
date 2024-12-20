@@ -14,7 +14,7 @@ void UTabGame::NativeOnInitialized()
 
 	// 绑定提示信息切换菜单
 	TArray<UWidget*> Tabs = SettingLeft->GetAllChildren();
-	for (int i = 0; i < Tabs.Num(); i++)
+	for (int i = 0; i < Tabs.Num(); ++i)
 	{
 		if (UCommonButtonBase* TabButton = Cast<UCommonButtonBase>(Tabs[i]))
 		{
@@ -24,15 +24,15 @@ void UTabGame::NativeOnInitialized()
 
 	LanguageComboBox->AddOption("en");
 	LanguageComboBox->AddOption("zh");
-	LanguageComboBox->AddOption("ja");
-	
+	// LanguageComboBox->AddOption("ja");
+
 	ObfuscatePlayerNameComboBox->AddOption("on");
 	ObfuscatePlayerNameComboBox->AddOption("off");
 	ObfuscateTextChatComboBox->AddOption("on");
 	ObfuscateTextChatComboBox->AddOption("off");
 	
 	SetUISavedValue();
-	
+
 	LanguageComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnLanguageChanged);
 	ObfuscatePlayerNameComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnObfuscatePlayerNameChanged);
 	ObfuscateTextChatComboBox->OnSelectionChanged.AddUniqueDynamic(this, &ThisClass::OnObfuscateTextChatChanged);
@@ -48,7 +48,7 @@ UWidget* UTabGame::NativeGetDesiredFocusTarget() const
 void UTabGame::OnTabButtonHovered(int Index)
 {
 	TArray<UWidget*> Contents = SettingRight->GetAllChildren();
-	for (int i = 0; i < Contents.Num(); i++)
+	for (int i = 0; i < Contents.Num(); ++i)
 	{
 		Contents[i]->SetVisibility(i == Index ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
@@ -64,7 +64,7 @@ void UTabGame::SetUISavedValue()
 		{
 			LanguageComboBox->SetSelectedOption(StorageSubsystem->CacheSetting->Language);
 		}
-		
+
 		ObfuscatePlayerNameComboBox->SetSelectedOption(StorageSubsystem->CacheSetting->ObfuscatePlayerName ? "on" : "off");
 		ObfuscateTextChatComboBox->SetSelectedOption(StorageSubsystem->CacheSetting->ObfuscateTextChat ? "on" : "off");
 	}

@@ -22,7 +22,7 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonHierarchicalScrollBox* LoadoutSelectButtonContainer;
 	UFUNCTION()
-	void OnLoadoutSelectButtonClicked(int32 CurLoadoutIndex);
+	void OnLoadoutSelectButtonClicked(int32 LoadoutIndex);
 
 	void CloseMenu(bool bClosePauseMenu);
 

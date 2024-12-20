@@ -196,31 +196,31 @@ void AMutationController::InitHUD()
 
 void AMutationController::InitHumanHUD()
 {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
 	if (MutationGameState == nullptr) MutationGameState = Cast<AMutationGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (BaseCharacter == nullptr) BaseCharacter = Cast<ABaseCharacter>(GetPawn());
 
-	if (MutationGameState && BaseCharacter)
+	if (BaseCharacter && MutationGameState)
 	{
 		SetHUDHealth(BaseCharacter->GetMaxHealth());
 		SetHUDCurrentRound();
-		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team1).Num(), ETeam::Team1);
-		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team2).Num(), ETeam::Team2);
+		SetHUDTeamNum(MutationGameState->GetPlayerStates(ETeam::Team1).Num(), ETeam::Team1);
+		SetHUDTeamNum(MutationGameState->GetPlayerStates(ETeam::Team2).Num(), ETeam::Team2);
 		SetHUDDamageMul(MutationGameState->GetDamageMul());
 	}
 }
 
 void AMutationController::InitMutantHUD()
 {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetPawn());
 	if (MutationGameState == nullptr) MutationGameState = Cast<AMutationGameState>(UGameplayStatics::GetGameState(GetWorld()));
-	if (BaseCharacter == nullptr) BaseCharacter = Cast<ABaseCharacter>(GetPawn());
 	if (MutationPlayerState == nullptr) MutationPlayerState = Cast<AMutationPlayerState>(PlayerState);
 
-	if (MutationGameState && BaseCharacter && MutationPlayerState)
+	if (BaseCharacter && MutationGameState && MutationPlayerState)
 	{
 		SetHUDHealth(BaseCharacter->GetMaxHealth());
 		SetHUDCurrentRound();
-		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team1).Num(), ETeam::Team1);
-		SetHUDTeamNum(MutationGameState->GetTeam(ETeam::Team2).Num(), ETeam::Team2);
+		SetHUDTeamNum(MutationGameState->GetPlayerStates(ETeam::Team1).Num(), ETeam::Team1);
+		SetHUDTeamNum(MutationGameState->GetPlayerStates(ETeam::Team2).Num(), ETeam::Team2);
 		SetHUDRage(MutationPlayerState->GetRage());
 
 		if (MutationPlayerState->GetAbilitySystemComponent())
