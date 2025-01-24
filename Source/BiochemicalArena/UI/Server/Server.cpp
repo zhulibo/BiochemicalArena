@@ -181,8 +181,7 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 			{
 				for (int32 i = 0; i < Lobbies.Num(); ++i)
 				{
-					UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass);
-					if (ServerLineButton)
+					if (UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass))
 					{
 						ServerLineButton->Lobby = Lobbies[i];
 

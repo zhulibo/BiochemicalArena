@@ -2,7 +2,12 @@
 
 #include "BiochemicalArena/Characters/MutantCharacter.h"
 #include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
+#include "MetaSoundSource.h"
+
+AGameplayCue_MutantRestore::AGameplayCue_MutantRestore()
+{
+	bAutoDestroyOnRemove = true;
+}
 
 bool AGameplayCue_MutantRestore::WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters)
 {

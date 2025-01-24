@@ -4,6 +4,11 @@
 #include "NiagaraFunctionLibrary.h"
 #include "BiochemicalArena/Characters/MutantCharacters/MutantSmoker.h"
 
+AGameplayCue_MutantSmokerSkill::AGameplayCue_MutantSmokerSkill()
+{
+	bAutoDestroyOnRemove = true;
+}
+
 bool AGameplayCue_MutantSmokerSkill::WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters)
 {
 	if (MutantSmoker == nullptr) MutantSmoker = Cast<AMutantSmoker>(MyTarget);

@@ -29,7 +29,8 @@ public:
 	float GetCharacterLevel();
 	float GetJumpZVelocity();
 
-	void PlayFootstepSound();
+	void PlayFootSound();
+	void PlayFootLandSound();
 
 	virtual void FellOutOfWorld(const UDamageType& DmgType) override;
 	void SetHealth(float TempHealth);
@@ -139,7 +140,7 @@ protected:
 	virtual void Landed(const FHitResult& Hit) override;
 	float CalcFallDamageRate();
 	UPROPERTY(EditAnywhere)
-	class USoundCue* OuchSound;
+	class UMetaSoundSource* OuchSound;
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastPlayOuchSound(float DamageRate);
 

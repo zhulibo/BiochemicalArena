@@ -3,11 +3,13 @@
 #include "DataRegistryId.h"
 #include "DataRegistrySubsystem.h"
 #include "EquipmentAnimInstance.h"
+#include "MetasoundSource.h"
 #include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
+#include "Components/AudioComponent.h"
 #include "Components/SphereComponent.h"
 #include "Shells/Shell.h"
 #include "Engine/SkeletalMeshSocket.h"
@@ -101,6 +103,17 @@ void AWeapon::Fire(const FVector& HitTarget, float RecoilVert, float RecoilHor)
 	}
 
 	SpendRound();
+
+	// 播放开火机械层声音
+	if (UAudioComponent* AudioComponent = UGameplayStatics::SpawnSoundAttached(MechSound, EquipmentMesh))
+	{
+		float Volume = 1.f;
+		if (Ammo * (60 / FireRate) < 1.f)
+		{
+			Volume = 3.f;
+		}
+		AudioComponent->SetFloatParameter(TEXT("Volume"), Volume);
+	}
 }
 
 void AWeapon::SpendRound()

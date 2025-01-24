@@ -16,7 +16,7 @@ public class BiochemicalArena : ModuleRules
 				"Engine",
 				"InputCore",
 				"EnhancedInput",
-				"OnlineServicesInterface", 
+				"OnlineServicesInterface",
 				"CoreOnline",
 				"CommonInput",
 				"Niagara",
@@ -24,6 +24,7 @@ public class BiochemicalArena : ModuleRules
 				"GameplayTags",
 				"GameplayTasks",
 				"DataRegistry",
+				"MetasoundEngine",
 			}
 		);
 

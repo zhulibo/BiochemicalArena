@@ -15,8 +15,12 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	UPROPERTY()
+	class UAssetSubsystem* AssetSubsystem;
+	
 	UFUNCTION()
 	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 		FVector NormalImpulse, const FHitResult& Hit);
 
+	
 };

@@ -11,14 +11,14 @@
 #include "TimerManager.h"
 #include "..\..\Equipments\Throwing.h"
 #include "BiochemicalArena/Characters/HumanAnimInstance.h"
-#include "BiochemicalArena/Characters/Data/CharacterSound.h"
 #include "BiochemicalArena/Equipments/EquipmentAnimInstance.h"
 #include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/Equipments/Melee.h"
 #include "BiochemicalArena/Equipments/Weapon.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
-#include "Sound/SoundCue.h"
+#include "MetaSoundSource.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentAsset.h"
 
 UCombatComponent::UCombatComponent()
 {
@@ -210,6 +210,13 @@ void UCombatComponent::MulticastEquipEquipment2_Implementation(AEquipment* Equip
 	Equipment->GetEquipmentMesh()->SetVisibility(true);
 
 	LocalEquipEquipment(Equipment);
+
+	// 播放装备音效
+	if (AssetSubsystem == nullptr) AssetSubsystem = HumanCharacter->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem && AssetSubsystem->EquipmentAsset)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->EquipmentAsset->EquipSound, HumanCharacter->GetActorLocation());
+	}
 }
 
 void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
@@ -220,12 +227,6 @@ void UCombatComponent::LocalEquipEquipment(AEquipment* Equipment)
 	Equipment->OnEquip();
 
 	AssignEquipment(Equipment);
-
-	if (AssetSubsystem == nullptr) AssetSubsystem = HumanCharacter->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem && AssetSubsystem->CharacterSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->CharacterSound->EquipSound, HumanCharacter->GetActorLocation());
-	}
 
 	AttachToBodySocket(Equipment);
 }
@@ -566,9 +567,9 @@ bool UCombatComponent::CanFire()
 	{
 		// 播放击锤音效
 		if (AssetSubsystem == nullptr) AssetSubsystem = HumanCharacter->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-		if (AssetSubsystem && AssetSubsystem->CharacterSound)
+		if (AssetSubsystem && AssetSubsystem->EquipmentAsset)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->CharacterSound->ClickSound, HumanCharacter->GetActorLocation());
+			UGameplayStatics::PlaySoundAtLocation(this, AssetSubsystem->EquipmentAsset->ClickSound, HumanCharacter->GetActorLocation());
 		}
 
 		return false;

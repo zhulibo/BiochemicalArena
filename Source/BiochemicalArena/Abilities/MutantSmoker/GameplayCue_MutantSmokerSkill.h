@@ -9,8 +9,9 @@ class BIOCHEMICALARENA_API AGameplayCue_MutantSmokerSkill : public AGameplayCueN
 {
 	GENERATED_BODY()
 
-
 public:
+	AGameplayCue_MutantSmokerSkill();
+	
 	virtual bool WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
 	virtual bool OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
 

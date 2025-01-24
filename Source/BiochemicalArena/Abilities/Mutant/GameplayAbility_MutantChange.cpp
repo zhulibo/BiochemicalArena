@@ -11,7 +11,7 @@ void UGameplayAbility_MutantChange::ActivateAbility(const FGameplayAbilitySpecHa
 
 	UE_LOG(LogTemp, Warning, TEXT("UGameplayAbility_MutantChange::ActivateAbility"));
 
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::TimerEnd, 10.0f);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::TimerEnd, 10.f);
 }
 
 bool UGameplayAbility_MutantChange::CommitAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,

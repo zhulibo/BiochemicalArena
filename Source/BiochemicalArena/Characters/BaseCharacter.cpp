@@ -9,7 +9,7 @@
 #include "..\PlayerStates\TeamType.h"
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
+#include "MetaSoundSource.h"
 #include "CommonInputSubsystem.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -25,9 +25,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/OverheadWidget.h"
 #include "Components/WidgetComponent.h"
-#include "Data/CharacterSound.h"
+#include "Data/CharacterAsset.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Data/InputBase.h"
+#include "Data/InputAsset.h"
 #include "Interfaces/InteractableTarget.h"
 #include "Net/UnrealNetwork.h"
 
@@ -99,45 +99,45 @@ void ABaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr) return;
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			// TODO 调查丢包导致失效
-			Subsystem->AddMappingContext(AssetSubsystem->InputBase->BaseMappingContext, 100);
+			Subsystem->AddMappingContext(AssetSubsystem->InputAsset->BaseMappingContext, 100);
 		}
 	}
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->MoveAction, ETriggerEvent::Started, this, &ThisClass::MoveStarted);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->MoveAction, ETriggerEvent::Completed, this, &ThisClass::MoveCompleted);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->LookStickAction, ETriggerEvent::Triggered, this, &ThisClass::LookStick);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->MoveAction, ETriggerEvent::Started, this, &ThisClass::MoveStarted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->MoveAction, ETriggerEvent::Triggered, this, &ThisClass::Move);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->MoveAction, ETriggerEvent::Completed, this, &ThisClass::MoveCompleted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->LookMouseAction, ETriggerEvent::Triggered, this, &ThisClass::LookMouse);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->LookStickAction, ETriggerEvent::Triggered, this, &ThisClass::LookStick);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->JumpAction, ETriggerEvent::Triggered, this, &ThisClass::JumpButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->CrouchAction, ETriggerEvent::Started, this, &ThisClass::CrouchButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->CrouchAction, ETriggerEvent::Completed, this, &ThisClass::CrouchButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->CrouchControllerAction, ETriggerEvent::Triggered, this, &ThisClass::CrouchControllerButtonPressed);
 		
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Started, this, &ThisClass::InteractStarted);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Ongoing, this, &ThisClass::InteractOngoing);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Triggered, this, &ThisClass::InteractTriggered);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Completed, this, &ThisClass::InteractCompleted);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->InteractAction, ETriggerEvent::Canceled, this, &ThisClass::InteractCanceled);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->InteractAction, ETriggerEvent::Started, this, &ThisClass::InteractStarted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->InteractAction, ETriggerEvent::Ongoing, this, &ThisClass::InteractOngoing);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->InteractAction, ETriggerEvent::Triggered, this, &ThisClass::InteractTriggered);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->InteractAction, ETriggerEvent::Completed, this, &ThisClass::InteractCompleted);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->InteractAction, ETriggerEvent::Canceled, this, &ThisClass::InteractCanceled);
 
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
 
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChangeButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->RadialMenuAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->RadialMenuAction, ETriggerEvent::Completed, this, &ThisClass::RadialMenuButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->RadialMenuChangeAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuChangeButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->RadialMenuSelectAction, ETriggerEvent::Triggered, this, &ThisClass::RadialMenuSelect);
 
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
 	}
 }
 
@@ -368,7 +368,7 @@ float ABaseCharacter::GetJumpZVelocity()
 }
 
 // 根据地形播放不同脚步声
-void ABaseCharacter::PlayFootstepSound()
+void ABaseCharacter::PlayFootSound()
 {
 	FHitResult HitResult;
 	FVector Start = GetActorLocation();
@@ -380,25 +380,56 @@ void ABaseCharacter::PlayFootstepSound()
 
 	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (HitResult.bBlockingHit && AssetSubsystem && AssetSubsystem->CharacterSound)
+	if (HitResult.bBlockingHit && AssetSubsystem && AssetSubsystem->CharacterAsset)
 	{
-		USoundCue* Sound;
+		UMetaSoundSource* Sound = AssetSubsystem->CharacterAsset->FootSound_Concrete;
 		switch (UGameplayStatics::GetSurfaceType(HitResult))
 		{
 		case EPhysicalSurface::SurfaceType1:
-			Sound = AssetSubsystem->CharacterSound->MetalSound;
+			Sound = AssetSubsystem->CharacterAsset->FootSound_Concrete;
 			break;
 		case EPhysicalSurface::SurfaceType2:
-			Sound = AssetSubsystem->CharacterSound->WaterSound;
+			Sound = AssetSubsystem->CharacterAsset->FootSound_Dirt;
 			break;
 		case EPhysicalSurface::SurfaceType3:
-			Sound = AssetSubsystem->CharacterSound->GrassSound;
+			Sound = AssetSubsystem->CharacterAsset->FootSound_Metal;
 			break;
 		case EPhysicalSurface::SurfaceType4:
-			Sound = AssetSubsystem->CharacterSound->MudSound;
+			Sound = AssetSubsystem->CharacterAsset->FootSound_Wood;
 			break;
-		default:
-			Sound = AssetSubsystem->CharacterSound->CommonSound;
+		}
+		UGameplayStatics::PlaySoundAtLocation(this, Sound, HitResult.Location);
+	}
+}
+
+void ABaseCharacter::PlayFootLandSound()
+{
+	FHitResult HitResult;
+	FVector Start = GetActorLocation();
+	FVector End = Start - FVector(0.f, 0.f, 100.f);
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	Params.bReturnPhysicalMaterial = true;
+
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (HitResult.bBlockingHit && AssetSubsystem && AssetSubsystem->CharacterAsset)
+	{
+		UMetaSoundSource* Sound = AssetSubsystem->CharacterAsset->FootLandSound_Concrete;
+		switch (UGameplayStatics::GetSurfaceType(HitResult))
+		{
+		case EPhysicalSurface::SurfaceType1:
+			Sound = AssetSubsystem->CharacterAsset->FootLandSound_Concrete;
+			break;
+		case EPhysicalSurface::SurfaceType2:
+			Sound = AssetSubsystem->CharacterAsset->FootLandSound_Dirt;
+			break;
+		case EPhysicalSurface::SurfaceType3:
+			Sound = AssetSubsystem->CharacterAsset->FootLandSound_Metal;
+			break;
+		case EPhysicalSurface::SurfaceType4:
+			Sound = AssetSubsystem->CharacterAsset->FootLandSound_Wood;
 			break;
 		}
 		UGameplayStatics::PlaySoundAtLocation(this, Sound, HitResult.Location);

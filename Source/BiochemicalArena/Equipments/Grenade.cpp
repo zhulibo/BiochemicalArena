@@ -8,7 +8,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
+#include "MetaSoundSource.h"
 
 AGrenade::AGrenade()
 {

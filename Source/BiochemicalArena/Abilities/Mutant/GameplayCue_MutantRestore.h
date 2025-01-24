@@ -9,15 +9,16 @@ class BIOCHEMICALARENA_API AGameplayCue_MutantRestore : public AGameplayCueNotif
 {
 	GENERATED_BODY()
 
-
 public:
-	void PlaySound();
+	AGameplayCue_MutantRestore();
+
 	virtual bool WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
 	virtual bool OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
 
 protected:
 	UPROPERTY(EditAnywhere)
-	class USoundCue* RestoreSound;
+	class UMetaSoundSource* RestoreSound;
+	void PlaySound();
 
 	UPROPERTY()
 	FTimerHandle TimerHandle;

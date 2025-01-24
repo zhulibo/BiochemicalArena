@@ -2,7 +2,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "BiochemicalArena/Characters/MutantCharacter.h"
-#include "BiochemicalArena/Characters/Data/MutantCommon.h"
+#include "BiochemicalArena/Characters/Data/CharacterAsset.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
 
 UGameplayAbility_MutantRestore::UGameplayAbility_MutantRestore()
@@ -19,11 +19,11 @@ void UGameplayAbility_MutantRestore::ActivateAbility(const FGameplayAbilitySpecH
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(ActorInfo->AvatarActor.Get());
-	if (AssetSubsystem && AssetSubsystem->MutantCommon && ASC && MutantCharacter)
+	if (AssetSubsystem && AssetSubsystem->CharacterAsset && ASC && MutantCharacter)
 	{
 		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 		EffectContext.AddSourceObject(this);
-		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(AssetSubsystem->MutantCommon->MutantRestoreEffect, MutantCharacter->GetCharacterLevel(), EffectContext);
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(AssetSubsystem->CharacterAsset->MutantRestoreEffect, MutantCharacter->GetCharacterLevel(), EffectContext);
 		if (SpecHandle.IsValid())
 		{
 			// 应用技能效果

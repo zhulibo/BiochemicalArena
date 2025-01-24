@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotify.h"
-#include "AN_Footstep.generated.h"
+#include "AN_Foot.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UAN_Footstep : public UAnimNotify
+class BIOCHEMICALARENA_API UAN_Foot : public UAnimNotify
 {
 	GENERATED_BODY()
 

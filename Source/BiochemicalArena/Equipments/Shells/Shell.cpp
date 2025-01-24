@@ -1,8 +1,9 @@
 #include "Shell.h"
 
 #include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "MetaSoundSource.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
 
 AShell::AShell()
 {
@@ -39,9 +40,33 @@ void AShell::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveC
 	{
 		bIsFirstOnHit = false;
 
-		if (ShellSound)
+		FHitResult HitResult;
+		FVector Start = GetActorLocation();
+		FVector End = Start - FVector(0.f, 0.f, 100.f);
+
+		FCollisionQueryParams Params;
+		Params.bReturnPhysicalMaterial = true;
+
+		GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
+		if (HitResult.bBlockingHit)
 		{
-			UGameplayStatics::PlaySoundAtLocation(this, ShellSound, GetActorLocation());
+			UMetaSoundSource* Sound = ShellSound_Concrete;
+			switch (UGameplayStatics::GetSurfaceType(HitResult))
+			{
+			case EPhysicalSurface::SurfaceType1:
+				Sound = ShellSound_Concrete;
+				break;
+			case EPhysicalSurface::SurfaceType2:
+				Sound = ShellSound_Dirt;
+				break;
+			case EPhysicalSurface::SurfaceType3:
+				Sound = ShellSound_Metal;
+				break;
+			case EPhysicalSurface::SurfaceType4:
+				Sound = ShellSound_Wood;
+				break;
+			}
+			UGameplayStatics::PlaySoundAtLocation(this, Sound, HitResult.Location);
 		}
 	}
 }

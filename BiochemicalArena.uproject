@@ -53,6 +53,10 @@
 		{
 			"Name": "NiagaraFluids",
 			"Enabled": true
+		},
+		{
+			"Name": "Soundscape",
+			"Enabled": true
 		}
 	]
 }

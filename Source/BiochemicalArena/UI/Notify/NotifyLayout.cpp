@@ -12,6 +12,8 @@ void UNotifyLayout::NativeConstruct()
 
 void UNotifyLayout::AddNotify(const FColor DisplayColor, const FText& Msg)
 {
+	if (GetWorld()->bIsTearingDown) return;
+
 	UNotifyLineButton* NotifyLineButton = CreateWidget<UNotifyLineButton>(this, NotifyLineButtonClass);
 	if (NotifyLineButton == nullptr) return;
 

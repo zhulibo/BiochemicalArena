@@ -82,6 +82,8 @@ protected:
 	int32 MagCapacity; // 弹匣容量
 	UPROPERTY()
 	int32 Ammo; // 当前弹匣子弹数量
+	UPROPERTY(EditAnywhere)
+	class UMetaSoundSource* MechSound;
 
 	UPROPERTY()
 	float FireRate;

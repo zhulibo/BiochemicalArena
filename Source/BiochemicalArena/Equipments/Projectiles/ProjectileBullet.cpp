@@ -8,11 +8,14 @@
 #include "Components/DecalComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "Sound/SoundCue.h"
+#include "MetaSoundSource.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentAsset.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
 
 AProjectileBullet::AProjectileBullet()
 {
 	CollisionBox->SetBoxExtent(FVector(4.f, 2.f, 2.f));
+	CollisionBox->bReturnMaterialOnMove = true;
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->SetUpdatedComponent(CollisionBox);
@@ -27,7 +30,7 @@ void AProjectileBullet::BeginPlay()
 	Super::BeginPlay();
 
 	SetLifeSpan(1.f);
-
+	
 	CollisionBox->OnComponentHit.AddUniqueDynamic(this, &ThisClass::OnHit);
 }
 
@@ -51,11 +54,6 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 	}
 
 	SetLifeSpan(5.f);
-
-	if (ImpactSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
-	}
 
 	if (TracerEffectComponent)
 	{
@@ -88,6 +86,47 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 			);
 
 			DecalComponent->SetFadeScreenSize(0.004f);
+		}
+	}
+
+	// 播放击中音效
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem && AssetSubsystem->EquipmentAsset)
+	{
+		UMetaSoundSource* ImpactSound = nullptr;
+		if (DamagedActor)
+		{
+			ImpactSound = AssetSubsystem->EquipmentAsset->ImpactSound_Body;
+		}
+		else
+		{
+			if (Hit.PhysMaterial.IsValid())
+			{
+				switch (Hit.PhysMaterial->SurfaceType)
+				{
+				case EPhysicalSurface::SurfaceType1:
+					ImpactSound = AssetSubsystem->EquipmentAsset->ImpactSound_Concrete;
+					break;
+				case EPhysicalSurface::SurfaceType2:
+					ImpactSound = AssetSubsystem->EquipmentAsset->ImpactSound_Dirt;
+					break;
+				case EPhysicalSurface::SurfaceType3:
+					ImpactSound = AssetSubsystem->EquipmentAsset->ImpactSound_Metal;
+					break;
+				case EPhysicalSurface::SurfaceType4:
+					ImpactSound = AssetSubsystem->EquipmentAsset->ImpactSound_Wood;
+					break;
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Hit.PhysMaterial == nullptr"));
+			}
+		}
+
+		if (ImpactSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
 		}
 	}
 }

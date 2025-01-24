@@ -9,8 +9,9 @@ class BIOCHEMICALARENA_API AGameplayCue_MutantGhostSkill : public AGameplayCueNo
 {
 	GENERATED_BODY()
 
-
 public:
+	AGameplayCue_MutantGhostSkill();
+
 	virtual bool WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
 	virtual bool OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters) override;
 

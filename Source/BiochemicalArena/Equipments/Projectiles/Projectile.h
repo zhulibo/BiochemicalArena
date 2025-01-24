@@ -53,8 +53,6 @@ protected:
 	// 击中效果
 	UPROPERTY(EditAnywhere)
 	UNiagaraSystem* ImpactEffect;
-	UPROPERTY(EditAnywhere)
-	class USoundCue* ImpactSound;
 
 	// 弹孔
 	UPROPERTY(EditAnywhere)

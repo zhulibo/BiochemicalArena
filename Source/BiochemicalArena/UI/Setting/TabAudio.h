@@ -18,8 +18,6 @@ class BIOCHEMICALARENA_API UTabAudio : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 
-public:
-
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;

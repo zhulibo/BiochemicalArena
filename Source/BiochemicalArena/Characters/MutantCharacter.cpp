@@ -4,6 +4,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "HumanCharacter.h"
+#include "MetaSoundSource.h"
 #include "MutantAnimInstance.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
@@ -20,9 +21,8 @@
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Data/InputBase.h"
-#include "Data/InputMutant.h"
-#include "Data/MutantCommon.h"
+#include "Data/InputAsset.h"
+#include "Data/CharacterAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
@@ -81,6 +81,8 @@ void AMutantCharacter::BeginPlay()
 	{
 		OnTakeAnyDamage.AddUniqueDynamic(this, &ThisClass::MutantReceiveDamage);
 	}
+
+	UGameplayStatics::SpawnSoundAttached(MutantBornSound, GetMesh());
 }
 
 void AMutantCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -88,23 +90,23 @@ void AMutantCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr || AssetSubsystem->InputMutant == nullptr) return;
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			Subsystem->AddMappingContext(AssetSubsystem->InputMutant->MutantMappingContext, 200);
+			Subsystem->AddMappingContext(AssetSubsystem->InputAsset->MutantMappingContext, 200);
 		}
 	}
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->LightAttackAction, ETriggerEvent::Started, this, &ThisClass::LightAttackButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->LightAttackAction, ETriggerEvent::Completed, this, &ThisClass::LightAttackButtonReleased);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->HeavyAttackAction, ETriggerEvent::Started, this, &ThisClass::HeavyAttackButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->HeavyAttackAction, ETriggerEvent::Completed, this, &ThisClass::HeavyAttackButtonReleased);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputMutant->SkillAction, ETriggerEvent::Triggered, this, &ThisClass::SkillButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->LightAttackAction, ETriggerEvent::Started, this, &ThisClass::LightAttackButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->LightAttackAction, ETriggerEvent::Completed, this, &ThisClass::LightAttackButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->HeavyAttackAction, ETriggerEvent::Started, this, &ThisClass::HeavyAttackButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->HeavyAttackAction, ETriggerEvent::Completed, this, &ThisClass::HeavyAttackButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->SkillAction, ETriggerEvent::Triggered, this, &ThisClass::SkillButtonPressed);
 	}
 }
 
@@ -128,14 +130,14 @@ void AMutantCharacter::PossessedBy(AController* NewController)
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(SkillAbility));
 
 		if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-		if (AssetSubsystem && AssetSubsystem->MutantCommon)
+		if (AssetSubsystem && AssetSubsystem->CharacterAsset)
 		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->MutantCommon->MutantChangeAbility));
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->MutantCommon->MutantRestoreAbility));
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->CharacterAsset->MutantChangeAbility));
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AssetSubsystem->CharacterAsset->MutantRestoreAbility));
 
 			if (SpawnMutantReason != ESpawnMutantReason::SelectMutant)
 			{
-				AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->MutantCommon->MutantChangeAbility);
+				AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->CharacterAsset->MutantChangeAbility);
 			}
 		}
 	}
@@ -179,9 +181,9 @@ void AMutantCharacter::OnRep_bSuckedDry()
 void AMutantCharacter::SetDeadMaterial()
 {
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem && AssetSubsystem->MutantCommon)
+	if (AssetSubsystem && AssetSubsystem->CharacterAsset)
 	{
-		GetMesh()->SetOverlayMaterial(AssetSubsystem->MutantCommon->MI_Overlay_Dead);
+		GetMesh()->SetOverlayMaterial(AssetSubsystem->CharacterAsset->MI_Overlay_Dead);
 	}
 }
 
@@ -272,10 +274,10 @@ void AMutantCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
 // 回复血量
 void AMutantCharacter::ActivateRestoreAbility()
 {
-	if (AbilitySystemComponent)
+	if (AbilitySystemComponent && AssetSubsystem && AssetSubsystem->CharacterAsset)
 	{
 		bHasActivateRestoreAbility = true;
-		AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->MutantCommon->MutantRestoreAbility);
+		AbilitySystemComponent->TryActivateAbilityByClass(AssetSubsystem->CharacterAsset->MutantRestoreAbility);
 	}
 }
 
@@ -290,9 +292,9 @@ void AMutantCharacter::EndRestoreAbility()
 	if (bHasActivateRestoreAbility)
 	{
 		if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-		if (AbilitySystemComponent && AssetSubsystem && AssetSubsystem->MutantCommon)
+		if (AbilitySystemComponent && AssetSubsystem && AssetSubsystem->CharacterAsset)
 		{
-			if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AssetSubsystem->MutantCommon->MutantRestoreAbility))
+			if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AssetSubsystem->CharacterAsset->MutantRestoreAbility))
 			{
 				bHasActivateRestoreAbility = false;
 
@@ -532,7 +534,9 @@ void AMutantCharacter::MutantReceiveDamage(AActor* DamagedActor, float Damage, c
 void AMutantCharacter::MulticastDead_Implementation(bool bKilledByMelee)
 {
 	bIsDead = true;
-
+	
+	EndRestoreAbility();
+	
 	GetCharacterMovement()->DisableMovement();
 	GetCharacterMovement()->StopMovementImmediately();
 
@@ -573,15 +577,15 @@ void AMutantCharacter::MutantRespawn(bool bKilledByMelee)
 void AMutantCharacter::RemoveMappingContext()
 {
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr || AssetSubsystem->InputMutant == nullptr) return;
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 	
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer()))
 		{
-			Subsystem->RemoveMappingContext(AssetSubsystem->InputBase->BaseMappingContext);
-			Subsystem->RemoveMappingContext(AssetSubsystem->InputMutant->MutantMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputAsset->BaseMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputAsset->MutantMappingContext);
 		}
 	}
 }

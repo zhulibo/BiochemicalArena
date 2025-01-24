@@ -51,6 +51,8 @@ protected:
 	class AMutationGameState* MutationGameState;
 	UPROPERTY()
 	class AMutationPlayerState* MutationPlayerState;
+	UPROPERTY()
+	class UAssetSubsystem* AssetSubsystem;
 
 	UFUNCTION(Server, Reliable)
 	void RequestServerMatchInfo();
@@ -86,6 +88,7 @@ protected:
 
 	UFUNCTION()
 	void OnRep_MatchState();
+	UFUNCTION()
 	void HandleMatchStateChange();
 
 	UFUNCTION()

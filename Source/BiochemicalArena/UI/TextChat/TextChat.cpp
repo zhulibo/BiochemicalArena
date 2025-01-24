@@ -119,6 +119,8 @@ void UTextChat::SendMsg()
 
 void UTextChat::ShowMsg(const EMsgType MsgType, const ETeam Team, const FString& PlayerName, const FString& Msg)
 {
+	if (GetWorld()->bIsTearingDown) return;
+
 	UMsgLineButton* MsgLineButton = CreateWidget<UMsgLineButton>(this, MsgLineButtonClass);
 	if (MsgLineButton == nullptr) return;
 

@@ -30,8 +30,7 @@
 #include "Components/RecoilComponent.h"
 #include "Data/CharacterType.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Data/InputBase.h"
-#include "Data/InputHuman.h"
+#include "Data/InputAsset.h"
 #include "Net/UnrealNetwork.h"
 
 #define LOCTEXT_NAMESPACE "AHumanCharacter"
@@ -91,31 +90,31 @@ void AHumanCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr || AssetSubsystem->InputHuman == nullptr) return;
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
-			Subsystem->AddMappingContext(AssetSubsystem->InputHuman->HumanMappingContext, 200);
+			Subsystem->AddMappingContext(AssetSubsystem->InputAsset->HumanMappingContext, 200);
 		}
 	}
 
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->AimAction, ETriggerEvent::Started, this, &ThisClass::AimButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->AimAction, ETriggerEvent::Completed, this, &ThisClass::AimButtonReleased);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->FireAction, ETriggerEvent::Started, this, &ThisClass::FireButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->FireAction, ETriggerEvent::Completed, this, &ThisClass::FireButtonReleased);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->ReloadAction, ETriggerEvent::Triggered, this, &ThisClass::ReloadButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->DropAction, ETriggerEvent::Triggered, this, &ThisClass::DropButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->AimAction, ETriggerEvent::Started, this, &ThisClass::AimButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->AimAction, ETriggerEvent::Completed, this, &ThisClass::AimButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->FireAction, ETriggerEvent::Started, this, &ThisClass::FireButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->FireAction, ETriggerEvent::Completed, this, &ThisClass::FireButtonReleased);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->ReloadAction, ETriggerEvent::Triggered, this, &ThisClass::ReloadButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->DropAction, ETriggerEvent::Triggered, this, &ThisClass::DropButtonPressed);
 
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->SwapPrimaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapPrimaryEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->SwapSecondaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapSecondaryEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->SwapMeleeEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapMeleeEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->SwapThrowingEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapThrowingEquipmentButtonPressed);
-		EnhancedInputComponent->BindAction(AssetSubsystem->InputHuman->SwapLastEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapLastEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->SwapPrimaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapPrimaryEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->SwapSecondaryEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapSecondaryEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->SwapMeleeEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapMeleeEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->SwapThrowingEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapThrowingEquipmentButtonPressed);
+		EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->SwapLastEquipmentAction, ETriggerEvent::Triggered, this, &ThisClass::SwapLastEquipmentButtonPressed);
 	}
 }
 
@@ -127,15 +126,15 @@ void AHumanCharacter::Tick(float DeltaSeconds)
 void AHumanCharacter::UnPossessed()
 {
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr || AssetSubsystem->InputHuman == nullptr) return;
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer()))
 		{
-			Subsystem->RemoveMappingContext(AssetSubsystem->InputBase->BaseMappingContext);
-			Subsystem->RemoveMappingContext(AssetSubsystem->InputHuman->HumanMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputAsset->BaseMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputAsset->HumanMappingContext);
 		}
 	}
 

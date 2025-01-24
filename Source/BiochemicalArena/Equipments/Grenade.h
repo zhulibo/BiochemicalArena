@@ -19,7 +19,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 	UParticleSystem* ExplodeParticle;
 	UPROPERTY(EditAnywhere)
-	class USoundCue* ExplodeSound;
+	class UMetaSoundSource* ExplodeSound;
 
 	UPROPERTY()
 	float Damage = 500.f;

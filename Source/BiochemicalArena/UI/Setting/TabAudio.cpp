@@ -145,10 +145,16 @@ void UTabAudio::SetDefault()
 			DialogueVolumeAnalogSlider->SetValue(DefaultConfig->DialogueVolume * 100.f);
 			DialogueVolume->SetText(FText::AsNumber(DefaultConfig->DialogueVolume * 100.f));
 
+			StorageSubsystem->SetAudio(DefaultConfig->MasterVolume, ESoundClassType::Master);
+			StorageSubsystem->SetAudio(DefaultConfig->EffectsVolume, ESoundClassType::Effects);
+			StorageSubsystem->SetAudio(DefaultConfig->MusicVolume, ESoundClassType::Music);
+			StorageSubsystem->SetAudio(DefaultConfig->DialogueVolume, ESoundClassType::Dialogue);
+
 			StorageSubsystem->CacheSetting->MasterVolume = DefaultConfig->MasterVolume;
 			StorageSubsystem->CacheSetting->EffectsVolume = DefaultConfig->EffectsVolume;
 			StorageSubsystem->CacheSetting->MusicVolume = DefaultConfig->MusicVolume;
 			StorageSubsystem->CacheSetting->DialogueVolume = DefaultConfig->DialogueVolume;
+
 			StorageSubsystem->SaveSetting();
 		}
 	}

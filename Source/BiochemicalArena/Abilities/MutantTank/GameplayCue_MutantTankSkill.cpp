@@ -2,6 +2,11 @@
 
 #include "BiochemicalArena/Characters/MutantCharacters/MutantTank.h"
 
+AGameplayCue_MutantTankSkill::AGameplayCue_MutantTankSkill()
+{
+	bAutoDestroyOnRemove = true;
+}
+
 bool AGameplayCue_MutantTankSkill::WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters)
 {
 	if (MutantTank == nullptr) MutantTank = Cast<AMutantTank>(MyTarget);

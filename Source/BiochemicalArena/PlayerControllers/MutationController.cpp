@@ -6,10 +6,14 @@
 #include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "BiochemicalArena/PlayerStates/MutationPlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/System/AssetSubsystem.h"
+#include "BiochemicalArena/System/Data/CommonAsset.h"
 #include "BiochemicalArena/UI/HUD/Mutation/MutationMutant.h"
 #include "BiochemicalArena/UI/HUD/RadialMenu/RadialMenuContainer.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "MetaSoundSource.h"
+#include "Components/AudioComponent.h"
 
 #define LOCTEXT_NAMESPACE "AMutationController"
 
@@ -159,7 +163,19 @@ void AMutationController::SetHUDTime()
 			if (MutateCountdown > 0)
 			{
 				ChangeAnnouncement.Broadcast(FText::FromString(FString::Printf(TEXT("%d"), MutateCountdown)));
-				// TODO 声音
+
+				// 播放倒计时
+				if (MutateCountdown <= 10 && MutateCountdown > 0)
+				{
+					if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+					if (AssetSubsystem && AssetSubsystem->CommonAsset && GetPawn())
+					{
+						if (UAudioComponent* AudioComponent = UGameplayStatics::SpawnSoundAttached(AssetSubsystem->CommonAsset->CountdownSound, GetPawn()->GetRootComponent()))
+						{
+							AudioComponent->SetFloatParameter(TEXT("Index"), MutateCountdown - 1);
+						}
+					}
+				}
 			}
 			else if (MutateCountdown == 0)
 			{

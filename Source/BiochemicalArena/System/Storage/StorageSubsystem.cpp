@@ -5,7 +5,7 @@
 #include "SaveGameLoadout.h"
 #include "SaveGameSetting.h"
 #include "BiochemicalArena/UI/Setting/TabAudio.h"
-#include "BiochemicalArena/System/Data/SystemSound.h"
+#include "BiochemicalArena/System/Data/CommonAsset.h"
 #include "Kismet/GameplayStatics.h"
 #include "Serialization/ObjectAndNameAsStringProxyArchive.h"
 
@@ -174,50 +174,43 @@ void UStorageSubsystem::ApplySetting()
 	
 	// 设置亮度
 	GEngine->DisplayGamma = CacheSetting->Brightness;
-
+	
 	// 设置音量
-	AudioDevice = GEngine->GetActiveAudioDevice();
-	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AudioDevice && AssetSubsystem && AssetSubsystem->SystemSound)
-	{
-		AudioDevice->PushSoundMixModifier(AssetSubsystem->SystemSound->SoundMix);
-
-		SetAudio(CacheSetting->MasterVolume, ESoundClassType::Master);
-		SetAudio(CacheSetting->EffectsVolume, ESoundClassType::Effects);
-		SetAudio(CacheSetting->MusicVolume, ESoundClassType::Music);
-		SetAudio(CacheSetting->DialogueVolume, ESoundClassType::Dialogue);
-	}
+	SetAudio(CacheSetting->MasterVolume, ESoundClassType::Master);
+	SetAudio(CacheSetting->EffectsVolume, ESoundClassType::Effects);
+	SetAudio(CacheSetting->MusicVolume, ESoundClassType::Music);
+	SetAudio(CacheSetting->DialogueVolume, ESoundClassType::Dialogue);
 }
 
-// 设置音量
+// 设置音量（PIE是无效的，需要在独立进程条件下测试。）
 void UStorageSubsystem::SetAudio(float Value, ESoundClassType SoundClassType)
 {
+	if (AssetSubsystem == nullptr) AudioDevice = GEngine->GetActiveAudioDevice();
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AudioDevice && AssetSubsystem && AssetSubsystem->SystemSound)
+	if (AudioDevice && AssetSubsystem && AssetSubsystem->CommonAsset)
 	{
-		// UE_LOG(LogTemp, Warning, TEXT("SetAudio: %f"), Value); // TODO test
 		USoundClass* SoundClass;
 		switch (SoundClassType)
 		{
 		case ESoundClassType::Master:
-			SoundClass = AssetSubsystem->SystemSound->MasterSound;
+			SoundClass = AssetSubsystem->CommonAsset->MasterSound;
 			break;
 		case ESoundClassType::Effects:
-			SoundClass = AssetSubsystem->SystemSound->EffectsSound;
+			SoundClass = AssetSubsystem->CommonAsset->EffectsSound;
 			break;
 		case ESoundClassType::Music:
-			SoundClass = AssetSubsystem->SystemSound->MusicSound;
+			SoundClass = AssetSubsystem->CommonAsset->MusicSound;
 			break;
 		case ESoundClassType::Dialogue:
-			SoundClass = AssetSubsystem->SystemSound->DialogueSound;
+			SoundClass = AssetSubsystem->CommonAsset->DialogueSound;
 			break;
 		default:
-			SoundClass = AssetSubsystem->SystemSound->MasterSound;
+			SoundClass = AssetSubsystem->CommonAsset->MasterSound;
 			break;
 		}
 
 		AudioDevice->SetSoundMixClassOverride(
-			AssetSubsystem->SystemSound->SoundMix,
+			AssetSubsystem->CommonAsset->SoundMix,
 			SoundClass,
 			Value,
 			1.f,

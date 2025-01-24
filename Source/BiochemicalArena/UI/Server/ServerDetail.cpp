@@ -154,7 +154,8 @@ void UServerDetail::SetUIButtonState()
 void UServerDetail::UpdatePlayerList()
 {
 	if (PlayerLineButtonClass == nullptr || Team1Container == nullptr || Team2Container == nullptr
-		|| EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return;
+		|| EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr
+		|| GetWorld()->bIsTearingDown) return;
 
 	// 记录焦点所在位置
 	UCommonHierarchicalScrollBox* Container = nullptr;

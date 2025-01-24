@@ -8,7 +8,7 @@
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "BiochemicalArena/Characters/MutantCharacter.h"
-#include "BiochemicalArena/Characters/Data/MutantCommon.h"
+#include "BiochemicalArena/Characters/Data/CharacterAsset.h"
 #include "BiochemicalArena/GameStates/MutationGameState.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
@@ -113,9 +113,9 @@ void UMutantSelect::OnMutantSelectButtonClicked(EMutantCharacterName MutantChara
 
 			// 终止切换角色技能
 			if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-			if (AssetSubsystem && AssetSubsystem->MutantCommon)
+			if (AssetSubsystem && AssetSubsystem->CharacterAsset)
 			{
-				if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AssetSubsystem->MutantCommon->MutantChangeAbility))
+				if (FGameplayAbilitySpec* Spec = AbilitySystemComponent->FindAbilitySpecFromClass(AssetSubsystem->CharacterAsset->MutantChangeAbility))
 				{
 					AbilitySystemComponent->CancelAbility(Spec->Ability);
 				}

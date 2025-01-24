@@ -6,8 +6,7 @@
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
-#include "Data/InputBase.h"
-#include "Data/InputSpectator.h"
+#include "Data/InputAsset.h"
 
 void ASpectatorCharacter::BeginPlay()
 {
@@ -19,7 +18,7 @@ void ASpectatorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr || AssetSubsystem->InputSpectator == nullptr) return;
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 	
 	if (ABaseGameState* BaseGameState = Cast<ABaseGameState>(GetWorld()->GetGameState()))
 	{
@@ -30,21 +29,21 @@ void ASpectatorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		{
 			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 			{
-				Subsystem->AddMappingContext(AssetSubsystem->InputBase->BaseMappingContext, 10);
-				Subsystem->AddMappingContext(AssetSubsystem->InputSpectator->SpectatorMappingContext, 20);
+				Subsystem->AddMappingContext(AssetSubsystem->InputAsset->BaseMappingContext, 10);
+				Subsystem->AddMappingContext(AssetSubsystem->InputAsset->SpectatorMappingContext, 20);
 			}
 		}
 
 		if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 		{
-			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
-			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
-			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
-			EnhancedInputComponent->BindAction(AssetSubsystem->InputBase->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->ScoreboardAction, ETriggerEvent::Triggered, this, &ThisClass::ScoreboardButtonPressed);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->ScoreboardAction, ETriggerEvent::Completed, this, &ThisClass::ScoreboardButtonReleased);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->PauseMenuAction, ETriggerEvent::Triggered, this, &ThisClass::PauseMenuButtonPressed);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->TextChatAction, ETriggerEvent::Triggered, this, &ThisClass::TextChat);
 		
-			EnhancedInputComponent->BindAction(AssetSubsystem->InputSpectator->SwitchPerspectiveAction, ETriggerEvent::Triggered, this, &ThisClass::SwitchPerspective);
-			EnhancedInputComponent->BindAction(AssetSubsystem->InputSpectator->ViewNextAction, ETriggerEvent::Triggered, this, &ThisClass::ViewNextPlayer);
-			EnhancedInputComponent->BindAction(AssetSubsystem->InputSpectator->ViewPrevAction, ETriggerEvent::Triggered, this, &ThisClass::ViewPrevPlayer);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->SwitchPerspectiveAction, ETriggerEvent::Triggered, this, &ThisClass::SwitchPerspective);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->ViewNextAction, ETriggerEvent::Triggered, this, &ThisClass::ViewNextPlayer);
+			EnhancedInputComponent->BindAction(AssetSubsystem->InputAsset->ViewPrevAction, ETriggerEvent::Triggered, this, &ThisClass::ViewPrevPlayer);
 		}
 	}
 }
@@ -52,15 +51,15 @@ void ASpectatorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 void ASpectatorCharacter::Destroyed()
 {
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-	if (AssetSubsystem == nullptr || AssetSubsystem->InputBase == nullptr || AssetSubsystem->InputSpectator == nullptr) return;
+	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 	
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 	if (BaseController)
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(BaseController->GetLocalPlayer()))
 		{
-			Subsystem->RemoveMappingContext(AssetSubsystem->InputBase->BaseMappingContext);
-			Subsystem->RemoveMappingContext(AssetSubsystem->InputSpectator->SpectatorMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputAsset->BaseMappingContext);
+			Subsystem->RemoveMappingContext(AssetSubsystem->InputAsset->SpectatorMappingContext);
 		}
 	}
 

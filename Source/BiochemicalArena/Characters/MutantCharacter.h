@@ -91,6 +91,9 @@ protected:
 	UAnimMontage* LightAttackMontage;
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HeavyAttackMontage;
+	
+	UPROPERTY(EditAnywhere)
+	class UMetaSoundSource* MutantBornSound;
 
 	virtual void MoveStarted(const FInputActionValue& Value) override;
 	virtual void MoveCompleted(const FInputActionValue& Value) override;

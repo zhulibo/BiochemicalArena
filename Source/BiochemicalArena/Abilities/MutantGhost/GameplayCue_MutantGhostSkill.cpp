@@ -1,7 +1,11 @@
 #include "GameplayCue_MutantGhostSkill.h"
 
 #include "BiochemicalArena/Characters/MutantCharacters/MutantGhost.h"
-#include "GameFramework/CharacterMovementComponent.h"
+
+AGameplayCue_MutantGhostSkill::AGameplayCue_MutantGhostSkill()
+{
+	bAutoDestroyOnRemove = true;
+}
 
 bool AGameplayCue_MutantGhostSkill::WhileActive_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters)
 {
