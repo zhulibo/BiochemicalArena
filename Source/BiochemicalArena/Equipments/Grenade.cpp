@@ -9,6 +9,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "MetaSoundSource.h"
+#include "NiagaraFunctionLibrary.h"
 
 AGrenade::AGrenade()
 {
@@ -23,16 +24,14 @@ void AGrenade::ThrowOut()
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter)
 	{
-		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
-		if (CameraComponent)
+		if (UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>())
 		{
 			FVector ThrowVector = CameraComponent->GetForwardVector();
 			ThrowVector.Z += 0.1;
 			ProjectileMovement->Velocity = ThrowVector * 2000.f;
+			ProjectileMovement->Activate();
 		}
 	}
-
-	ProjectileMovement->Activate();
 
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::ExplodeDamage, 3.f);
@@ -76,10 +75,13 @@ void AGrenade::ExplodeDamage()
 		);
 	}
 
-	if (ExplodeParticle)
-	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplodeParticle, GetActorTransform());
-	}
+	ExplodeEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		ExplodeEffect,
+		GetActorLocation(),
+		GetActorRotation()
+	);
+
 	if (ExplodeSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ExplodeSound, GetActorLocation());

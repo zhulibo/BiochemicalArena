@@ -501,7 +501,7 @@ void UServerDetail::OnStartServerButtonClicked()
 		});
 	}
 
-	FString MapPath = "/Game/Maps/Map_" + EOSSubsystem->GetLobbyModeName() + "/" + EOSSubsystem->GetLobbyMapName() + "?listen";
+	FString MapPath = "/Game/Maps/Map_" + EOSSubsystem->GetLobbyModeName() + "/" + EOSSubsystem->GetLobbyMapName() + "/" + EOSSubsystem->GetLobbyMapName() + "?listen";
 
 	UE_LOG(LogTemp, Warning, TEXT("ServerTravel ------------------------------------------"));
 	GetWorld()->ServerTravel(MapPath, ETravelType::TRAVEL_Absolute);

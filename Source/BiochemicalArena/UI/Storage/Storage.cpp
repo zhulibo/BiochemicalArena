@@ -171,19 +171,19 @@ void UStorage::InitPlayerConfig(USaveGameLoadout* SaveGameLoadout)
 			FText ButtonText = FText();
 			
 			FString PrimaryName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Primary));
-			FText::FindText(CULTURE_EQUIPMENT, PrimaryName, ButtonText);
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, PrimaryName, ButtonText);
 			LoadoutContent->Primary->ButtonText->SetText(ButtonText);
 
 			FString SecondaryName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Secondary));
-			FText::FindText(CULTURE_EQUIPMENT, SecondaryName, ButtonText);
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, SecondaryName, ButtonText);
 			LoadoutContent->Secondary->ButtonText->SetText(ButtonText);
 
 			FString MeleeName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Melee));
-			FText::FindText(CULTURE_EQUIPMENT, MeleeName, ButtonText);
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, MeleeName, ButtonText);
 			LoadoutContent->Melee->ButtonText->SetText(ButtonText);
 
 			FString ThrowingName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Throwing));
-			FText::FindText(CULTURE_EQUIPMENT, ThrowingName, ButtonText);
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, ThrowingName, ButtonText);
 			LoadoutContent->Throwing->ButtonText->SetText(ButtonText);
 		}
 	}
@@ -196,7 +196,7 @@ void UStorage::InitPlayerConfig(USaveGameLoadout* SaveGameLoadout)
 	// 设置角色
 	FString HumanCharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->HumanCharacterName));
 	FText ButtonText = FText();
-	FText::FindText(CULTURE_HUMAN, HumanCharacterName, ButtonText);
+	FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, HumanCharacterName, ButtonText);
 	Character->SetText(ButtonText);
 }
 
@@ -284,7 +284,7 @@ void UStorage::AddStorageTypeButton()
 				EquipmentTypeButton->Name = EnumValue;
 
 				FText ButtonText = FText();
-				FText::FindText(CULTURE_EQUIPMENT_TYPE, EnumValue, ButtonText);
+				FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT_TYPE, EnumValue, ButtonText);
 				EquipmentTypeButton->ButtonText->SetText(ButtonText);
 
 				EquipmentTypeButton->SetIsSelectable(true);
@@ -390,7 +390,7 @@ void UStorage::AddEquipmentButton(FEquipmentMain EquipmentMain)
 	{
 		FText ButtonText = FText();
 		FString EquipmentName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(EquipmentMain.EquipmentName));
-		FText::FindText(CULTURE_EQUIPMENT, EquipmentName, ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EquipmentName, ButtonText);
 		EquipmentButton->ButtonText->SetText(ButtonText);
 		EquipmentButton->EquipmentName = EquipmentMain.EquipmentName;
 		EquipmentButton->EquipmentType = EquipmentMain.EquipmentType;
@@ -409,7 +409,7 @@ void UStorage::AddCharacterButton(FHumanCharacterMain HumanCharacterMain)
 	{
 		FText ButtonText = FText();
 		FString CharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(HumanCharacterMain.HumanCharacterName));
-		FText::FindText(CULTURE_HUMAN, CharacterName, ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, CharacterName, ButtonText);
 		CharacterButton->ButtonText->SetText(ButtonText);
 		CharacterButton->HumanCharacterName = HumanCharacterMain.HumanCharacterName;
 		CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnCharacterButtonClicked, CharacterButton);
@@ -429,7 +429,7 @@ void UStorage::OnEquipmentButtonClicked(UStorageButton* EquipmentButton)
 	{
 		FText ButtonText = FText();
 		FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(EquipmentButton->EquipmentName));
-		FText::FindText(CULTURE_EQUIPMENT, EnumValue, ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EnumValue, ButtonText);
 
 		switch (EquipmentButton->EquipmentType)
 		{
@@ -487,7 +487,7 @@ void UStorage::OnCharacterButtonClicked(UStorageButton* CharacterButton)
 	
 	FText ButtonText = FText();
 	FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CharacterButton->HumanCharacterName));
-	FText::FindText(CULTURE_HUMAN, EnumValue, ButtonText);
+	FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, EnumValue, ButtonText);
 	Character->SetText(ButtonText);
 	
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();

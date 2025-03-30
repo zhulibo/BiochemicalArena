@@ -32,8 +32,7 @@ protected:
 	FPrimaryAssetId CharacterAssetId;
 	FPrimaryAssetId EquipmentAssetId;
 
-	UPROPERTY()
-	FString Prefix = TEXT("DA_");
+	UFUNCTION()
 	FPrimaryAssetId GenerateId(UClass* Class);
 
 };

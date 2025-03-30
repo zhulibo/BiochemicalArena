@@ -28,7 +28,7 @@ void UAssetSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	CommonAsset = UDataAssetManager::Get().GetAsset(TSoftObjectPtr<UCommonAsset>(CommonAssetPath));
 	InputAsset = UDataAssetManager::Get().GetAsset(TSoftObjectPtr<UInputAsset>(InputAssetPath));
-	
+
 	double EndTime = FPlatformTime::Seconds();
 	UE_LOG(LogTemp, Warning, TEXT("Sync load asset time: %f seconds"), EndTime - StartTime);
 
@@ -41,7 +41,7 @@ void UAssetSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 FPrimaryAssetId UAssetSubsystem::GenerateId(UClass* Class)
 {
-	return FPrimaryAssetId(FPrimaryAssetType(Class->GetFName()), FName(Prefix + Class->GetFName().ToString()));
+	return FPrimaryAssetId(FPrimaryAssetType(Class->GetFName()), FName(TEXT("DA_") + Class->GetFName().ToString()));
 }
 
 void UAssetSubsystem::LoadCompleted()

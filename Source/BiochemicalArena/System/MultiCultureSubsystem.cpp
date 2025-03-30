@@ -4,6 +4,8 @@ void UMultiCultureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	// 统一进行翻译，供FText::FindTextInLiveTable_Advanced查找使用。
+
 	// 需与 EHumanCharacterName 的值一致
 #define LOCTEXT_NAMESPACE "Human"
 	LOCTEXT("SAS", "SAS");
@@ -18,9 +20,6 @@ void UMultiCultureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LOCTEXT("Ghost", "Ghost");
 	LOCTEXT("Smoker", "Smoker");
 	LOCTEXT("Hunter", "Hunter");
-	LOCTEXT("Cooker", "Cooker");
-	LOCTEXT("Corrupter", "Corrupter");
-	LOCTEXT("Corpseherder", "Corpseherder");
 #undef LOCTEXT_NAMESPACE
 
 	// 需与 EEquipmentName 的值一致

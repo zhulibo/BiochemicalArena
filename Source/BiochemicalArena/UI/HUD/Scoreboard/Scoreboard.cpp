@@ -2,6 +2,7 @@
 #include "CommonHierarchicalScrollBox.h"
 #include "CommonTextBlock.h"
 #include "ScoreBoardLineButton.h"
+#include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
@@ -22,7 +23,7 @@ void UScoreboard::ShowScoreboard(bool bIsShow)
 {
 	if (bIsShow)
 	{
-		// 手柄Action设为了长按/键鼠为默认，且ETriggerEvent::Triggered时，会频繁触发
+		// ETriggerEvent::Triggered时调用ShowScoreboard，会频繁触发
 		if (GetVisibility() == ESlateVisibility::Visible) return;
 
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &ThisClass::RefreshScoreBoard, 0.5f, true, 0.f);
@@ -73,6 +74,10 @@ void UScoreboard::RefreshScoreBoard()
 				ScoreBoardLineButton->Player->SetText(FText::FromString(ULibraryCommon::ObfuscatePlayerName(PlayerName, this)));
 				ScoreBoardLineButton->Damage->SetText(FText::FromString(FString::FromInt(PlayerStates[i]->GetDamage())));
 				ScoreBoardContainer->AddChild(ScoreBoardLineButton);
+				if (PlayerStates[i]->GetTeam() == ETeam::Team2)
+				{
+					ScoreBoardLineButton->SetColorAndOpacity(C_GREEN);
+				}
 			}
 		}
 	}

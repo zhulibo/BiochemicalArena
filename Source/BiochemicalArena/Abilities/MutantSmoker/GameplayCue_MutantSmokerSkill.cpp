@@ -27,11 +27,12 @@ bool AGameplayCue_MutantSmokerSkill::WhileActive_Implementation(AActor* MyTarget
 
 bool AGameplayCue_MutantSmokerSkill::OnRemove_Implementation(AActor* MyTarget, const FGameplayCueParameters& Parameters)
 {
-	if (MutantSmoker == nullptr) MutantSmoker = Cast<AMutantSmoker>(MyTarget);
-	if (MutantSmoker && SmokeEffectComponent)
-	{
-		SmokeEffectComponent->DestroyComponent();
-	}
+	// 也许会改为围绕在角色身边的烟雾，技能结束时需要结束烟雾。
+	// if (MutantSmoker == nullptr) MutantSmoker = Cast<AMutantSmoker>(MyTarget);
+	// if (MutantSmoker && SmokeEffectComponent)
+	// {
+	// 	SmokeEffectComponent->DestroyComponent();
+	// }
 
 	return Super::OnExecute_Implementation(MyTarget, Parameters);
 }

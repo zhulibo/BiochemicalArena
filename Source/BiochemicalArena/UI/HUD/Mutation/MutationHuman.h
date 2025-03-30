@@ -4,6 +4,13 @@
 #include "CommonActivatableWidget.h"
 #include "MutationHuman.generated.h"
 
+UENUM(BlueprintType)
+enum class ECombatIconType : uint8
+{
+	Cause1000Damage,
+	BeImmune,
+};
+
 enum class ETeam : uint8;
 
 UCLASS()
@@ -24,18 +31,21 @@ public:
 	UCommonTextBlock* CarriedAmmo;
 
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* DamageIcon;
+	UCommonTextBlock* CombatIcon;
 
 protected:
 	virtual void NativeOnInitialized() override;
+	
+	UPROPERTY()
+	class UAssetSubsystem* AssetSubsystem;
 
 	void OnHumanHealthChange(float TempHealth);
 	void OnAmmoChange(int32 TempAmmo);
 	void OnCarriedAmmoChange(int32 TempCarriedAmmo);
-	void OnCause1000Damage();
-	FTimerHandle DamageIconTimerHandle;
-	void ClearDamageIcon();
 	void OnDamageMulChange(float TempDamageMul);
-	void OnBeImmune();
+
+	void OnCombatIconChange(ECombatIconType CombatIconType);
+	FTimerHandle CombatIconTimerHandle;
+	void ClearCombatIcon();
 
 };

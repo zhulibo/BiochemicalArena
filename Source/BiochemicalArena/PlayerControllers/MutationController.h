@@ -41,6 +41,9 @@ public:
 	void SetHUDRage(float UpdateRageUI);
 	void SetHUDDamageMul(float DamageMul);
 
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlaySpawnPickupSound();
+	
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;

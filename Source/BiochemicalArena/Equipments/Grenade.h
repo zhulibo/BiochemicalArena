@@ -15,9 +15,10 @@ public:
 	virtual void ThrowOut() override;
 
 protected:
-
 	UPROPERTY(EditAnywhere)
-	UParticleSystem* ExplodeParticle;
+	class UNiagaraSystem* ExplodeEffect;
+	UPROPERTY()
+	class UNiagaraComponent* ExplodeEffectComponent;
 	UPROPERTY(EditAnywhere)
 	class UMetaSoundSource* ExplodeSound;
 

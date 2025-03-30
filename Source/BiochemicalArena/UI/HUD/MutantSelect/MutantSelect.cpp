@@ -49,7 +49,7 @@ void UMutantSelect::NativeOnInitialized()
 			{
 				FText CharacterNameText = FText();
 				FString MutantCharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(ItemValue.MutantCharacterName));
-				FText::FindText(CULTURE_MUTANT, MutantCharacterName, CharacterNameText);
+				FText::FindTextInLiveTable_Advanced(CULTURE_MUTANT, MutantCharacterName, CharacterNameText);
 				MutantSelectButton->CharacterNameText->SetText(CharacterNameText);
 
 				MutantSelectButton->CharacterDescText->SetText(FText::FromString(ItemValue.Desc));

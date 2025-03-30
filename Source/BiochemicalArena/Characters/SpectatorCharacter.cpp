@@ -50,6 +50,8 @@ void ASpectatorCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 
 void ASpectatorCharacter::Destroyed()
 {
+	if (GetGameInstance() == nullptr) return;
+
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 	if (AssetSubsystem == nullptr || AssetSubsystem->InputAsset == nullptr || AssetSubsystem->InputAsset == nullptr) return;
 	

@@ -26,9 +26,10 @@ UObject* UDataAssetManager::SyncLoadAsset(const FSoftObjectPath& AssetPath)
 	{
 		if (IsInitialized())
 		{
-			return GetStreamableManager().LoadSynchronous(AssetPath, false);
+			return GetStreamableManager().LoadSynchronous(AssetPath);
 		}
 
+		// Use LoadObject if asset manager isn't ready yet.
 		return AssetPath.TryLoad();
 	}
 

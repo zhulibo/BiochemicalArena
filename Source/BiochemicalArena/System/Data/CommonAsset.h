@@ -33,4 +33,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "CountdownSound")
 	class UMetaSoundSource* CountdownSound;
 
+	// 补给箱音效
+	UPROPERTY(EditAnywhere, Category = "SpawnPickupSound")
+	class UMetaSoundSource* SpawnPickupSound;
+
+	// 战斗图标
+	UPROPERTY(EditAnywhere, Category = "CombatIconSound")
+	UMetaSoundSource* Cause1000DamageSound;
+	UPROPERTY(EditAnywhere, Category = "CombatIconSound")
+	UMetaSoundSource* BeImmuneSound;
+
 };

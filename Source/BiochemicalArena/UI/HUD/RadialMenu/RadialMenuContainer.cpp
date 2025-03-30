@@ -260,10 +260,10 @@ void URadialMenuContainer::SetHumanRadialMenuText()
 	FText Item2Text = FText();
 	FText Item3Text = FText();
 	FText Item4Text = FText();
-	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Primary"), Item1Text);
-	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Secondary"), Item2Text);
-	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Melee"), Item3Text);
-	FText::FindText(CULTURE_EQUIPMENT_TYPE, TEXT("Throwing"), Item4Text);
+	FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT_TYPE, TEXT("Primary"), Item1Text);
+	FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT_TYPE, TEXT("Secondary"), Item2Text);
+	FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT_TYPE, TEXT("Melee"), Item3Text);
+	FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT_TYPE, TEXT("Throwing"), Item4Text);
 
 	RadialMenuEquipment->Item1->SetText(Item1Text);
 	RadialMenuEquipment->Item2->SetText(Item2Text);

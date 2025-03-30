@@ -13,9 +13,32 @@
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Kismet/GameplayStatics.h"
 
+void UOverheadWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	UE_LOG(LogTemp, Warning, TEXT("NativeOnInitialized"));
+}
+
 void UOverheadWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	if (BaseCharacter->HasAuthority())
+	{
+		if (BaseCharacter->IsLocallyControlled())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NativeConstruct 1"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("NativeConstruct 2"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("NativeConstruct 3"));
+	}
 
 	SetPlayerName();
 
@@ -188,7 +211,7 @@ void UOverheadWidget::InitOverheadWidget()
 			}
 			else
 			{
-				// 游戏结束了关卡才加载完成GetTeam() == ETeam::NoTeam，中断循环，不然会crash（不知道什么原因）。
+				// 游戏结束了关卡才加载完成GetTeam() == ETeam::NoTeam，中断循环，不然会crash。
 				if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
 				if (BaseGameState)
 				{

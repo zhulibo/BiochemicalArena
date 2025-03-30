@@ -91,7 +91,7 @@ protected:
 	UAnimMontage* LightAttackMontage;
 	UPROPERTY(EditAnywhere)
 	UAnimMontage* HeavyAttackMontage;
-	
+
 	UPROPERTY(EditAnywhere)
 	class UMetaSoundSource* MutantBornSound;
 

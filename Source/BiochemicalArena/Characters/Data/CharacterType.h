@@ -20,6 +20,7 @@ enum class EMutantCharacterName : uint8
 	Tank,
 	Ghost,
 	Smoker,
+	Hunter,
 
 	None
 };

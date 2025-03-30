@@ -13,10 +13,10 @@ enum class ECoolGameMode : uint8
 UENUM(BlueprintType)
 enum class EMutationMap : uint8
 {
+	Colosseum,
+	CrossStreet,
 	Dust,
 	Farm,
-	FoggyCity,
-	SpacePrison,
 
 	None
 };

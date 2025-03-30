@@ -578,4 +578,13 @@ void AMutationMode::SpawnPickups()
 			SpawnParams
 		);
 	}
+
+	// 播放补给箱抵达音效
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (AMutationController* MutationController = Cast<AMutationController>(*It))
+		{
+			MutationController->MulticastPlaySpawnPickupSound();
+		}
+	}
 }

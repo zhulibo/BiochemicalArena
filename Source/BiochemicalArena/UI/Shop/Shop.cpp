@@ -93,7 +93,7 @@ void UShop::AddEquipmentButton(const FOffer& Offer)
 	{
 		EquipmentButton->Offer = Offer;
 		FText ButtonText = FText();
-		FText::FindText(CULTURE_EQUIPMENT, Offer.Title.ToString(), ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, Offer.Title.ToString(), ButtonText);
 		EquipmentButton->ItemName->SetText(ButtonText);
 		EquipmentButton->Price->SetText(Offer.FormattedPrice);
 		EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnItemButtonClicked, EquipmentButton);
@@ -111,7 +111,7 @@ void UShop::AddCharacterButton(const FOffer& Offer)
 	{
 		CharacterButton->Offer = Offer;
 		FText ButtonText = FText();
-		FText::FindText(CULTURE_HUMAN, Offer.Title.ToString(), ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, Offer.Title.ToString(), ButtonText);
 		CharacterButton->ItemName->SetText(ButtonText);
 		CharacterButton->Price->SetText(Offer.FormattedPrice);
 		CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnItemButtonClicked, CharacterButton);

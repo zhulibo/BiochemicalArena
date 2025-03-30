@@ -168,9 +168,9 @@ void AMutationController::SetHUDTime()
 				if (MutateCountdown <= 10 && MutateCountdown > 0)
 				{
 					if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
-					if (AssetSubsystem && AssetSubsystem->CommonAsset && GetPawn())
+					if (AssetSubsystem && AssetSubsystem->CommonAsset)
 					{
-						if (UAudioComponent* AudioComponent = UGameplayStatics::SpawnSoundAttached(AssetSubsystem->CommonAsset->CountdownSound, GetPawn()->GetRootComponent()))
+						if (UAudioComponent* AudioComponent = UGameplayStatics::SpawnSound2D(this, AssetSubsystem->CommonAsset->CountdownSound))
 						{
 							AudioComponent->SetFloatParameter(TEXT("Index"), MutateCountdown - 1);
 						}
@@ -292,6 +292,19 @@ void AMutationController::SetHUDRage(float Rage)
 void AMutationController::SetHUDDamageMul(float DamageMul)
 {
 	OnDamageMulChange.Broadcast(DamageMul);
+}
+
+void AMutationController::MulticastPlaySpawnPickupSound_Implementation()
+{
+	if (!IsLocalController()) return;
+	
+	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+	if (AssetSubsystem && AssetSubsystem->CommonAsset)
+	{
+		if (UAudioComponent* AudioComponent = UGameplayStatics::SpawnSound2D(this, AssetSubsystem->CommonAsset->SpawnPickupSound))
+		{
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
