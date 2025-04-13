@@ -302,11 +302,6 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 	{
 		if (Result.IsOk())
 		{
-			for (auto& Item : Result.GetOkValue().Lobby->Members)
-			{
-				UE_LOG(LogTemp, Warning, TEXT("JoinLobby Member->Attributes.Num(): %d"), Item.Value->Attributes.Num());
-			}
-
 			CurrentLobby = Result.GetOkValue().Lobby;
 			OnJoinLobbyComplete.Broadcast(true);
 		}
