@@ -68,9 +68,9 @@ void UTextChat::OnMsgCommitted(const FText& Text, ETextCommit::Type CommitMethod
 void UTextChat::SendMsg()
 {
 	if (EOSSubsystem == nullptr) return;
-	
+
 	FString Msg = MsgEditableTextBox->GetText().ToString();
-	
+
 	if (Msg.Len() == 0)
 	{
 		NOTIFY(this, C_YELLOW, LOCTEXT("EmptyMsg", "Empty msg!"));
@@ -112,7 +112,7 @@ void UTextChat::SendMsg()
 		EOSSubsystem->ModifyLobbyMemberAttr(TMap<UE::Online::FSchemaAttributeId, UE::Online::FSchemaVariant>{
 			{ LOBBY_MEMBER_MSG, Msg}
 		});
-		
+
 		MsgEditableTextBox->SetText(FText::GetEmpty());
 	}
 }

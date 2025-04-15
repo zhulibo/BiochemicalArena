@@ -67,7 +67,7 @@ UWidget* UStorage::NativeGetDesiredFocusTarget() const
 	return StorageTypeButtonContainer->GetChildAt(TypeIndex);
 }
 
-// 查询已购商品完成
+// 获取远程已购商品完成
 void UStorage::OnQueryEntitlementsComplete(bool bWasSuccessful)
 {
 	if(bWasSuccessful)
@@ -83,7 +83,7 @@ void UStorage::OnQueryEntitlementsComplete(bool bWasSuccessful)
 				OnStorageTypeButtonClicked(AllTypeButton);
 			}
 
-			// 查询用户文件
+			// 获取远程用户文件
 			EOSSubsystem->EnumerateFiles();
 		}
 	}
@@ -93,7 +93,7 @@ void UStorage::OnQueryEntitlementsComplete(bool bWasSuccessful)
 	}
 }
 
-// 查询用户文件完成
+// 获取远程用户文件完成
 void UStorage::OnEnumerateFilesComplete(bool bWasSuccessful)
 {
 	if (!bWasSuccessful) return;

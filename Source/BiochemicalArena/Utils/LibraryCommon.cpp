@@ -4,9 +4,21 @@
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "Kismet/KismetMathLibrary.h"
 
+FString ULibraryCommon::GetProjectVersion()
+{
+	FString ProjectVersion;
+	GConfig->GetString(
+		TEXT("/Script/EngineSettings.GeneralProjectSettings"),
+		TEXT("ProjectVersion"),
+		ProjectVersion,
+		GGameIni
+	);
+	return ProjectVersion;
+}
+
 int32 ULibraryCommon::GetBloodParticleCount(float Damage)
 {
-	return  UKismetMathLibrary::MapRangeClamped(Damage, 40, 200, 3, 10);
+	return UKismetMathLibrary::MapRangeClamped(Damage, 40, 200, 3, 10);
 }
 
 FString ULibraryCommon::GetFormatTime(int32 CountdownTime)
@@ -22,7 +34,7 @@ FString ULibraryCommon::GetNowFormatTime()
 	int32 Hour = Time.GetHour();
 	int32 Minute = Time.GetMinute();
 	int32 Second = Time.GetSecond();
-	return  FString::Printf(TEXT("%02d:%02d:%02d"), Hour, Minute, Second);
+	return FString::Printf(TEXT("%02d:%02d:%02d"), Hour, Minute, Second);
 }
 
 FString ULibraryCommon::GetEnumValue(const FString& EnumValue)

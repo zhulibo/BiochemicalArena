@@ -28,6 +28,7 @@ void UServerDetail::NativeOnInitialized()
 	SwitchTeamButton->OnClicked().AddUObject(this, &ThisClass::OnSwitchTeamButtonClicked);
 
 	ReadyButton->OnClicked().AddUObject(this, &ThisClass::OnReadyButtonClicked);
+	ReadyButton->ButtonText->SetText(LOCTEXT("Ready", "Ready"));
 	JoinServerButton->OnClicked().AddUObject(this, &ThisClass::OnJoinServerButtonClicked);
 	StartServerButton->OnClicked().AddUObject(this, &ThisClass::OnStartServerButtonClicked);
 	BackButton->OnClicked().AddUObject(this, &ThisClass::OnBackButtonClicked);
@@ -74,14 +75,23 @@ UWidget* UServerDetail::NativeGetDesiredFocusTarget() const
 void UServerDetail::NativeConstruct()
 {
 	Super::NativeConstruct();
-	
+
 	TextChat->MsgContainer->ClearChildren();
 
 	SetUIAttr();
 	SetUIButtonState();
-	UpdatePlayerList();
+	// UpdatePlayerList(); // 已在OnLobbyMemberJoined中调用
 
 	bIsExitingLobby = false;
+
+	GetWorld()->GetTimerManager().SetTimer(TickNumTimerHandle, this, &ThisClass::ChangeLobbyMemberTickNum, 10.f, true);
+}
+
+void UServerDetail::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	GetWorld()->GetTimerManager().ClearTimer(TickNumTimerHandle);
 }
 
 // 设置大厅属性
@@ -118,6 +128,7 @@ void UServerDetail::SetUIButtonState()
 		MapComboBox->SetIsEnabled(true);
 
 		StartServerButton->SetIsEnabled(true);
+		// 如果之前不是房主且焦点在准备或加入按钮上，变成房主后准备或加入按钮会被禁用，把焦点放在开始按钮上
 		if (ReadyButton->HasFocusedDescendants() || JoinServerButton->HasFocusedDescendants())
 		{
 			StartServerButton->SetFocus();
@@ -134,15 +145,16 @@ void UServerDetail::SetUIButtonState()
 
 		JoinServerButton->SetIsEnabled(EOSSubsystem->GetLobbyStatus() != 0);
 		ReadyButton->SetIsEnabled(EOSSubsystem->GetLobbyStatus() == 0);
+		// 如果之前焦点在操作区
 		if (ReadyButton->HasFocusedDescendants() || JoinServerButton->HasFocusedDescendants() || StartServerButton->HasFocusedDescendants())
 		{
-			if (EOSSubsystem->GetLobbyStatus())
+			if (EOSSubsystem->GetLobbyStatus() == 0)
 			{
-				JoinServerButton->SetFocus();
+				ReadyButton->SetFocus();
 			}
 			else
 			{
-				ReadyButton->SetFocus();
+				JoinServerButton->SetFocus();
 			}
 		}
 
@@ -175,13 +187,12 @@ void UServerDetail::UpdatePlayerList()
 	Team1Container->ClearChildren();
 	Team2Container->ClearChildren();
 
-	// TODO Try to use MVVM
 	// 重新生成玩家列表
 	for (auto& Member : EOSSubsystem->CurrentLobby->Members)
 	{
 		UPlayerLineButton* PlayerLineButton = CreateWidget<UPlayerLineButton>(this, PlayerLineButtonClass);
 		if (PlayerLineButton == nullptr) continue;
-		
+
 		PlayerLineButton->Member = Member.Value;
 
 		FString PlayerName = EOSSubsystem->GetMemberName(Member.Value);
@@ -288,13 +299,11 @@ void UServerDetail::InitMapComboBox()
 	}
 }
 
-// TODO OnLobbyMemberJoined触发两次
 // 成员加入大厅事件
 void UServerDetail::OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
 {
-	UE_LOG(LogTemp, Warning, TEXT("OnLobbyMemberJoined"));
 	UpdatePlayerList();
-	
+
 	if (EOSSubsystem)
 	{
 		TextChat->ShowMsg(
@@ -354,6 +363,8 @@ void UServerDetail::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type
 		}
 		if (UpdatedAttributes.Num() > 0)
 		{
+			// TODO bug UpdatedAttributes中模式在前地图在后
+			// OnLobbyAttrChanged中返回的数据却是反向的
 			EOSSubsystem->ModifyLobbyAttr(UpdatedAttributes);
 		}
 	}
@@ -381,7 +392,7 @@ void UServerDetail::OnLobbyAttrChanged(const FLobbyAttributesChanged& LobbyAttri
 		PlayerName = EOSSubsystem->GetMemberName(EOSSubsystem->GetLobbyHost());
 		PlayerTeam = EOSSubsystem->GetMemberTeam(EOSSubsystem->GetLobbyHost());
 	}
-	
+
 	for (auto& ChangedAttribute : LobbyAttributesChanged.ChangedAttributes)
 	{
 		if (ChangedAttribute.Key == LOBBY_SERVER_NAME)
@@ -451,6 +462,8 @@ void UServerDetail::OnReadyButtonClicked()
 			EOSSubsystem->ModifyLobbyMemberAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
 				{ LOBBY_MEMBER_READY, !EOSSubsystem->GetMemberReady(Member.Value)}
 			});
+
+			ReadyButton->ButtonText->SetText(EOSSubsystem->GetMemberReady(Member.Value) ? LOCTEXT("Ready", "Ready") : LOCTEXT("CancelReady", "Cancel Ready"));
 			break;
 		}
 	}
@@ -471,7 +484,17 @@ void UServerDetail::OnModifyLobbyMemberAttrComplete(bool bWasSuccessful)
 // 大厅成员属性改变事件
 void UServerDetail::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
 {
-	if (auto LobbyAttribute = LobbyMemberAttributesChanged.ChangedAttributes.Find(LOBBY_MEMBER_MSG))
+	FString Msg = FString();
+	if (auto AddedAttribute = LobbyMemberAttributesChanged.AddedAttributes.Find(LOBBY_MEMBER_MSG))
+	{
+		Msg = AddedAttribute->GetString();
+	}
+	else if (auto ChangedAttribute = LobbyMemberAttributesChanged.ChangedAttributes.Find(LOBBY_MEMBER_MSG))
+	{
+		Msg = ChangedAttribute->Value.GetString();
+	}
+
+	if (!Msg.IsEmpty())
 	{
 		if (EOSSubsystem)
 		{
@@ -479,7 +502,7 @@ void UServerDetail::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged
 				EMsgType::Msg,
 				EOSSubsystem->GetMemberTeam(LobbyMemberAttributesChanged.Member),
 				EOSSubsystem->GetMemberName(LobbyMemberAttributesChanged.Member),
-				LobbyAttribute->Value.GetString()
+				Msg
 			);
 		}
 	}
@@ -653,6 +676,17 @@ void UServerDetail::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
 	{
 		NOTIFY(this, C_WHITE, LOCTEXT("GotKicked", "Got kicked!"));
 	}
+}
+
+// LobbyMember's Attributes有时为空，未为尽量解决此bug，定时修改TickNum Attribute，以便同步所有Attributes到其他客户端
+void UServerDetail::ChangeLobbyMemberTickNum()
+{
+	if (EOSSubsystem == nullptr) return;
+
+	int64 TickNum = FMath::RandRange(0, 999);
+	EOSSubsystem->ModifyLobbyMemberAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
+		{ LOBBY_MEMBER_TICK_NUM, TickNum}
+	});
 }
 
 #undef LOCTEXT_NAMESPACE

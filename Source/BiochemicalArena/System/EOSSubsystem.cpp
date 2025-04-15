@@ -2,6 +2,10 @@
 
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/Utils/LibraryCommon.h"
+#include "BiochemicalArena/Utils/LibraryNotify.h"
+
+#define LOCTEXT_NAMESPACE "UEOSSubsystem"
 
 UEOSSubsystem::UEOSSubsystem()
 {
@@ -205,6 +209,7 @@ void UEOSSubsystem::CreateLobby()
 	Params.bPresenceEnabled = true;
 	Params.MaxMembers = 18;
 	Params.JoinPolicy = ELobbyJoinPolicy::PublicAdvertised;
+	Params.Attributes.Emplace(LOBBY_VERSION, ULibraryCommon::GetProjectVersion());
 	Params.Attributes.Emplace(LOBBY_SERVER_NAME, FString(TEXT("Default Name")));
 	Params.Attributes.Emplace(LOBBY_MODE_NAME, MUTATION);
 	Params.Attributes.Emplace(LOBBY_MAP_NAME, FString(TEXT("DevMutation")));
@@ -213,13 +218,13 @@ void UEOSSubsystem::CreateLobby()
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_TEAM, static_cast<int64>(1));
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_READY, false);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_MSG, FString());
+	Params.UserAttributes.Emplace(LOBBY_MEMBER_TICK_NUM, static_cast<int64>(0));
 
 	LobbyPtr->CreateLobby(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FCreateLobby>& Result)
 	{
 		if (Result.IsOk())
 		{
-			CurrentLobby = Result.GetOkValue().Lobby;
 			OnCreateLobbyComplete.Broadcast(true);
 		}
 		else
@@ -242,6 +247,13 @@ void UEOSSubsystem::FindLobbies(FString LobbyName, FString GameMode, FString Map
 	FFindLobbies::Params Params;
 	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.MaxResults = 100;
+
+	Params.Filters.Emplace(FFindLobbySearchFilter{
+		LOBBY_VERSION,
+		ESchemaAttributeComparisonOp::Equals,
+		ULibraryCommon::GetProjectVersion()
+	});
+
 	if (!LobbyName.IsEmpty())
 	{
 		Params.Filters.Emplace(FFindLobbySearchFilter{
@@ -287,6 +299,15 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 {
 	if (LobbyPtr == nullptr || AccountInfo == nullptr) return;
 
+	FString YourVersion = ULibraryCommon::GetProjectVersion();
+	FString LobbyVersion = GetLobbyVersion();
+	if (YourVersion != LobbyVersion)
+	{
+		NOTIFY(this, C_YELLOW, FText::Format(LOCTEXT("VersionInconsistent", "LobbyVersion {0} YourVersion {1}"), FText::FromString(LobbyVersion), FText::FromString(YourVersion)));
+		OnJoinLobbyComplete.Broadcast(false);
+		return;
+	}
+
 	FJoinLobby::Params Params;
 	Params.LocalAccountId = AccountInfo->AccountId;
 	Params.LocalName = LocalLobbyName;
@@ -296,13 +317,13 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_NAME, UserInfo->DisplayName);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_READY, false);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_MSG, FString());
+	Params.UserAttributes.Emplace(LOBBY_MEMBER_TICK_NUM, static_cast<int64>(0));
 
 	LobbyPtr->JoinLobby(MoveTemp(Params))
 	.OnComplete([this](const TOnlineResult<FJoinLobby>& Result)
 	{
 		if (Result.IsOk())
 		{
-			CurrentLobby = Result.GetOkValue().Lobby;
 			OnJoinLobbyComplete.Broadcast(true);
 		}
 		else
@@ -348,14 +369,19 @@ void UEOSSubsystem::BroadcastOnUILobbyJoinRequested(const FUILobbyJoinRequested&
 	OnUILobbyJoinRequested.Broadcast(UILobbyJoinRequested);
 }
 
+
+// TODO BroadcastOnLobbyJoined触发两次
 void UEOSSubsystem::BroadcastOnLobbyJoined(const FLobbyJoined& LobbyJoined)
 {
+	// TODO bug 此处LobbyMember's Attributes为空
 	CurrentLobby = LobbyJoined.Lobby;
 	OnLobbyJoined.Broadcast(LobbyJoined);
 }
 
+// TODO BroadcastOnLobbyMemberJoined触发两次
 void UEOSSubsystem::BroadcastOnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
 {
+	// TODO bug 此处LobbyMember's Attributes为空
 	CurrentLobby = LobbyMemberJoined.Lobby;
 	OnLobbyMemberJoined.Broadcast(LobbyMemberJoined);
 }
@@ -535,6 +561,22 @@ void UEOSSubsystem::LeaveLobby()
 			OnLeaveLobbyComplete.Broadcast(false);
 		}
 	});
+}
+
+FString UEOSSubsystem::GetLobbyVersion()
+{
+	if (CurrentLobby == nullptr || CurrentLobby->Attributes.Num() == 0)
+	{
+		return FString();
+	}
+
+	const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_VERSION);
+	if (Attr == nullptr)
+	{
+		return FString();
+	}
+	
+	return Attr->GetString();
 }
 
 FString UEOSSubsystem::GetLobbyServerName()
@@ -732,7 +774,7 @@ TSharedPtr<const FLobbyMember> UEOSSubsystem::GetLocalMember()
 	return nullptr;
 }
 
-// 查询用户文件
+// 获取远程用户文件
 void UEOSSubsystem::EnumerateFiles()
 {
 	if (AuthPtr == nullptr || AccountInfo == nullptr || !AuthPtr->IsLoggedIn(AccountInfo->AccountId)) return;
@@ -827,7 +869,7 @@ void UEOSSubsystem::WriteFile(FString Filename, FUserFileContents FileContents)
 	});
 }
 
-// 查询商品列表
+// 获取远程商品列表
 void UEOSSubsystem::QueryOffers()
 {
 	if (AuthPtr == nullptr || AccountInfo == nullptr || !AuthPtr->IsLoggedIn(AccountInfo->AccountId)) return;
@@ -903,7 +945,7 @@ void UEOSSubsystem::BroadcastOnPurchaseCompleted(const FCommerceOnPurchaseComple
 	OnPurchaseCompleted.Broadcast(CommerceOnPurchaseComplete);
 }
 
-// 查询已购商品
+// 获取远程已购商品
 void UEOSSubsystem::QueryEntitlements()
 {
 	if (AuthPtr == nullptr || AccountInfo == nullptr || CommercePtr == nullptr) return;
@@ -962,3 +1004,5 @@ bool UEOSSubsystem::OwnEntitlement(const FString& Id)
 
 	return false;
 }
+
+#undef LOCTEXT_NAMESPACE

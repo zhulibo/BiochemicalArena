@@ -11,6 +11,12 @@ class BIOCHEMICALARENA_API UDev : public UCommonActivatableWidget
 
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
+	UPROPERTY(meta = (BindWidget))
+	class UCommonTextBlock* ProjectVersion;
+	UPROPERTY(meta = (BindWidget))
+	UCommonTextBlock* EngineVersion;
+	
 };

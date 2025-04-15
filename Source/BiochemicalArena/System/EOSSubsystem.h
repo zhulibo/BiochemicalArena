@@ -136,6 +136,7 @@ public:
 	void LeaveLobby();
 	FOnLeaveLobbyComplete OnLeaveLobbyComplete;
 
+	FString GetLobbyVersion();
 	FString GetLobbyServerName();
 	FString GetLobbyModeName();
 	FString GetLobbyMapName();

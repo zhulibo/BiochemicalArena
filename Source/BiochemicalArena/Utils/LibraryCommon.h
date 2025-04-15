@@ -10,6 +10,8 @@ class BIOCHEMICALARENA_API ULibraryCommon : public UObject
 	GENERATED_BODY()
 
 public:
+	static FString GetProjectVersion();
+
 	static int32 GetBloodParticleCount(float Damage);
 	
 	static FString GetFormatTime(int32 CountdownTime);

@@ -13,6 +13,7 @@ class BIOCHEMICALARENA_API UServerDetail : public UCommonActivatableWidget
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual UWidget* NativeGetDesiredFocusTarget() const override;
 
 	UPROPERTY()
@@ -94,5 +95,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	class UTextChat* TextChat;
-	
+
+	UPROPERTY()
+	FTimerHandle TickNumTimerHandle;
+	void ChangeLobbyMemberTickNum();
+
 };

@@ -30,6 +30,7 @@
 // EOS大厅属性
 #define LOBBY_SCHEMA_ID FName(TEXT("GameLobby"))
 
+#define LOBBY_VERSION FName(TEXT("Version"))
 #define LOBBY_SERVER_NAME FName(TEXT("ServerName"))
 #define LOBBY_MODE_NAME FName(TEXT("ModeName"))
 #define LOBBY_MAP_NAME FName(TEXT("MapName"))
@@ -39,6 +40,7 @@
 #define LOBBY_MEMBER_TEAM FName(TEXT("Team"))
 #define LOBBY_MEMBER_READY FName(TEXT("Ready"))
 #define LOBBY_MEMBER_MSG FName(TEXT("Msg"))
+#define LOBBY_MEMBER_TICK_NUM FName(TEXT("TickNum"))
 
 // GAS
 #define TAG_MUTANT_SKILL_CD FName(TEXT("Mutant.Skill.CD"))
