@@ -5,14 +5,14 @@
 #include "CoreMinimal.h"
 
 // 颜色
-#define C_RED FColor(130, 0, 0, 255)
+#define C_RED FColor(200, 0, 0, 255)
 #define C_GREEN FColor(0, 130, 0, 255)
 #define C_BLUE FColor(0, 100, 200, 255)
 #define C_YELLOW FColor(238, 119, 0, 255)
 #define C_WHITE FColor(255, 255, 255, 255)
 #define C_GREY FColor(120, 120, 120, 255)
 
-// 地图
+// 地图路径
 #define MAP_LOGIN FString(TEXT("/Game/Maps/UI_Login"))
 #define MAP_MENU FString(TEXT("/Game/Maps/UI_Menu"))
 

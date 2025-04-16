@@ -73,7 +73,7 @@ void UTextChat::SendMsg()
 
 	if (Msg.Len() == 0)
 	{
-		NOTIFY(this, C_YELLOW, LOCTEXT("EmptyMsg", "Empty msg!"));
+		NOTIFY(this, C_YELLOW, LOCTEXT("EmptyMsg", "Empty msg"));
 		return;
 	}
 	if (Msg.Len() > 60)

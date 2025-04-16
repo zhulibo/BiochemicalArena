@@ -154,7 +154,7 @@ void AMutationMode::EndMatch()
 	GetWorldTimerManager().ClearTimer(SpawnPickupTimerHandle);
 
 	MatchEndTime = GetWorld()->GetTimeSeconds();
-	
+
 	Super::EndMatch();
 }
 

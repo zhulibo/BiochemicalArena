@@ -66,7 +66,7 @@ void UPlayerSubsystem::OnLoginComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("LoginFailed", "Login failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("LoginFailed", "Login failed"));
 	}
 }
 
@@ -119,12 +119,12 @@ void UPlayerSubsystem::ShowLoginNotify()
 	}
 	if (bShowNotify_NotLoggedIn)
 	{
-		NOTIFY(this, C_YELLOW, LOCTEXT("LoginStatusChanged_NotLoggedIn", "Login status changed: NotLoggedIn!"));
+		NOTIFY(this, C_YELLOW, LOCTEXT("LoginStatusChanged_NotLoggedIn", "Login status changed: NotLoggedIn"));
 		bShowNotify_NotLoggedIn = false;
 	}
 	if (bShowNotify_UsingLocalProfile)
 	{
-		NOTIFY(this, C_YELLOW, LOCTEXT("LoginStatusChanged_UsingLocalProfile", "Login status changed: UsingLocalProfile!"));
+		NOTIFY(this, C_YELLOW, LOCTEXT("LoginStatusChanged_UsingLocalProfile", "Login status changed: UsingLocalProfile"));
 		bShowNotify_UsingLocalProfile = false;
 	}
 }

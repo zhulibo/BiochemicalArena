@@ -57,8 +57,7 @@ void UServer::NativeConstruct()
 
 	// for (int32 i = 0; i < 100; ++i)
 	// {
-	// 	UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass);
-	// 	if (ServerLineButton)
+	// 	if (UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass))
 	// 	{
 	// 		ServerLineButtonContainer->AddChild(ServerLineButton);
 	// 	}
@@ -85,8 +84,12 @@ UWidget* UServer::NativeGetDesiredFocusTarget() const
 void UServer::OnCreateServerButtonClicked()
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnCreateServerButtonClicked ------------------------------------------"));
+	if (bIsClickLocked) return;
+	
 	if (EOSSubsystem)
 	{
+		bIsClickLocked = true;
+		
 		CreateServerButton->ButtonText->SetText(LOCTEXT("Creating", "Creating"));
 		CreateServerButton->SetIsEnabled(false);
 
@@ -97,6 +100,7 @@ void UServer::OnCreateServerButtonClicked()
 // 创建大厅完成事件
 void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 {
+	bIsClickLocked = false;
 	CreateServerButton->ButtonText->SetText(LOCTEXT("Create", "Create"));
 	CreateServerButton->SetIsEnabled(true);
 
@@ -105,7 +109,7 @@ void UServer::OnCreateLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("CreateServerFailed", "Create server failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("CreateServerFailed", "Create server failed"));
 	}
 }
 
@@ -184,28 +188,63 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 					if (UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass))
 					{
 						ServerLineButton->Lobby = Lobbies[i];
-
+						ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton);
+						ServerLineButtonContainer->AddChild(ServerLineButton);
+						
+						FString ServerName = FString("-1");
+						FString ModeName = FString("-1");
+						FString MapName = FString("-1");
 						if (Lobbies[i]->Attributes.Num() > 0)
 						{
-							ServerLineButton->Server->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_SERVER_NAME)->GetString()));
-							ServerLineButton->Mode->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_MODE_NAME)->GetString()));
-							ServerLineButton->Map->SetText(FText::FromString(Lobbies[i]->Attributes.Find(LOBBY_MAP_NAME)->GetString()));
+							ServerName = Lobbies[i]->Attributes.Find(LOBBY_SERVER_NAME)->GetString();
+							ModeName = Lobbies[i]->Attributes.Find(LOBBY_MODE_NAME)->GetString();
+							MapName = Lobbies[i]->Attributes.Find(LOBBY_MAP_NAME)->GetString();
+						}
+						
+						if (Lobbies[i]->Attributes.Num() > 0)
+						{
+							ServerLineButton->Server->SetText(FText::FromString(ServerName));
+							ServerLineButton->Mode->SetText(FText::FromString(ModeName));
+							ServerLineButton->Map->SetText(FText::FromString(MapName));
 						}
 						ServerLineButton->Player->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Lobbies[i]->Members.Num(), Lobbies[i]->MaxMembers)));
 
 						// 游戏进度
 						int64 Status = EOSSubsystem->GetLobbyStatus();
 						int64 MaxStatus = -1;
-						if (EOSSubsystem->GetLobbyModeName() == MUTATION)
+						if (ModeName == MUTATION)
 						{
 							MaxStatus = 12;
 						}
-						else if (EOSSubsystem->GetLobbyModeName() == TEAM_DEAD_MATCH || EOSSubsystem->GetLobbyModeName() == MELEE)
+						else if (ModeName == TEAM_DEAD_MATCH || ModeName == MELEE)
 						{
 							MaxStatus = 6;
 						}
-						// 字
 						ServerLineButton->Status->SetText(FText::FromString(FString::Printf(TEXT("%lld/%lld"), Status, MaxStatus)));
+						
+						float ProgressRate = Status / MaxStatus;
+						FColor StatusColor;
+						if (ProgressRate < 0.f)
+						{
+							StatusColor = C_GREY;
+						}
+						else if (ProgressRate == 0.f)
+						{
+							StatusColor = C_WHITE;
+						}
+						else if (ProgressRate < 0.5)
+						{
+							StatusColor = C_GREEN;
+						}
+						else if (ProgressRate < 0.8)
+						{
+							StatusColor = C_YELLOW;
+						}
+						else
+						{
+							StatusColor = C_RED;
+						}
+						ServerLineButton->Status->SetColorAndOpacity(StatusColor);
 
 						// TODO Ping
 						int32 Ping = -1;
@@ -215,7 +254,7 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 						{
 							PingColor = C_GREY;
 						}
-						if (Ping < 100)
+						else if (Ping < 100)
 						{
 							PingColor = C_GREEN;
 						}
@@ -228,9 +267,6 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 							PingColor = C_RED;
 						}
 						ServerLineButton->Ping->SetColorAndOpacity(PingColor);
-						
-						ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton);
-						ServerLineButtonContainer->AddChild(ServerLineButton);
 					}
 				}
 			}
@@ -242,7 +278,7 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("FindServerFailed", "Find server failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("FindServerFailed", "Find server failed"));
 	}
 }
 
@@ -316,21 +352,27 @@ void UServer::OnPageNextButtonClicked()
 // 加入大厅
 void UServer::OnServerLineButtonClicked(UServerLineButton* ServerLineButton)
 {
+	if (bIsClickLocked) return;
+
 	if (EOSSubsystem && ServerLineButton->Lobby.IsValid())
 	{
-		EOSSubsystem->JoinLobby(ServerLineButton->Lobby.ToSharedRef());
+		bIsClickLocked = true;
+
+		EOSSubsystem->JoinLobby(ServerLineButton->Lobby);
 	}
 }
 
 // 加入大厅完成事件
 void UServer::OnJoinLobbyComplete(bool bWasSuccessful)
 {
+	bIsClickLocked = false;
+
 	if (bWasSuccessful)
 	{
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("JoinServerFailed", "Join server failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("JoinServerFailed", "Join server failed"));
 	}
 }
 
@@ -351,15 +393,9 @@ void UServer::GoToServerDetail()
 void UServer::OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnLobbyInvitationAdded"));
-	
-	if (EOSSubsystem == nullptr) EOSSubsystem = GetGameInstance()->GetSubsystem<UEOSSubsystem>();
-	if (EOSSubsystem)
-	{
-		EOSSubsystem->JoinLobby(LobbyInvitationAdded.Lobby);
-	}
 }
 
-void UServer::OnUILobbyJoinRequested(const FUILobbyJoinRequested& FuiLobbyJoinRequested)
+void UServer::OnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnUILobbyJoinRequested"));
 }

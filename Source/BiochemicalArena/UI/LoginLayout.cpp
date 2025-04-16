@@ -54,7 +54,7 @@ void ULoginLayout::OnLoginButtonClicked(ECoolLoginType LoginType, FString Id, FS
 		{
 			PlayerSubsystem->Login(LoginType, Id, Token);
 	
-			LoginStatus->SetText(LOCTEXT("Logging", "Logging"));
+			LoginStatus->SetText(LOCTEXT("Logging", "Logging..."));
 			LoginButton->SetIsEnabled(false);
 		}
 	}
@@ -64,12 +64,12 @@ void ULoginLayout::OnLoginComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
-		LoginStatus->SetText(LOCTEXT("Redirecting", "Redirecting"));
+		LoginStatus->SetText(LOCTEXT("Redirecting", "Redirecting..."));
 	}
 	else
 	{
 		LoginButton->SetIsEnabled(true);
-		LoginStatus->SetText(LOCTEXT("LoginFailed", "Login failed!"));
+		LoginStatus->SetText(LOCTEXT("LoginFailed", "Login failed"));
 	}
 }
 

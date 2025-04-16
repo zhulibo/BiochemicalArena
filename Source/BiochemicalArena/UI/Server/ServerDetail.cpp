@@ -58,7 +58,7 @@ UWidget* UServerDetail::NativeGetDesiredFocusTarget() const
 		}
 		else
 		{
-			if (EOSSubsystem->GetLobbyStatus())
+			if (EOSSubsystem->GetLobbyStatus() != 0)
 			{
 				return JoinServerButton;
 			}
@@ -84,14 +84,18 @@ void UServerDetail::NativeConstruct()
 
 	bIsExitingLobby = false;
 
-	GetWorld()->GetTimerManager().SetTimer(TickNumTimerHandle, this, &ThisClass::ChangeLobbyMemberTickNum, 10.f, true);
+	// 回合置为未开始
+	if (EOSSubsystem && EOSSubsystem->IsLobbyHost())
+	{
+		EOSSubsystem->ModifyLobbyAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
+			{LOBBY_STATUS, static_cast<int64>(0)},
+		});
+	}
 }
 
 void UServerDetail::NativeDestruct()
 {
 	Super::NativeDestruct();
-
-	GetWorld()->GetTimerManager().ClearTimer(TickNumTimerHandle);
 }
 
 // 设置大厅属性
@@ -128,7 +132,7 @@ void UServerDetail::SetUIButtonState()
 		MapComboBox->SetIsEnabled(true);
 
 		StartServerButton->SetIsEnabled(true);
-		// 如果之前不是房主且焦点在准备或加入按钮上，变成房主后准备或加入按钮会被禁用，把焦点放在开始按钮上
+		// 如果之前不是房主且焦点在准备或加入按钮上，变成房主后把焦点放在开始按钮上（准备和加入按钮会被禁用）
 		if (ReadyButton->HasFocusedDescendants() || JoinServerButton->HasFocusedDescendants())
 		{
 			StartServerButton->SetFocus();
@@ -207,7 +211,7 @@ void UServerDetail::UpdatePlayerList()
 		{
 			if (EOSSubsystem->GetMemberReady(Member.Value))
 			{
-				if (EOSSubsystem->GetLobbyStatus())
+				if (EOSSubsystem->GetLobbyStatus() != 0) // 加入游戏时已自动设为准备状态
 				{
 					Status = LOCTEXT("Playing", "Playing");
 				}
@@ -378,7 +382,7 @@ void UServerDetail::OnModifyLobbyAttrComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("ModifyServerAttrFailed", "Modify server attributes failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("ModifyServerAttrFailed", "Modify server attributes failed"));
 	}
 }
 
@@ -429,7 +433,11 @@ void UServerDetail::OnLobbyAttrChanged(const FLobbyAttributesChanged& LobbyAttri
 				SetUIButtonState();
 			}
 
-			// TODO
+			// 如果玩家处于准备状态，则加入游戏
+			if (EOSSubsystem->GetMemberReady(EOSSubsystem->GetLocalMember()))
+			{
+				OnJoinServerButtonClicked();
+			}
 		}
 	}
 }
@@ -477,7 +485,8 @@ void UServerDetail::OnModifyLobbyMemberAttrComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("ModifyPlayerAttrFailed", "Modify player attribute failed!"));
+		// TODO 待 UEOSSubsystem::ChangeLobbyMemberTickNum 删除后取消注释
+		// NOTIFY(this, C_RED, LOCTEXT("ModifyPlayerAttrFailed", "Modify player attribute failed"));
 	}
 }
 
@@ -514,8 +523,7 @@ void UServerDetail::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged
 
 void UServerDetail::OnStartServerButtonClicked()
 {
-	// TODO
-	// if (!CanStartServer()) return;
+	if (!CanStartServer()) return;
 
 	if (EOSSubsystem && EOSSubsystem->IsLobbyHost())
 	{
@@ -536,7 +544,7 @@ bool UServerDetail::CanStartServer()
 
 	if (MapComboBox->GetSelectedOption().IsEmpty())
 	{
-		NOTIFY(this, C_YELLOW, LOCTEXT("NeedSelectMap", "Please select map!"));
+		NOTIFY(this, C_YELLOW, LOCTEXT("NeedSelectMap", "Please select map"));
 		return false;
 	}
 
@@ -552,7 +560,7 @@ bool UServerDetail::CanStartServer()
 		}
 		if (ReadyPlayerNum == 0)
 		{
-			NOTIFY(this, C_YELLOW, LOCTEXT("RequirePlayer", "Require at least 1 player to be ready!"));
+			NOTIFY(this, C_YELLOW, LOCTEXT("RequirePlayerReady", "Require at least 1 player to be ready"));
 			return false;
 		}
 	}
@@ -562,7 +570,7 @@ bool UServerDetail::CanStartServer()
 		
 		if (HostTeam == ETeam::NoTeam)
 		{
-			NOTIFY(this, C_YELLOW, LOCTEXT("HostTeamNotFound", "Host's team was not found!"));
+			NOTIFY(this, C_YELLOW, LOCTEXT("HostTeamNotFound", "Host's team was not found"));
 			return false;
 		}
 
@@ -578,7 +586,7 @@ bool UServerDetail::CanStartServer()
 
 		if (!bAnotherTeamHasPlayerReady)
 		{
-			NOTIFY(this, C_YELLOW, FText::Format(LOCTEXT("RequirePlayerAtTeam", "Require at least 1 player to be ready in team {0}!"), FText::AsNumber(HostTeam == ETeam::Team1 ? 1 : 2)));
+			NOTIFY(this, C_YELLOW, FText::Format(LOCTEXT("RequirePlayerReadyInTeam", "Require at least 1 player to be ready in team {0}"), FText::AsNumber(HostTeam == ETeam::Team1 ? 1 : 2)));
 			return false;
 		}
 	}
@@ -643,7 +651,7 @@ void UServerDetail::OnLeaveLobbyComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("LeaveServerFailed", "Leave server failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("LeaveServerFailed", "Leave server failed"));
 	}
 }
 
@@ -674,19 +682,8 @@ void UServerDetail::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
 
 	if (!bIsExitingLobby)
 	{
-		NOTIFY(this, C_WHITE, LOCTEXT("GotKicked", "Got kicked!"));
+		NOTIFY(this, C_WHITE, LOCTEXT("GotKicked", "Got kicked"));
 	}
-}
-
-// LobbyMember's Attributes有时为空，未为尽量解决此bug，定时修改TickNum Attribute，以便同步所有Attributes到其他客户端
-void UServerDetail::ChangeLobbyMemberTickNum()
-{
-	if (EOSSubsystem == nullptr) return;
-
-	int64 TickNum = FMath::RandRange(0, 999);
-	EOSSubsystem->ModifyLobbyMemberAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
-		{ LOBBY_MEMBER_TICK_NUM, TickNum}
-	});
 }
 
 #undef LOCTEXT_NAMESPACE

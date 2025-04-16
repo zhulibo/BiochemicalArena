@@ -61,7 +61,7 @@ void UPlayerLineButton::OnPromoteLobbyMemberComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("ChangeHostFailed", "Change host failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("ChangeHostFailed", "Change host failed"));
 	}
 }
 
@@ -81,7 +81,7 @@ void UPlayerLineButton::OnKickLobbyMemberComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("KickPlayerFailed", "Kick player failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("KickPlayerFailed", "Kick player failed"));
 	}
 }
 

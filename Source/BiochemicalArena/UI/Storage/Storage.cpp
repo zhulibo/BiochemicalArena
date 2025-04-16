@@ -89,7 +89,7 @@ void UStorage::OnQueryEntitlementsComplete(bool bWasSuccessful)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("QueryEntitlementsFailed", "Get purchased items failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("QueryEntitlementsFailed", "Get purchased items failed"));
 	}
 }
 

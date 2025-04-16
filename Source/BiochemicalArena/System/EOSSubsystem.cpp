@@ -54,6 +54,10 @@ void UEOSSubsystem::Deinitialize()
 // 登录
 void UEOSSubsystem::Login(FPlatformUserId TempPlatformUserId, ECoolLoginType LoginType, FString Id, FString Token)
 {
+	// TODO 删除此定时器
+	GetWorld()->GetTimerManager().ClearTimer(TickNumTimerHandle);
+	GetWorld()->GetTimerManager().SetTimer(TickNumTimerHandle, this, &ThisClass::ChangeLobbyMemberTickNum, 2.f, true);
+
 	if (AuthPtr == nullptr) return;
 
 	PlatformUserId = TempPlatformUserId;
@@ -66,7 +70,7 @@ void UEOSSubsystem::Login(FPlatformUserId TempPlatformUserId, ECoolLoginType Log
 		GetUserInfo();
 
 		OnLoginComplete.Broadcast(true);
-		
+
 		return;
 	}
 
@@ -212,7 +216,7 @@ void UEOSSubsystem::CreateLobby()
 	Params.Attributes.Emplace(LOBBY_VERSION, ULibraryCommon::GetProjectVersion());
 	Params.Attributes.Emplace(LOBBY_SERVER_NAME, FString(TEXT("Default Name")));
 	Params.Attributes.Emplace(LOBBY_MODE_NAME, MUTATION);
-	Params.Attributes.Emplace(LOBBY_MAP_NAME, FString(TEXT("DevMutation")));
+	Params.Attributes.Emplace(LOBBY_MAP_NAME, FString(TEXT("Colosseum")));
 	Params.Attributes.Emplace(LOBBY_STATUS, static_cast<int64>(0));
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_NAME, UserInfo->DisplayName);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_TEAM, static_cast<int64>(1));
@@ -295,12 +299,17 @@ void UEOSSubsystem::FindLobbies(FString LobbyName, FString GameMode, FString Map
 }
 
 // 加入大厅
-void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
+void UEOSSubsystem::JoinLobby(TSharedPtr<const FLobby> Lobby)
 {
-	if (LobbyPtr == nullptr || AccountInfo == nullptr) return;
+	if (LobbyPtr == nullptr || AccountInfo == nullptr || Lobby == nullptr) return;
 
+	// 判断版本是否一致
+	FString LobbyVersion = FString();
+	if (const FSchemaVariant* Attr = Lobby->Attributes.Find(LOBBY_VERSION))
+	{
+		LobbyVersion = Attr->GetString();
+	}
 	FString YourVersion = ULibraryCommon::GetProjectVersion();
-	FString LobbyVersion = GetLobbyVersion();
 	if (YourVersion != LobbyVersion)
 	{
 		NOTIFY(this, C_YELLOW, FText::Format(LOCTEXT("VersionInconsistent", "LobbyVersion {0} YourVersion {1}"), FText::FromString(LobbyVersion), FText::FromString(YourVersion)));
@@ -313,7 +322,7 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 	Params.LocalName = LocalLobbyName;
 	Params.LobbyId = Lobby->LobbyId;
 	Params.bPresenceEnabled = true;
-	Params.UserAttributes.Emplace(LOBBY_MEMBER_TEAM, static_cast<int64>(2)); // TODO 加入人数少的队伍
+	Params.UserAttributes.Emplace(LOBBY_MEMBER_TEAM, static_cast<int64>(FMath::RandRange(1, 2)));
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_NAME, UserInfo->DisplayName);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_READY, false);
 	Params.UserAttributes.Emplace(LOBBY_MEMBER_MSG, FString());
@@ -331,6 +340,15 @@ void UEOSSubsystem::JoinLobby(TSharedRef<const FLobby> Lobby)
 			UE_LOG(LogTemp, Error, TEXT("JoinLobby %s"), *Result.GetErrorValue().GetLogString());
 			OnJoinLobbyComplete.Broadcast(false);
 		}
+	});
+}
+
+// LobbyMember's Attributes有时为空，未为尽量解决此bug，定时修改TickNum Attribute，以便同步所有Attributes到其他客户端
+void UEOSSubsystem::ChangeLobbyMemberTickNum()
+{
+	int64 TickNum = FMath::RandRange(0, 999);
+	ModifyLobbyMemberAttr(TMap<FSchemaAttributeId, FSchemaVariant>{
+		{ LOBBY_MEMBER_TICK_NUM, TickNum}
 	});
 }
 
@@ -563,143 +581,107 @@ void UEOSSubsystem::LeaveLobby()
 	});
 }
 
-FString UEOSSubsystem::GetLobbyVersion()
-{
-	if (CurrentLobby == nullptr || CurrentLobby->Attributes.Num() == 0)
-	{
-		return FString();
-	}
-
-	const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_VERSION);
-	if (Attr == nullptr)
-	{
-		return FString();
-	}
-	
-	return Attr->GetString();
-}
-
 FString UEOSSubsystem::GetLobbyServerName()
 {
-	if (CurrentLobby == nullptr || CurrentLobby->Attributes.Num() == 0)
+	if (CurrentLobby)
 	{
-		return FString();
-	}
-
-	const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_SERVER_NAME);
-	if (Attr == nullptr)
-	{
-		return FString();
+		if (const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_SERVER_NAME))
+		{
+			return Attr->GetString();
+		}
 	}
 	
-	return Attr->GetString();
+	return FString();
 }
 
 FString UEOSSubsystem::GetLobbyModeName()
 {
-	if (CurrentLobby == nullptr || CurrentLobby->Attributes.Num() == 0)
+	if (CurrentLobby)
 	{
-		return FString();
+		if (const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_MODE_NAME))
+		{
+			return Attr->GetString();
+		}
 	}
 	
-	const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_MODE_NAME);
-	if (Attr == nullptr)
-	{
-		return FString();
-	}
-	
-	return Attr->GetString();
+	return FString();
 }
 
 FString UEOSSubsystem::GetLobbyMapName()
 {
-	if (CurrentLobby == nullptr || CurrentLobby->Attributes.Num() == 0)
+	if (CurrentLobby)
 	{
-		return FString();
+		if (const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_MAP_NAME))
+		{
+			return Attr->GetString();
+		}
 	}
 	
-	const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_MAP_NAME);
-	if (Attr == nullptr)
-	{
-		return FString();
-	}
-	
-	return Attr->GetString();
+	return FString();
 }
 
 int64 UEOSSubsystem::GetLobbyStatus()
 {
-	if (CurrentLobby == nullptr || CurrentLobby->Attributes.Num() == 0)
+	if (CurrentLobby)
 	{
-		return 0;
+		if (const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_STATUS))
+		{
+			return Attr->GetInt64();
+		}
 	}
-
-	const FSchemaVariant* Attr = CurrentLobby->Attributes.Find(LOBBY_STATUS);
-	if (Attr == nullptr)
-	{
-		return 0;
-	}
-
-	return Attr->GetInt64();
+	
+	return 0;
 }
 
 ETeam UEOSSubsystem::GetMemberTeam(TSharedPtr<const FLobbyMember> Member)
 {
-	if (Member == nullptr || Member->Attributes.Num() == 0)
+	if (Member)
 	{
-		return ETeam::NoTeam;
+		if (const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_TEAM))
+		{
+			return Attr->GetInt64() == 1 ? ETeam::Team1 : ETeam::Team2;
+		}
 	}
 	
-	const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_TEAM);
-	if (Attr == nullptr)
-	{
-		return ETeam::NoTeam;
-	}
-	
-	return Attr->GetInt64() == 1 ? ETeam::Team1 : ETeam::Team2;
+	return ETeam::NoTeam;
 }
 
 bool UEOSSubsystem::GetMemberReady(TSharedPtr<const FLobbyMember> Member)
 {
-	if (Member == nullptr || Member->Attributes.Num() == 0)
+	if (Member)
 	{
-		return false;
+		if (const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_READY))
+		{
+			return Attr->GetBoolean();
+		}
 	}
 	
-	const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_READY);
-	if (Attr == nullptr)
-	{
-		return false;
-	}
-
-	return Attr->GetBoolean();
+	return false;
 }
 
 FString UEOSSubsystem::GetMemberName(TSharedPtr<const FLobbyMember> Member)
 {
-	if (Member == nullptr || Member->Attributes.Num() == 0)
+	if (Member)
 	{
-		return FString(TEXT("-1"));
+		if (const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_NAME))
+		{
+			return Attr->GetString();
+		}
 	}
-
-	const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_NAME);
-	if (Attr == nullptr)
-	{
-		return FString(TEXT("-1"));
-	}
-
-	return Attr->GetString();
+	
+	return FString(TEXT("-1"));
 }
 
 TSharedPtr<const FLobbyMember> UEOSSubsystem::GetMember(FAccountId AccountId)
 {
-	if (CurrentLobby == nullptr || CurrentLobby->Attributes.Num() == 0) return nullptr;
-	
-	for (const auto& Member : CurrentLobby->Members)
+	if (CurrentLobby)
 	{
-		if (Member.Value->AccountId == AccountId)
+		for (const auto& Member : CurrentLobby->Members)
 		{
-			return Member.Value;
+			if (Member.Value->AccountId == AccountId)
+			{
+				return Member.Value;
+			}
 		}
 	}
 	
@@ -708,44 +690,48 @@ TSharedPtr<const FLobbyMember> UEOSSubsystem::GetMember(FAccountId AccountId)
 
 FString UEOSSubsystem::GetMemberMsg(TSharedPtr<const FLobbyMember> Member)
 {
-	if (Member == nullptr || Member->Attributes.Num() == 0)
+	if (Member)
 	{
-		return FString();
+		if (const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_MSG))
+		{
+			return Attr->GetString();
+		}
 	}
 	
-	const FSchemaVariant* Attr = Member->Attributes.Find(LOBBY_MEMBER_MSG);
-	if (Attr == nullptr)
-	{
-		return FString();
-	}
-	
-	return Attr->GetString();
+	return FString();
 }
 
 bool UEOSSubsystem::IsLobbyHost(TSharedPtr<const FLobbyMember> Member)
 {
-	if (CurrentLobby == nullptr) return false;
-
-	// 未传Member，判断本地是否为主机
-	if (Member == nullptr)
+	if (CurrentLobby)
 	{
-		if (AccountInfo == nullptr) return false;
-
-		return AccountInfo->AccountId == CurrentLobby->OwnerAccountId;
+		// 未传Member，判断本地是否为主机
+		if (Member == nullptr)
+		{
+			if (AccountInfo)
+			{
+				return AccountInfo->AccountId == CurrentLobby->OwnerAccountId;
+			}
+		}
+		else
+		{
+			return Member->AccountId == CurrentLobby->OwnerAccountId;
+		}
 	}
-
-	return Member->AccountId == CurrentLobby->OwnerAccountId;
+	
+	return false;
 }
 
 TSharedPtr<const FLobbyMember> UEOSSubsystem::GetLobbyHost()
 {
-	if (CurrentLobby == nullptr) return nullptr;
-	
-	for (auto& Member : CurrentLobby->Members)
+	if (CurrentLobby)
 	{
-		if (IsLobbyHost(Member.Value))
+		for (auto& Member : CurrentLobby->Members)
 		{
-			return Member.Value;
+			if (IsLobbyHost(Member.Value))
+			{
+				return Member.Value;
+			}
 		}
 	}
 	
@@ -754,20 +740,24 @@ TSharedPtr<const FLobbyMember> UEOSSubsystem::GetLobbyHost()
 
 bool UEOSSubsystem::IsLocalMember(TSharedPtr<const FLobbyMember> Member)
 {
-	if (AccountInfo == nullptr) return false;
+	if (AccountInfo)
+	{
+		return Member->AccountId == AccountInfo->AccountId;
+	}
 	
-	return Member->AccountId == AccountInfo->AccountId;
+	return false;
 }
 
 TSharedPtr<const FLobbyMember> UEOSSubsystem::GetLocalMember()
 {
-	if (CurrentLobby == nullptr) return nullptr;
-	
-	for (auto& Member : CurrentLobby->Members)
+	if (CurrentLobby)
 	{
-		if (IsLocalMember(Member.Value))
+		for (auto& Member : CurrentLobby->Members)
 		{
-			return Member.Value;
+			if (IsLocalMember(Member.Value))
+			{
+				return Member.Value;
+			}
 		}
 	}
 

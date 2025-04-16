@@ -67,9 +67,10 @@ protected:
 	void OnJoinLobbyComplete(bool bWasSuccessful);
 	void OnLobbyJoined(const FLobbyJoined& LobbyJoined);
 	void GoToServerDetail();
+	bool bIsClickLocked = false;
 
 	// 邀请
 	void OnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded);
-	void OnUILobbyJoinRequested(const FUILobbyJoinRequested& FuiLobbyJoinRequested);
+	void OnUILobbyJoinRequested(const FUILobbyJoinRequested& UILobbyJoinRequested);
 	
 };

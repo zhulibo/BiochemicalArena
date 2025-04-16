@@ -142,7 +142,7 @@ void UShop::OnCheckoutComplete(bool bWasSuccessful, TOptional<FString> String)
 	}
 	else
 	{
-		NOTIFY(this, C_RED, LOCTEXT("CheckoutFailed", "Buy item failed!"));
+		NOTIFY(this, C_RED, LOCTEXT("CheckoutFailed", "Buy item failed"));
 	}
 }
 

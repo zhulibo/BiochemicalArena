@@ -96,8 +96,4 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UTextChat* TextChat;
 
-	UPROPERTY()
-	FTimerHandle TickNumTimerHandle;
-	void ChangeLobbyMemberTickNum();
-
 };

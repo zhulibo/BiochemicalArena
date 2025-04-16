@@ -95,9 +95,12 @@ public:
 	FOnCreateLobbyComplete OnCreateLobbyComplete;
 	void FindLobbies(FString LobbyName, FString GameMode, FString MapName);
 	FOnFindLobbiesComplete OnFindLobbiesComplete;
-	void JoinLobby(TSharedRef<const FLobby> Lobby);
+	void JoinLobby(TSharedPtr<const FLobby> Lobby);
 	FOnJoinLobbyComplete OnJoinLobbyComplete;
 	bool GetJoinedLobbies();
+	UPROPERTY()
+	FTimerHandle TickNumTimerHandle;
+	void ChangeLobbyMemberTickNum();
 
 	FOnLobbyInvitationAdded OnLobbyInvitationAdded;
 	void BroadcastOnLobbyInvitationAdded(const FLobbyInvitationAdded& LobbyInvitationAdded);
@@ -136,7 +139,6 @@ public:
 	void LeaveLobby();
 	FOnLeaveLobbyComplete OnLeaveLobbyComplete;
 
-	FString GetLobbyVersion();
 	FString GetLobbyServerName();
 	FString GetLobbyModeName();
 	FString GetLobbyMapName();
