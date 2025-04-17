@@ -25,14 +25,12 @@ AEquipment::AEquipment()
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CollisionSphere->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
 	CollisionSphere->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore); // 忽略角色胶囊体
-	CollisionSphere->SetCollisionResponseToChannel(ECC_Blood, ECollisionResponse::ECR_Ignore);
 	CollisionSphere->SetLinearDamping(1.f);
 	CollisionSphere->SetSphereRadius(20.f);
 
 	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("EquipmentMesh"));
 	EquipmentMesh->SetupAttachment(RootComponent);
 	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	EquipmentMesh->SetCollisionResponseToChannel(ECC_Blood, ECollisionResponse::ECR_Ignore);
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	OverlapSphere->SetupAttachment(RootComponent);

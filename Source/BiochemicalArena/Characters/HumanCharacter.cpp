@@ -426,9 +426,9 @@ void AHumanCharacter::ServerDetectOverlappingEquipment_Implementation()
 // 装备检测到的重叠装备
 void AHumanCharacter::EquipOverlappingEquipment(AEquipment* Equipment)
 {
-	if (bIsDead || Equipment == nullptr || Equipment->GetOwner()) return;
-	if (CombatComponent && CombatComponent->HasEquippedThisTypeEquipment(Equipment->GetEquipmentType())) return;
-	if (CombatComponent)
+	if (bIsDead || Equipment == nullptr || Equipment->GetOwner() || CombatComponent == nullptr) return;
+	if (CombatComponent->HasEquippedThisTypeEquipment(Equipment->GetEquipmentType())) return;
+	if (CombatComponent->MeleeEquipment) // 排除玩家刚重生还没有装备好武器（近战武器装备后无法丢弃）
 	{
 		CombatComponent->MulticastEquipEquipment2(Equipment);
 	}

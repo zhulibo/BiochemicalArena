@@ -38,7 +38,6 @@ ABaseCharacter::ABaseCharacter()
 	GetMesh()->SetGenerateOverlapEvents(true);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECC_Blood, ECollisionResponse::ECR_Ignore);
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh(), TEXT("CameraSocket"));
@@ -58,7 +57,6 @@ ABaseCharacter::ABaseCharacter()
 	GetCharacterMovement()->AirControlBoostMultiplier = 1;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Blood, ECollisionResponse::ECR_Ignore);
 }
 
 void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -283,7 +281,7 @@ void ABaseCharacter::OnInputMethodChanged(ECommonInputType TempCommonInputType)
 void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp,
 	FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (BloodEffect_Projectile)
+	if (BloodEffect)
 	{
 		// UE_LOG(LogTemp, Warning, TEXT("ABaseCharacter::OnHit Location: %s"), *Hit.ImpactPoint.ToString());
 		// UE_LOG(LogTemp, Warning, TEXT("ABaseCharacter::OnHit Rotation: %s"), *Hit.ImpactNormal.Rotation().ToString());
@@ -291,7 +289,7 @@ void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPr
 		FRotator HitRotation = Hit.ImpactNormal.Rotation();
 		auto BloodEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 			GetWorld(),
-			BloodEffect_Projectile,
+			BloodEffect,
 			Hit.ImpactPoint,
 			FRotator(-HitRotation.Pitch, HitRotation.Yaw + 180.f, HitRotation.Roll)
 		);
@@ -299,7 +297,7 @@ void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPr
 		if (AProjectileBullet* ProjectileBullet = Cast<AProjectileBullet>(OtherActor))
 		{
 			float Damage = ProjectileBullet->GetDamage(Hit.Distance);
-			BloodEffectComponent->SetVariableInt("ParticleCount", ULibraryCommon::GetBloodParticleCount(Damage));
+			BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
 		}
 		BloodEffectComponent->SetVariableLinearColor("Color", BloodColor);
 	}

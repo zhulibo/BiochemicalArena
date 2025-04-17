@@ -343,7 +343,7 @@ void UEOSSubsystem::JoinLobby(TSharedPtr<const FLobby> Lobby)
 	});
 }
 
-// LobbyMember's Attributes有时为空，未为尽量解决此bug，定时修改TickNum Attribute，以便同步所有Attributes到其他客户端
+// LobbyMember's Attributes有时为空，为尽量解决此bug，定时修改TickNum Attribute，以便同步所有Attributes到其他客户端
 void UEOSSubsystem::ChangeLobbyMemberTickNum()
 {
 	int64 TickNum = FMath::RandRange(0, 999);

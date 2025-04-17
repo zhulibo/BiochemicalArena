@@ -40,9 +40,7 @@ public:
 	UPROPERTY()
 	FColor BloodColor;
 	UPROPERTY(EditAnywhere)
-	class UNiagaraSystem* BloodEffect_Projectile;
-	UPROPERTY(EditAnywhere)
-	UNiagaraSystem* BloodEffect_Melee;
+	class UNiagaraSystem* BloodEffect;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

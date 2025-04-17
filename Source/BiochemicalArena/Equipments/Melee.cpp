@@ -126,7 +126,7 @@ void AMelee::DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherAc
 {
 	ABaseCharacter* OverlappedCharacter = Cast<ABaseCharacter>(OtherActor);
 
-	if (OverlappedCharacter == nullptr || OverlappedCharacter->BloodEffect_Melee == nullptr) return;
+	if (OverlappedCharacter == nullptr || OverlappedCharacter->BloodEffect == nullptr) return;
 
 	TArray<FHitResult> TraceResults;
 
@@ -150,12 +150,12 @@ void AMelee::DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherAc
 		{
 			auto BloodEffectComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 				GetWorld(),
-				OverlappedCharacter->BloodEffect_Melee,
+				OverlappedCharacter->BloodEffect,
 				TraceResult.ImpactPoint,
 				TraceResult.ImpactNormal.Rotation()
 			);
 
-			BloodEffectComponent->SetVariableInt("ParticleCount", ULibraryCommon::GetBloodParticleCount(Damage));
+			BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
 			BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
 
 			break;

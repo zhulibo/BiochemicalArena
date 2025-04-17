@@ -25,7 +25,6 @@
 // 角色碰撞通道
 #define ECC_TEAM1_MESH ECollisionChannel::ECC_GameTraceChannel1
 #define ECC_TEAM2_MESH ECollisionChannel::ECC_GameTraceChannel2
-#define ECC_Blood ECollisionChannel::ECC_GameTraceChannel3
 
 // EOS大厅属性
 #define LOBBY_SCHEMA_ID FName(TEXT("GameLobby"))
