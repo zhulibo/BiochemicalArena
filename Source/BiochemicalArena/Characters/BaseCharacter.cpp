@@ -29,6 +29,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Data/InputAsset.h"
 #include "Interfaces/InteractableTarget.h"
+#include "BiochemicalArena/Effects/BloodCollision.h"
 #include "Net/UnrealNetwork.h"
 
 ABaseCharacter::ABaseCharacter()
@@ -293,13 +294,18 @@ void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPr
 			Hit.ImpactPoint,
 			FRotator(-HitRotation.Pitch, HitRotation.Yaw + 180.f, HitRotation.Roll)
 		);
-
-		if (AProjectileBullet* ProjectileBullet = Cast<AProjectileBullet>(OtherActor))
+		if (BloodEffectComponent)
 		{
-			float Damage = ProjectileBullet->GetDamage(Hit.Distance);
-			BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
+			if (AProjectileBullet* ProjectileBullet = Cast<AProjectileBullet>(OtherActor))
+			{
+				float Damage = ProjectileBullet->GetDamage(Hit.Distance);
+				BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
+			}
+			BloodEffectComponent->SetVariableLinearColor("Color", BloodColor);
+
+			UBloodCollision* CollisionCB = NewObject<UBloodCollision>(this);
+			BloodEffectComponent->SetVariableObject(FName(TEXT("CollisionCB")), CollisionCB);
 		}
-		BloodEffectComponent->SetVariableLinearColor("Color", BloodColor);
 	}
 }
 
@@ -376,7 +382,7 @@ void ABaseCharacter::PlayFootSound()
 	Params.AddIgnoredActor(this);
 	Params.bReturnPhysicalMaterial = true;
 
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility, Params);
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 	if (HitResult.bBlockingHit && AssetSubsystem && AssetSubsystem->CharacterAsset)
 	{
@@ -410,7 +416,7 @@ void ABaseCharacter::PlayFootLandSound()
 	Params.AddIgnoredActor(this);
 	Params.bReturnPhysicalMaterial = true;
 
-	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
+	GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility, Params);
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 	if (HitResult.bBlockingHit && AssetSubsystem && AssetSubsystem->CharacterAsset)
 	{

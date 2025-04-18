@@ -90,6 +90,9 @@ protected:
 	UPROPERTY()
 	bool bIsAutomatic;
 
+	UPROPERTY()
+	int32 PelletNum;
+	
 	void InitData();
 
 	void SpendRound();
@@ -110,5 +113,7 @@ public:
 
 	FORCEINLINE float GetFireDelay() const { return 60 / FireRate; }
 	FORCEINLINE bool IsAutomatic() const { return bIsAutomatic; }
+	
+	FORCEINLINE int32 GetPelletNum() const { return PelletNum; }
 
 };

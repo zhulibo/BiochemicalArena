@@ -39,5 +39,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "GAS")
 	UMaterialInterface* MI_Overlay_Dead;
-
+	
+	UPROPERTY(EditAnywhere)
+	UMaterialInterface* MI_BloodDecal;
+	
 };

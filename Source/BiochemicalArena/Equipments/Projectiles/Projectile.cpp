@@ -78,7 +78,7 @@ float AProjectile::GetDamage(float Distance)
 	{
 		if (UCurveFloat* DamageCurve = WeaponData->DamageCurve)
 		{
-			Damage = DamageCurve->GetFloatValue(Distance / 100);
+			Damage = DamageCurve->GetFloatValue(Distance / 100) / WeaponData->PelletNum;
 		}
 	}
 
@@ -98,7 +98,7 @@ float AProjectile::GetImpulse(float DeclineDamage)
 
 			if (MaxDamage != 0)
 			{
-				Impulse = DeclineDamage / MaxDamage * WeaponData->Impulse;
+				Impulse = DeclineDamage / MaxDamage * WeaponData->Impulse / WeaponData->PelletNum;
 			}
 		}
 	}

@@ -45,6 +45,7 @@ void AWeapon::InitData()
 			FireRate = WeaponData->FireRate;
 			bIsAutomatic = WeaponData->bIsAutomatic;
 			MoveSpeedMul = WeaponData->MoveSpeedMul;
+			PelletNum = WeaponData->PelletNum;
 
 			CarriedAmmo = MaxCarriedAmmo;
 			Ammo = MagCapacity;

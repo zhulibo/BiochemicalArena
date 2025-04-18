@@ -8,6 +8,7 @@
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Characters/Components/CombatComponent.h"
 #include "..\Characters\Components\CombatStateType.h"
+#include "BiochemicalArena/Effects/BloodCollision.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Components/CapsuleComponent.h"
@@ -155,8 +156,14 @@ void AMelee::DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherAc
 				TraceResult.ImpactNormal.Rotation()
 			);
 
-			BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
-			BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
+			if (BloodEffectComponent)
+			{
+				BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
+				BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
+				
+				UBloodCollision* CollisionCB = NewObject<UBloodCollision>(this);
+				BloodEffectComponent->SetVariableObject(FName(TEXT("CollisionCB")), CollisionCB);
+			}
 
 			break;
 		}

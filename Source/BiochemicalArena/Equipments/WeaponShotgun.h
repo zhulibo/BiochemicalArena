@@ -18,7 +18,4 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AProjectileBullet> ProjectileClass;
 
-	UPROPERTY(EditAnywhere)
-	int32 PelletNum;
-
 };

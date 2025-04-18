@@ -31,6 +31,7 @@ AEquipment::AEquipment()
 	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("EquipmentMesh"));
 	EquipmentMesh->SetupAttachment(RootComponent);
 	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	EquipmentMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	OverlapSphere->SetupAttachment(RootComponent);
@@ -139,8 +140,7 @@ void AEquipment::OnDrop()
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter)
 	{
-		UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>();
-		if (CameraComponent)
+		if (UCameraComponent* CameraComponent = HumanCharacter->FindComponentByClass<UCameraComponent>())
 		{
 			float Impulse = HumanCharacter->IsDead() ? 100.f : 300.f;
 			CollisionSphere->AddImpulse(CameraComponent->GetForwardVector() * Impulse, NAME_None, true);

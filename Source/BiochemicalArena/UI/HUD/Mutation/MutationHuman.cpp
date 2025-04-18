@@ -48,15 +48,12 @@ void UMutationHuman::OnDamageMulChange(float TempDamageMul)
 
 void UMutationHuman::OnCombatIconChange(ECombatIconType CombatIconType)
 {
-	UE_LOG(LogTemp, Warning, TEXT("1"));
 	if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
 	if (AssetSubsystem == nullptr || AssetSubsystem->CommonAsset == nullptr) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("2"));
 	switch (CombatIconType)
 	{
 	case ECombatIconType::Cause1000Damage:
-		UE_LOG(LogTemp, Warning, TEXT("3"));
 		CombatIcon->SetText(FText::FromString(TEXT("1000 DAMAGE")));
 		
 		if (UAudioComponent* AudioComponent = UGameplayStatics::SpawnSound2D(this, AssetSubsystem->CommonAsset->Cause1000DamageSound))

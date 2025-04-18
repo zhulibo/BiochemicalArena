@@ -23,6 +23,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Data/InputAsset.h"
 #include "Data/CharacterAsset.h"
+#include "BiochemicalArena/Effects/BloodCollision.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
@@ -506,9 +507,14 @@ void AMutantCharacter::DropBlood(UPrimitiveComponent* OverlappedComponent, AActo
 				TraceResult.ImpactPoint,
 				TraceResult.ImpactNormal.Rotation()
 			);
-
-			BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
-			BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
+			if (BloodEffectComponent)
+			{
+				BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
+				BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
+				
+				UBloodCollision* CollisionCB = NewObject<UBloodCollision>(this);
+				BloodEffectComponent->SetVariableObject(FName(TEXT("CollisionCB")), CollisionCB);
+			}
 
 			break;
 		}

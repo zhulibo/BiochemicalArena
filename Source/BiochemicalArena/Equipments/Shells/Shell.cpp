@@ -47,7 +47,7 @@ void AShell::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveC
 		FCollisionQueryParams Params;
 		Params.bReturnPhysicalMaterial = true;
 
-		GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_WorldStatic, Params);
+		GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility, Params);
 		if (HitResult.bBlockingHit)
 		{
 			UMetaSoundSource* Sound = ShellSound_Concrete;
