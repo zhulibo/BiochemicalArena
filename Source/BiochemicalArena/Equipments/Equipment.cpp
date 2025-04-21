@@ -30,7 +30,9 @@ AEquipment::AEquipment()
 
 	EquipmentMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("EquipmentMesh"));
 	EquipmentMesh->SetupAttachment(RootComponent);
-	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	EquipmentMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	EquipmentMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	EquipmentMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));

@@ -177,103 +177,101 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 
 	if (bWasSuccessful)
 	{
+		if (ServerLineButtonContainer == nullptr && ServerLineButtonClass == nullptr) return;
+
 		ServerLineButtonContainer->ClearChildren();
 
-		if (Lobbies.Num() > 0)
-		{
-			if (ServerLineButtonContainer && ServerLineButtonClass)
-			{
-				for (int32 i = 0; i < Lobbies.Num(); ++i)
-				{
-					if (UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass))
-					{
-						ServerLineButton->Lobby = Lobbies[i];
-						ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton);
-						ServerLineButtonContainer->AddChild(ServerLineButton);
-						
-						FString ServerName = FString("-1");
-						FString ModeName = FString("-1");
-						FString MapName = FString("-1");
-						if (Lobbies[i]->Attributes.Num() > 0)
-						{
-							ServerName = Lobbies[i]->Attributes.Find(LOBBY_SERVER_NAME)->GetString();
-							ModeName = Lobbies[i]->Attributes.Find(LOBBY_MODE_NAME)->GetString();
-							MapName = Lobbies[i]->Attributes.Find(LOBBY_MAP_NAME)->GetString();
-						}
-						
-						if (Lobbies[i]->Attributes.Num() > 0)
-						{
-							ServerLineButton->Server->SetText(FText::FromString(ServerName));
-							ServerLineButton->Mode->SetText(FText::FromString(ModeName));
-							ServerLineButton->Map->SetText(FText::FromString(MapName));
-						}
-						ServerLineButton->Player->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Lobbies[i]->Members.Num(), Lobbies[i]->MaxMembers)));
-
-						// 游戏进度
-						int64 Status = EOSSubsystem->GetLobbyStatus();
-						int64 MaxStatus = -1;
-						if (ModeName == MUTATION)
-						{
-							MaxStatus = 12;
-						}
-						else if (ModeName == TEAM_DEAD_MATCH || ModeName == MELEE)
-						{
-							MaxStatus = 6;
-						}
-						ServerLineButton->Status->SetText(FText::FromString(FString::Printf(TEXT("%lld/%lld"), Status, MaxStatus)));
-						
-						float ProgressRate = Status / MaxStatus;
-						FColor StatusColor;
-						if (ProgressRate < 0.f)
-						{
-							StatusColor = C_GREY;
-						}
-						else if (ProgressRate == 0.f)
-						{
-							StatusColor = C_WHITE;
-						}
-						else if (ProgressRate < 0.5)
-						{
-							StatusColor = C_GREEN;
-						}
-						else if (ProgressRate < 0.8)
-						{
-							StatusColor = C_YELLOW;
-						}
-						else
-						{
-							StatusColor = C_RED;
-						}
-						ServerLineButton->Status->SetColorAndOpacity(StatusColor);
-
-						// TODO Ping
-						int32 Ping = -1;
-						ServerLineButton->Ping->SetText(FText::AsNumber(Ping));
-						FColor PingColor;
-						if (Ping < 0)
-						{
-							PingColor = C_GREY;
-						}
-						else if (Ping < 100)
-						{
-							PingColor = C_GREEN;
-						}
-						else if (Ping < 200)
-						{
-							PingColor = C_YELLOW;
-						}
-						else
-						{
-							PingColor = C_RED;
-						}
-						ServerLineButton->Ping->SetColorAndOpacity(PingColor);
-					}
-				}
-			}
-		}
-		else
+		if (Lobbies.Num() == 0)
 		{
 			NOTIFY(this, C_WHITE, LOCTEXT("NoServerFound", "No server found"));
+			return;
+		}
+		
+		for (int32 i = 0; i < Lobbies.Num(); ++i)
+		{
+			if (UServerLineButton* ServerLineButton = CreateWidget<UServerLineButton>(this, ServerLineButtonClass))
+			{
+				ServerLineButton->Lobby = Lobbies[i];
+				ServerLineButton->OnClicked().AddUObject(this, &ThisClass::OnServerLineButtonClicked, ServerLineButton);
+				ServerLineButtonContainer->AddChild(ServerLineButton);
+				
+				FString ServerName = FString("-1");
+				FString ModeName = FString("-1");
+				FString MapName = FString("-1");
+				if (Lobbies[i]->Attributes.Num() > 0)
+				{
+					ServerName = Lobbies[i]->Attributes.Find(LOBBY_SERVER_NAME)->GetString();
+					ModeName = Lobbies[i]->Attributes.Find(LOBBY_MODE_NAME)->GetString();
+					MapName = Lobbies[i]->Attributes.Find(LOBBY_MAP_NAME)->GetString();
+				}
+				
+				if (Lobbies[i]->Attributes.Num() > 0)
+				{
+					ServerLineButton->Server->SetText(FText::FromString(ServerName));
+					ServerLineButton->Mode->SetText(FText::FromString(ModeName));
+					ServerLineButton->Map->SetText(FText::FromString(MapName));
+				}
+				ServerLineButton->Player->SetText(FText::FromString(FString::Printf(TEXT("%d/%d"), Lobbies[i]->Members.Num(), Lobbies[i]->MaxMembers)));
+
+				// 游戏进度
+				int64 Status = EOSSubsystem->GetLobbyStatus();
+				int64 MaxStatus = -1;
+				if (ModeName == MUTATION)
+				{
+					MaxStatus = 12; // 12回合
+				}
+				else if (ModeName == TEAM_DEAD_MATCH || ModeName == MELEE)
+				{
+					MaxStatus = 10; // 10分钟
+				}
+				ServerLineButton->Status->SetText(FText::FromString(FString::Printf(TEXT("%lld/%lld"), Status, MaxStatus)));
+				
+				float ProgressRate = Status / MaxStatus;
+				FColor StatusColor;
+				if (ProgressRate < 0.f)
+				{
+					StatusColor = C_GREY;
+				}
+				else if (ProgressRate == 0.f)
+				{
+					StatusColor = C_WHITE;
+				}
+				else if (ProgressRate < 0.5)
+				{
+					StatusColor = C_GREEN;
+				}
+				else if (ProgressRate < 0.8)
+				{
+					StatusColor = C_YELLOW;
+				}
+				else
+				{
+					StatusColor = C_RED;
+				}
+				ServerLineButton->Status->SetColorAndOpacity(StatusColor);
+
+				// TODO Ping
+				int32 Ping = -1;
+				ServerLineButton->Ping->SetText(FText::AsNumber(Ping));
+				FColor PingColor;
+				if (Ping < 0)
+				{
+					PingColor = C_GREY;
+				}
+				else if (Ping < 100)
+				{
+					PingColor = C_GREEN;
+				}
+				else if (Ping < 200)
+				{
+					PingColor = C_YELLOW;
+				}
+				else
+				{
+					PingColor = C_RED;
+				}
+				ServerLineButton->Ping->SetColorAndOpacity(PingColor);
+			}
 		}
 	}
 	else

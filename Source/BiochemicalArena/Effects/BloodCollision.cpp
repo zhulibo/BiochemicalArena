@@ -21,14 +21,7 @@ void UBloodCollision::ReceiveParticleData_Implementation(const TArray<FBasicPart
 		FHitResult OutHit;
 		FVector Start = WorldPos - FVector(0,0,1);
 		FVector End   = WorldPos + FVector(0,0,1);
-		GetWorld()->SweepSingleByChannel(
-			OutHit,
-			Start,
-			End,
-			FQuat::Identity,
-			ECollisionChannel::ECC_Visibility,
-			FCollisionShape::MakeSphere(1.f)
-		);
+		GetWorld()->SweepSingleByChannel(OutHit, Start, End, FQuat::Identity, ECollisionChannel::ECC_Visibility, FCollisionShape::MakeSphere(1.f));
 		if (OutHit.bBlockingHit)
 		{
 			if (AssetSubsystem == nullptr) AssetSubsystem = GetWorld()->GetGameInstance()->GetSubsystem<UAssetSubsystem>();
@@ -38,19 +31,25 @@ void UBloodCollision::ReceiveParticleData_Implementation(const TArray<FBasicPart
 				{
 					FLinearColor Color = FLinearColor(ParticleData.Velocity.X, ParticleData.Velocity.Y, ParticleData.Velocity.Z, ParticleData.Size);
 					MID->SetVectorParameterValue(TEXT("Color"), Color.ToFColor(true));
+					MID->SetScalarParameterValue(TEXT("TextureIndex"), FMath::RandRange(0, 5));
 
 					auto DecalComponent = UGameplayStatics::SpawnDecalAttached(
 						MID,
-						FVector(7.f),
+						FVector(5.f, 20.f, 20.f),
 						OutHit.GetComponent(),
-						NAME_None,
+						OutHit.BoneName,
 						OutHit.ImpactPoint,
 						OutHit.ImpactNormal.Rotation(),
 						EAttachLocation::KeepWorldPosition,
-						5.f
+						10.f
 					);
 
-					DecalComponent->SetFadeOut(4.f, 1.f, false);
+					// if (OutHit.BoneName.ToString() != FString(TEXT("NONE")))
+					// {
+					// 	UE_LOG(LogTemp, Warning, TEXT("OutHit.BoneName %s"), *OutHit.BoneName.ToString());
+					// }
+					
+					DecalComponent->SetFadeOut(8.f, 2.f, false);
 					DecalComponent->SetFadeScreenSize(0.004f);
 				}
 

@@ -142,7 +142,7 @@ public:
 	FString GetLobbyServerName();
 	FString GetLobbyModeName();
 	FString GetLobbyMapName();
-	// Status代表游戏当前局数，未开始时是0
+	// Status代表游戏当前回合数，未开始时是0
 	int64 GetLobbyStatus();
 
 	TSharedPtr<const FLobbyMember> GetMember(FAccountId AccountId);

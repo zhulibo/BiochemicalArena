@@ -299,12 +299,12 @@ void ABaseCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPr
 			if (AProjectileBullet* ProjectileBullet = Cast<AProjectileBullet>(OtherActor))
 			{
 				float Damage = ProjectileBullet->GetDamage(Hit.Distance);
-				BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
+				BloodEffectComponent->SetVariableInt(TEXT("Count"), ULibraryCommon::GetBloodParticleCount(Damage));
 			}
-			BloodEffectComponent->SetVariableLinearColor("Color", BloodColor);
+			BloodEffectComponent->SetVariableLinearColor(TEXT("Color"), BloodColor);
 
 			UBloodCollision* CollisionCB = NewObject<UBloodCollision>(this);
-			BloodEffectComponent->SetVariableObject(FName(TEXT("CollisionCB")), CollisionCB);
+			BloodEffectComponent->SetVariableObject(TEXT("CollisionCB"), CollisionCB);
 		}
 	}
 }

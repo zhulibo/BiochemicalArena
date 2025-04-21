@@ -158,11 +158,11 @@ void AMelee::DropBlood(UPrimitiveComponent* OverlappedComponent, AActor* OtherAc
 
 			if (BloodEffectComponent)
 			{
-				BloodEffectComponent->SetVariableInt("Count", ULibraryCommon::GetBloodParticleCount(Damage));
-				BloodEffectComponent->SetVariableLinearColor("Color", OverlappedCharacter->BloodColor);
-				
+				BloodEffectComponent->SetVariableInt(TEXT("Count"), ULibraryCommon::GetBloodParticleCount(Damage));
+				BloodEffectComponent->SetVariableLinearColor(TEXT("Color"), OverlappedCharacter->BloodColor);
+
 				UBloodCollision* CollisionCB = NewObject<UBloodCollision>(this);
-				BloodEffectComponent->SetVariableObject(FName(TEXT("CollisionCB")), CollisionCB);
+				BloodEffectComponent->SetVariableObject(TEXT("CollisionCB"), CollisionCB);
 			}
 
 			break;

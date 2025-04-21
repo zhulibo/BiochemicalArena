@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 
 // 颜色
-#define C_RED FColor(200, 0, 0, 255)
+#define C_RED FColor(170, 0, 0, 255)
 #define C_GREEN FColor(0, 130, 0, 255)
 #define C_BLUE FColor(0, 100, 200, 255)
 #define C_YELLOW FColor(238, 119, 0, 255)

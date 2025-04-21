@@ -85,7 +85,8 @@ void AProjectileBullet::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, 
 				5.f
 			);
 
-			DecalComponent->SetFadeScreenSize(0.004f);
+			DecalComponent->SetFadeOut(4.f, 1.f, false);
+			DecalComponent->SetFadeScreenSize(0.002f);
 		}
 	}
 

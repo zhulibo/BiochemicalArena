@@ -18,7 +18,7 @@ FString ULibraryCommon::GetProjectVersion()
 
 int32 ULibraryCommon::GetBloodParticleCount(float Damage)
 {
-	return UKismetMathLibrary::MapRangeClamped(Damage, 40, 180, 3, 10);
+	return UKismetMathLibrary::MapRangeClamped(Damage, 40, 100, 4, 10);
 }
 
 FString ULibraryCommon::GetFormatTime(int32 CountdownTime)

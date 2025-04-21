@@ -206,7 +206,7 @@ void AMutationMode::HandleMatchHasStarted()
 		}
 	}
 
-	// 第一局角色生成后开始监视比赛状态
+	// 第一回合角色生成后开始监视比赛状态
 	if (CurrentRound == 1)
 	{
 		bWatchMatchState = true;

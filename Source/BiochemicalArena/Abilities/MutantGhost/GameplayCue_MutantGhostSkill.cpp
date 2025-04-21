@@ -41,14 +41,14 @@ bool AGameplayCue_MutantGhostSkill::OnRemove_Implementation(AActor* MyTarget, co
 		TArray<UMaterialInterface*> MaterialInterfaces = MutantGhost->GetMesh()->GetMaterials();
 		for (int32 i = 0; i < MaterialInterfaces.Num(); ++i)
 		{
-			UMaterialInstanceDynamic* DynamicMaterial = Cast<UMaterialInstanceDynamic>(MaterialInterfaces[i]);
-			if (DynamicMaterial == nullptr)
+			UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(MaterialInterfaces[i]);
+			if (MID == nullptr)
 			{
-				DynamicMaterial = MutantGhost->GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
+				MID = MutantGhost->GetMesh()->CreateAndSetMaterialInstanceDynamic(i);
 			}
-			if (DynamicMaterial)
+			if (MID)
 			{
-				DynamicMaterial->SetScalarParameterValue(TEXT("Opacity"), 1.f);
+				MID->SetScalarParameterValue(TEXT("Opacity"), 1.f);
 			}
 		}
 		
