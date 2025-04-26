@@ -10,13 +10,22 @@ enum class EEquipmentName : uint8 // 装备名字
 {
 	AK47,
 	AK47_Desert,
+	PKM,
+	M60,
 	M870,
 
 	Glock17,
+	DesertEagle,
 
 	Kukri,
+	MilitaryShovel,
+	FireAxe,
 
 	Grenade,
+	Flashbang,
+
+	AK47_Cyclone,
+	MG42,
 
 	None
 };
@@ -58,9 +67,11 @@ struct FEquipmentMain : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	// EquipmentName用作id
 	UPROPERTY(EditAnywhere)
 	EEquipmentName EquipmentName = EEquipmentName::None;
+
+	UPROPERTY(EditAnywhere)
+	FString ShowName;
 
 	UPROPERTY(EditAnywhere)
 	EEquipmentName EquipmentParentName = EEquipmentName::None;
@@ -75,15 +86,15 @@ struct FEquipmentMain : public FTableRowBase
 	TSubclassOf<class AEquipment> EquipmentClass; // TODO TSoftClassPtr
 
 	/**
-	 * Must be same as the OfferId in dev portal,
-	 * Used to determine button type in the UShop::OnQueryOffersComplete.
+	 * Must be the same as the OfferId in dev portal,
+	 * Used to determine the button type in the UShop::OnQueryOffersComplete.
 	 */
 	UPROPERTY(EditAnywhere)
 	FString OfferId;
 
 	/**
 	 * Must be same as the audience item ID in dev portal,
-	 * Used to determine whether account own the product.
+	 * Used to determine whether player's account owns the product.
 	 */
 	UPROPERTY(EditAnywhere)
 	FString AudienceItemId;

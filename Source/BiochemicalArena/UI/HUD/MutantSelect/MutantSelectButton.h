@@ -4,6 +4,8 @@
 #include "CommonButtonBase.h"
 #include "MutantSelectButton.generated.h"
 
+enum class EMutantCharacterName : uint8;
+
 UCLASS()
 class BIOCHEMICALARENA_API UMutantSelectButton : public UCommonButtonBase
 {
@@ -11,8 +13,10 @@ class BIOCHEMICALARENA_API UMutantSelectButton : public UCommonButtonBase
 
 public:
 	UPROPERTY(meta = (BindWidget))
-	class UCommonTextBlock* CharacterNameText;
+	class UCommonTextBlock* NameText;
 	UPROPERTY(meta = (BindWidget))
-	UCommonTextBlock* CharacterDescText;
+	UCommonTextBlock* DescText;
+	UPROPERTY()
+	EMutantCharacterName MutantCharacterName;
 
 };

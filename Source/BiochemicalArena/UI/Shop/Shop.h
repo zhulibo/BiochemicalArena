@@ -6,6 +6,9 @@
 #include "BiochemicalArena/System/EOSSubsystem.h"
 #include "Shop.generated.h"
 
+struct FEquipmentMain;
+struct FHumanCharacterMain;
+
 UCLASS()
 class BIOCHEMICALARENA_API UShop : public UCommonActivatableWidget
 {
@@ -28,11 +31,11 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UItemButton> EquipmentButtonClass;
-	void AddEquipmentButton(const FOffer& Offer);
+	void AddEquipmentButton(const FOffer& Offer, const FEquipmentMain& EquipmentMain);
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UItemButton> CharacterButtonClass;
-	void AddCharacterButton(const FOffer& Offer);
+	void AddCharacterButton(const FOffer& Offer, const FHumanCharacterMain& HumanCharacterMain);
 
 	void OnItemButtonClicked(UItemButton* ItemButton);
 	void OnCheckoutComplete(bool bWasSuccessful, TOptional<FString> String);

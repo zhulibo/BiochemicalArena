@@ -17,10 +17,9 @@ public:
 
 	friend class AHumanCharacter;
 
-	class AEquipment* GetCurEquipment(); // If it has equipment in use return it, or return nullptr
-	class AWeapon* GetCurShotEquipment(); // If primary or secondary equipment is in use return it, or return nullptr
-	class AMelee* GetCurMeleeEquipment(); // If MeleeEquipment is in use return it, or return nullptr
-	class AThrowing* GetCurThrowingEquipment();
+	class AEquipment* GetCurEquipment();
+	AEquipment* GetLastEquipment();
+	class AWeapon* GetUsingWeapon(); // 如果正在使用主副武器，返回正在使用的武器，否则返空。
 
 	void FinishSwap();
 
@@ -57,26 +56,25 @@ protected:
 	float AimWalkSpeed = 450.f;
 
 	FVector HitTarget;
-	void TraceUnderCrosshair(FHitResult& TraceHitResult); // 检测准星对应游戏世界的物体
+	void TraceUnderCrosshair(FHitResult& TraceHitResult);
 
 	float DefaultFOV;
 	float CurrentFOV;
 	void InterpFOV(float DeltaSeconds);
 
 	UPROPERTY()
-	AWeapon* PrimaryEquipment;
+	class AWeapon* PrimaryEquipment;
 	UPROPERTY()
 	AWeapon* SecondaryEquipment;
 	UPROPERTY()
-	AMelee* MeleeEquipment;
+	class AMelee* MeleeEquipment;
 	UPROPERTY()
-	AThrowing* ThrowingEquipment;
+	class AThrowing* ThrowingEquipment;
 	UPROPERTY()
-	EEquipmentType CurrentEquipmentType;
+	EEquipmentType CurEquipmentType;
 	UPROPERTY()
 	EEquipmentType LastEquipmentType;
 
-	AEquipment* GetLastEquipment();
 	AEquipment* GetEquipmentByType(EEquipmentType EquipmentType);
 	bool HasEquippedThisTypeEquipment(EEquipmentType EquipmentType);
 
@@ -190,6 +188,10 @@ protected:
 
 public:
 	FORCEINLINE AWeapon* GetPrimaryEquipment() const { return PrimaryEquipment; }
+	FORCEINLINE AWeapon* GetSecondaryEquipment() const { return SecondaryEquipment; }
+	FORCEINLINE AMelee* GetMeleeEquipment() const { return MeleeEquipment; }
+	FORCEINLINE AThrowing* GetThrowingEquipment() const { return ThrowingEquipment; }
+	FORCEINLINE EEquipmentType GetCurEquipmentType() const { return CurEquipmentType; }
 	FORCEINLINE ECombatState GetCombatState() const { return CombatState; }
 	FORCEINLINE bool IsAiming() const { return bIsAiming; }
 	FORCEINLINE bool IsFireButtonPressed() const { return bFireButtonPressed; }

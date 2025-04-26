@@ -453,8 +453,6 @@ void AMutantCharacter::OnLeftHandCapsuleOverlap(UPrimitiveComponent* OverlappedC
 
 void AMutantCharacter::ServerApplyDamage_Implementation(AActor* OtherActor, float Damage)
 {
-	if (OtherActor == nullptr) return;
-	
 	// 判断Overlap对象不是人类退出（Human变为Mutant时，Team可能未同步到本地，会发生Overlap）。
 	AHumanCharacter* DamagedCharacter = Cast<AHumanCharacter>(OtherActor);
 	if (DamagedCharacter == nullptr) return;

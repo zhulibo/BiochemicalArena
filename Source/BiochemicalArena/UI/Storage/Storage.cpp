@@ -146,19 +146,19 @@ void UStorage::InitPlayerConfig(USaveGameLoadout* SaveGameLoadout)
 	// 判断是否拥有装备，没有则把存档恢复默认
 	for (int32 i = 0; i < SaveGameLoadout->Loadouts.Num(); ++i)
 	{
-		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Primary))
+		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Primary, EEquipmentType::Primary))
 		{
 			SaveGameLoadout->Loadouts[i].Primary = DefaultConfig->Primary;
 		}
-		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Secondary))
+		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Secondary, EEquipmentType::Secondary))
 		{
 			SaveGameLoadout->Loadouts[i].Secondary = DefaultConfig->Secondary;
 		}
-		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Melee))
+		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Melee, EEquipmentType::Melee))
 		{
 			SaveGameLoadout->Loadouts[i].Melee = DefaultConfig->Melee;
 		}
-		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Throwing))
+		if (!HasEquipment(SaveGameLoadout->Loadouts[i].Throwing, EEquipmentType::Throwing))
 		{
 			SaveGameLoadout->Loadouts[i].Throwing = DefaultConfig->Throwing;
 		}
@@ -170,21 +170,47 @@ void UStorage::InitPlayerConfig(USaveGameLoadout* SaveGameLoadout)
 		{
 			FText ButtonText = FText();
 			
-			FString PrimaryName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Primary));
-			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, PrimaryName, ButtonText);
+			FString PrimaryShowName = FString();
+			FString SecondaryShowName = FString();
+			FString MeleeShowName = FString();
+			FString ThrowingShowName = FString();
+
+			for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
+			{
+				FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
+				if (ItemValue.EquipmentName == SaveGameLoadout->Loadouts[i].Primary)
+				{
+					PrimaryShowName = ItemValue.ShowName;
+				}
+				else if (ItemValue.EquipmentName == SaveGameLoadout->Loadouts[i].Secondary)
+				{
+					SecondaryShowName = ItemValue.ShowName;
+				}
+				else if (ItemValue.EquipmentName == SaveGameLoadout->Loadouts[i].Melee)
+				{
+					MeleeShowName = ItemValue.ShowName;
+				}
+				else if (ItemValue.EquipmentName == SaveGameLoadout->Loadouts[i].Throwing)
+				{
+					ThrowingShowName = ItemValue.ShowName;
+				}
+			}
+
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, PrimaryShowName, ButtonText);
 			LoadoutContent->Primary->ButtonText->SetText(ButtonText);
-
-			FString SecondaryName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Secondary));
-			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, SecondaryName, ButtonText);
+			LoadoutContent->Primary->EquipmentName = SaveGameLoadout->Loadouts[i].Primary;
+			
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, SecondaryShowName, ButtonText);
 			LoadoutContent->Secondary->ButtonText->SetText(ButtonText);
+			LoadoutContent->Secondary->EquipmentName = SaveGameLoadout->Loadouts[i].Secondary;
 
-			FString MeleeName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Melee));
-			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, MeleeName, ButtonText);
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, MeleeShowName, ButtonText);
 			LoadoutContent->Melee->ButtonText->SetText(ButtonText);
+			LoadoutContent->Melee->EquipmentName = SaveGameLoadout->Loadouts[i].Melee;
 
-			FString ThrowingName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->Loadouts[i].Throwing));
-			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, ThrowingName, ButtonText);
+			FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, ThrowingShowName, ButtonText);
 			LoadoutContent->Throwing->ButtonText->SetText(ButtonText);
+			LoadoutContent->Throwing->EquipmentName = SaveGameLoadout->Loadouts[i].Throwing;
 		}
 	}
 
@@ -193,20 +219,29 @@ void UStorage::InitPlayerConfig(USaveGameLoadout* SaveGameLoadout)
 	{
 		SaveGameLoadout->HumanCharacterName = DefaultConfig->HumanCharacterName;
 	}
-	// 设置角色
-	FString HumanCharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(SaveGameLoadout->HumanCharacterName));
+
+	FString ShowName = FString();
+	for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMains)
+	{
+		FHumanCharacterMain ItemValue = *reinterpret_cast<const FHumanCharacterMain*>(Pair.Value);
+		if (ItemValue.HumanCharacterName == SaveGameLoadout->HumanCharacterName)
+		{
+			ShowName = ItemValue.ShowName;
+			break;
+		}
+	}
 	FText ButtonText = FText();
-	FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, HumanCharacterName, ButtonText);
+	FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, ShowName, ButtonText);
 	Character->SetText(ButtonText);
 }
 
 // 是否拥有装备
-bool UStorage::HasEquipment(EEquipmentName EquipmentName)
+bool UStorage::HasEquipment(EEquipmentName EquipmentName, EEquipmentType EquipmentType)
 {
 	for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
 	{
 		FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
-		if (EquipmentName == ItemValue.EquipmentName)
+		if (EquipmentType == ItemValue.EquipmentType && EquipmentName == ItemValue.EquipmentName)
 		{
 			// 免费装备
 			if (ItemValue.AudienceItemId.IsEmpty())
@@ -272,21 +307,18 @@ void UStorage::AddStorageTypeButton()
 				NewSlot->SetPadding(FMargin(0, 0, 20, 0));
 			}
 		}
-		
+
 		// 装备按钮
 		for (int32 i = 0; i < static_cast<int32>(EEquipmentType::None); ++i)
 		{
 			if (UCommonButton* EquipmentTypeButton = CreateWidget<UCommonButton>(this, StorageTypeButtonClass))
 			{
 				FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(static_cast<EEquipmentType>(i)));
-
-				EquipmentTypeButton->ButtonText->SetText(FText::FromString(EnumValue));
-				EquipmentTypeButton->Name = EnumValue;
-
 				FText ButtonText = FText();
 				FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT_TYPE, EnumValue, ButtonText);
 				EquipmentTypeButton->ButtonText->SetText(ButtonText);
-
+				
+				EquipmentTypeButton->Name = EnumValue;
 				EquipmentTypeButton->SetIsSelectable(true);
 				EquipmentTypeButton->OnClicked().AddUObject(this, &ThisClass::OnStorageTypeButtonClicked, EquipmentTypeButton);
 				if (UScrollBoxSlot* NewSlot = Cast<UScrollBoxSlot>(StorageTypeButtonContainer->AddChild(EquipmentTypeButton)))
@@ -333,19 +365,19 @@ void UStorage::OnStorageTypeButtonClicked(UCommonButton* CommonButton)
 	StorageButtonContainer->ClearChildren();
 
 	// 点击分类按钮添加库存
-	FString Type = CommonButton->Name;
-	if (Type == STORAGE_TYPE_ALL)
+	FString TypeName = CommonButton->Name;
+	if (TypeName == STORAGE_TYPE_ALL)
 	{
-		AddEquipments(Type);
+		AddEquipments(TypeName);
 		AddHumanCharacters();
 	}
-	else if (Type == STORAGE_TYPE_CHARACTER)
+	else if (TypeName == STORAGE_TYPE_CHARACTER)
 	{
 		AddHumanCharacters();
 	}
 	else
 	{
-		AddEquipments(Type);
+		AddEquipments(TypeName);
 	}
 }
 
@@ -359,8 +391,8 @@ void UStorage::AddEquipments(FString EquipmentType)
 
 		if (EquipmentType == STORAGE_TYPE_ALL || EnumValue == EquipmentType)
 		{
-			if (ItemValue.AudienceItemId.IsEmpty() // 免费装备
-				|| EOSSubsystem && EOSSubsystem->OwnEntitlement(ItemValue.AudienceItemId)) // 付费装备且已拥有
+			// 免费装备 || 付费装备且已拥有
+			if (ItemValue.AudienceItemId.IsEmpty() || EOSSubsystem && EOSSubsystem->OwnEntitlement(ItemValue.AudienceItemId))
 			{
 				AddEquipmentButton(ItemValue);
 			}
@@ -374,9 +406,8 @@ void UStorage::AddHumanCharacters()
 	for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMains)
 	{
 		FHumanCharacterMain ItemValue = *reinterpret_cast<const FHumanCharacterMain*>(Pair.Value);
-
-		if (ItemValue.AudienceItemId.IsEmpty() // 免费角色
-			|| EOSSubsystem && EOSSubsystem->OwnEntitlement(ItemValue.AudienceItemId)) // 付费角色且已拥有
+		// 免费角色 || 付费角色且已拥有
+		if (ItemValue.AudienceItemId.IsEmpty() || EOSSubsystem && EOSSubsystem->OwnEntitlement(ItemValue.AudienceItemId))
 		{
 			AddCharacterButton(ItemValue);
 		}
@@ -389,9 +420,20 @@ void UStorage::AddEquipmentButton(FEquipmentMain EquipmentMain)
 	if (UStorageButton* EquipmentButton = CreateWidget<UStorageButton>(this, EquipmentButtonClass))
 	{
 		FText ButtonText = FText();
-		FString EquipmentName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(EquipmentMain.EquipmentName));
-		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EquipmentName, ButtonText);
+		FString ShowName = FString();
+		for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
+		{
+			FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
+			if (ItemValue.EquipmentName == EquipmentMain.EquipmentName)
+			{
+				ShowName = ItemValue.ShowName;
+				break;
+			}
+		}
+		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, ShowName, ButtonText);
 		EquipmentButton->ButtonText->SetText(ButtonText);
+
+		EquipmentButton->ShowName = ShowName;
 		EquipmentButton->EquipmentName = EquipmentMain.EquipmentName;
 		EquipmentButton->EquipmentType = EquipmentMain.EquipmentType;
 		EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnEquipmentButtonClicked, EquipmentButton);
@@ -408,9 +450,20 @@ void UStorage::AddCharacterButton(FHumanCharacterMain HumanCharacterMain)
 	if (UStorageButton* CharacterButton = CreateWidget<UStorageButton>(this, CharacterButtonClass))
 	{
 		FText ButtonText = FText();
-		FString CharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(HumanCharacterMain.HumanCharacterName));
-		FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, CharacterName, ButtonText);
+		FString ShowName = FString();
+		for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMains)
+		{
+			FHumanCharacterMain ItemValue = *reinterpret_cast<const FHumanCharacterMain*>(Pair.Value);
+			if (ItemValue.HumanCharacterName == HumanCharacterMain.HumanCharacterName)
+			{
+				ShowName = ItemValue.ShowName;
+				break;
+			}
+		}
+		FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, ShowName, ButtonText);
 		CharacterButton->ButtonText->SetText(ButtonText);
+
+		CharacterButton->ShowName = ShowName;
 		CharacterButton->HumanCharacterName = HumanCharacterMain.HumanCharacterName;
 		CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnCharacterButtonClicked, CharacterButton);
 		if (UWrapBoxSlot* NewSlot = Cast<UWrapBoxSlot>(StorageButtonContainer->AddChild(CharacterButton)))
@@ -428,8 +481,7 @@ void UStorage::OnEquipmentButtonClicked(UStorageButton* EquipmentButton)
 	if (ULoadoutContent* LoadoutContent = Cast<ULoadoutContent>(LoadoutSwitcher->GetActiveWidget()))
 	{
 		FText ButtonText = FText();
-		FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(EquipmentButton->EquipmentName));
-		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EnumValue, ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EquipmentButton->ShowName, ButtonText);
 
 		switch (EquipmentButton->EquipmentType)
 		{
@@ -484,12 +536,11 @@ void UStorage::SaveEquipmentsToLoadouts()
 void UStorage::OnCharacterButtonClicked(UStorageButton* CharacterButton)
 {
 	if (CharacterButton == nullptr) return;
-	
+
 	FText ButtonText = FText();
-	FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CharacterButton->HumanCharacterName));
-	FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, EnumValue, ButtonText);
+	FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, CharacterButton->ShowName, ButtonText);
 	Character->SetText(ButtonText);
-	
+
 	if (StorageSubsystem == nullptr) StorageSubsystem = GetGameInstance()->GetSubsystem<UStorageSubsystem>();
 	if (StorageSubsystem && StorageSubsystem->CacheLoadout)
 	{

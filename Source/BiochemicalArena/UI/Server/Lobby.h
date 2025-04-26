@@ -3,10 +3,10 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "BiochemicalArena/System/EOSSubsystem.h"
-#include "ServerDetail.generated.h"
+#include "Lobby.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API UServerDetail : public UCommonActivatableWidget
+class BIOCHEMICALARENA_API ULobby : public UCommonActivatableWidget
 {
 	GENERATED_BODY()
 

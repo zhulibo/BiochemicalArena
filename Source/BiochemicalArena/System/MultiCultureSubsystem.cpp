@@ -19,13 +19,13 @@ void UMultiCultureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LOCTEXT("Tank", "Tank");
 	LOCTEXT("Ghost", "Ghost");
 	LOCTEXT("Smoker", "Smoker");
-	LOCTEXT("Hunter", "Hunter");
+	LOCTEXT("Terminator", "Terminator");
 #undef LOCTEXT_NAMESPACE
 
 	// 需与 EEquipmentName 的值一致
 #define LOCTEXT_NAMESPACE "Equipment"
 	LOCTEXT("AK47", "AK47");
-	LOCTEXT("AK47_Desert", "AK47_Desert");
+	LOCTEXT("AK47-Desert", "AK47-Desert");
 	LOCTEXT("M870", "M870");
 	LOCTEXT("Glock17", "Glock17");
 	LOCTEXT("Kukri", "Kukri");

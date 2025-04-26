@@ -124,12 +124,7 @@ void AEquipment::OnDrop()
 	CollisionSphere->SetEnableGravity(true);
 	CollisionSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-	/**
-	 * HACK 延迟开启AreaSphere碰撞
-	 * 1 避免DropEquipment未执行完，当前角色与武器发生OnSphereOverlap > EquipEquipment
-	 * 2 确保武器已被丢出当前角色的Overlap区域
-	 * 3 角色死亡时，等待bIsKilled已从服务器同步到本地，因为伤害只在服务端计算，Kill() > MulticastKill()
-	 */
+	// HACK 延迟开启AreaSphere碰撞 确保武器已被丢出当前角色的Overlap区域
 	FTimerHandle TimerHandle;
 	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::SetAreaSphereCollision, .4f);
 

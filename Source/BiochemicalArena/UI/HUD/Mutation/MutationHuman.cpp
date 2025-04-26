@@ -79,5 +79,5 @@ void UMutationHuman::OnCombatIconChange(ECombatIconType CombatIconType)
 
 void UMutationHuman::ClearCombatIcon()
 {
-	CombatIcon->SetText(FText::GetEmpty());
+	CombatIcon->SetText(FText());
 }

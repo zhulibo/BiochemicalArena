@@ -51,11 +51,11 @@ void UCommonHUD::OnKillStreakChange(int Num)
 	}
 	else
 	{
-		KillStreak->SetText(FText::GetEmpty());
+		KillStreak->SetText(FText());
 	}
 }
 
-void UCommonHUD::OnAddKillLog(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState)
+void UCommonHUD::OnAddKillLog(ABasePlayerState* AttackerState, const FText& CauserName, ABasePlayerState* DamagedState)
 {
 	if (AttackerState == nullptr || DamagedState == nullptr || GetWorld()->bIsTearingDown) return;
 
@@ -86,7 +86,7 @@ void UCommonHUD::OnAddKillLog(ABasePlayerState* AttackerState, const FString& Ca
 			}
 
 			// 击杀原因
-			KillLogLine->CauserName->SetText(FText::FromString(CauserName));
+			KillLogLine->CauserName->SetText(CauserName);
 
 			// 死亡者
 			if (DamagedState)

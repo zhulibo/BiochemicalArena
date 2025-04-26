@@ -16,6 +16,8 @@
 #include "GameFramework/PlayerStart.h"
 #include "Online/SchemaTypes.h"
 
+#define LOCTEXT_NAMESPACE "ABaseMode"
+
 ABaseMode::ABaseMode()
 {
 	bDelayedStart = true;
@@ -198,8 +200,8 @@ void ABaseMode::AssignTeam(AController* Controller, ETeam Team)
 // 击杀日志
 void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser, const UDamageType* DamageType, ABasePlayerState* DamagedState)
 {
-	FString CauserName = FString(TEXT("-1"));
-	
+	FText CauserName = FText::FromString(TEXT("-1"));
+
 	if (const UDamageTypeBase* DamageTypeBase = Cast<UDamageTypeBase>(DamageType))
 	{
 		switch (DamageTypeBase->DamageType)
@@ -207,23 +209,33 @@ void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser
 		case EDamageCauserType::Equipment:
 			if (AEquipment* CauserEquipment = Cast<AEquipment>(DamageCauser->GetOwner()))
 			{
-				CauserName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
+				FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
+				FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, FName(EnumValue));
+				if (const FHumanCharacterMain* HumanCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
+				{
+					FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, HumanCharacterMain->ShowName, CauserName);
+				}
 			}
 			break;
 		case EDamageCauserType::Melee:
 			if (AEquipment* CauserEquipment = Cast<AEquipment>(DamageCauser))
 			{
-				CauserName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
+				FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
+				FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, FName(EnumValue));
+				if (const FHumanCharacterMain* HumanCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
+				{
+					FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, HumanCharacterMain->ShowName, CauserName);
+				}
 			}
 			break;
 		case EDamageCauserType::MutantInfect:
-			CauserName = FString(TEXT("Infect"));
+			CauserName = LOCTEXT("Infect", "Infect");
 			break;
 		case EDamageCauserType::MutantDamage:
-			CauserName = FString(TEXT("Damage"));
+			CauserName = LOCTEXT("Damage", "Damage");
 			break;
 		case EDamageCauserType::Fall:
-			CauserName = FString(TEXT("Fall"));
+			CauserName = LOCTEXT("Fall", "Fall");
 			break;
 		}
 	}
@@ -245,3 +257,5 @@ void ABaseMode::ChangeLobbyStatus(int64 Status)
 		});
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

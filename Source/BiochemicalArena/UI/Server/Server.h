@@ -26,7 +26,7 @@ protected:
 	class UCommonButton* CreateServerButton;
 	void OnCreateServerButtonClicked();
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class UServerDetail> ServerDetailClass;
+	TSubclassOf<class ULobby> LobbyClass;
 	void OnCreateLobbyComplete(bool bWasSuccessful);
 
 	// 搜索大厅
@@ -66,7 +66,7 @@ protected:
 	void OnServerLineButtonClicked(class UServerLineButton* ServerLineButton);
 	void OnJoinLobbyComplete(bool bWasSuccessful);
 	void OnLobbyJoined(const FLobbyJoined& LobbyJoined);
-	void GoToServerDetail();
+	void GoToLobby();
 	bool bIsClickLocked = false;
 
 	// 邀请

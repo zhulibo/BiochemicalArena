@@ -72,9 +72,9 @@ void URadialMenuContainer::SetSelectedItem()
 {
 	if (HumanCharacter)
 	{
-		if (HumanCharacter->GetCombatComponent() && HumanCharacter->GetCombatComponent()->GetCurEquipment())
+		if (HumanCharacter->GetCombatComponent())
 		{
-			switch (HumanCharacter->GetCombatComponent()->GetCurEquipment()->GetEquipmentType())
+			switch (HumanCharacter->GetCombatComponent()->GetCurEquipmentType())
 			{
 			case EEquipmentType::Primary:
 				RadialMenuEquipment->SetSelectedItem(1);

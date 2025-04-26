@@ -20,7 +20,7 @@ enum class EMutantCharacterName : uint8
 	Tank,
 	Ghost,
 	Smoker,
-	Hunter,
+	Terminator,
 
 	None
 };
@@ -30,23 +30,25 @@ struct FHumanCharacterMain : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	// HumanCharacterName用作id
 	UPROPERTY(EditAnywhere)
 	EHumanCharacterName HumanCharacterName = EHumanCharacterName::None;
+
+	UPROPERTY(EditAnywhere)
+	FString ShowName;
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AHumanCharacter> HumanCharacterClass;
 
 	/**
-	 * Must be same as the OfferId in dev portal,
-	 * Used to determine button type in the UShop::OnQueryOffersComplete.
+	 * Must be the same as the OfferId in dev portal,
+	 * Used to determine the button type in the UShop::OnQueryOffersComplete.
 	 */
 	UPROPERTY(EditAnywhere)
 	FString OfferId;
 
 	/**
 	 * Must be same as the audience item ID in dev portal,
-	 * Used to determine whether account own the product.
+	 * Used to determine whether player's account owns the product.
 	 */
 	UPROPERTY(EditAnywhere)
 	FString AudienceItemId;
@@ -60,6 +62,9 @@ struct FMutantCharacterMain : public FTableRowBase
 
 	UPROPERTY(EditAnywhere)
 	EMutantCharacterName MutantCharacterName = EMutantCharacterName::None;
+
+	UPROPERTY(EditAnywhere)
+	FString ShowName;
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class AMutantCharacter> MutantCharacterClass; // TODO TSoftClassPtr

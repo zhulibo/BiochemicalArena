@@ -40,7 +40,7 @@ void UCrosshairComponent::SetHUDCrosshair(float DeltaSeconds)
 	if (BaseController == nullptr) BaseController = Cast<ABaseController>(HumanCharacter->Controller);
 	if (BaseController == nullptr) return;
 
-	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetCurShotEquipment();
+	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetUsingWeapon();
 	if (Weapon == nullptr) return;
 
 	// TODO 做各种动作时应关联射击精度与准星扩塞，不能只改变扩塞

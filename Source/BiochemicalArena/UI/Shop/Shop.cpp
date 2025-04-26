@@ -3,6 +3,7 @@
 #include "DataRegistrySubsystem.h"
 #include "ItemButton.h"
 #include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/Characters/Data/CharacterType.h"
 #include "Components/WrapBox.h"
 #include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
@@ -59,10 +60,10 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 
 				for (const TPair<FDataRegistryId, const uint8*>& Pair : EquipmentMains)
 				{
-					FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
-					if (Offers[i].OfferId == ItemValue.OfferId)
+					FEquipmentMain EquipmentMain = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
+					if (Offers[i].OfferId == EquipmentMain.OfferId)
 					{
-						AddEquipmentButton(Offers[i]);
+						AddEquipmentButton(Offers[i], EquipmentMain);
 						bIsEquipment = true;
 						break;
 					}
@@ -72,10 +73,10 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 
 				for (const TPair<FDataRegistryId, const uint8*>& Pair : HumanCharacterMains)
 				{
-					FEquipmentMain ItemValue = *reinterpret_cast<const FEquipmentMain*>(Pair.Value);
-					if (Offers[i].OfferId == ItemValue.OfferId)
+					FHumanCharacterMain HumanCharacterMain = *reinterpret_cast<const FHumanCharacterMain*>(Pair.Value);
+					if (Offers[i].OfferId == HumanCharacterMain.OfferId)
 					{
-						AddCharacterButton(Offers[i]);
+						AddCharacterButton(Offers[i], HumanCharacterMain);
 						break;
 					}
 				}
@@ -87,13 +88,13 @@ void UShop::OnQueryOffersComplete(bool bWasSuccessful)
 }
 
 // 添加装备按钮
-void UShop::AddEquipmentButton(const FOffer& Offer)
+void UShop::AddEquipmentButton(const FOffer& Offer, const FEquipmentMain& EquipmentMain)
 {
 	if (UItemButton* EquipmentButton = CreateWidget<UItemButton>(this, EquipmentButtonClass))
 	{
 		EquipmentButton->Offer = Offer;
 		FText ButtonText = FText();
-		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, Offer.Title.ToString(), ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EquipmentMain.ShowName, ButtonText);
 		EquipmentButton->ItemName->SetText(ButtonText);
 		EquipmentButton->Price->SetText(Offer.FormattedPrice);
 		EquipmentButton->OnClicked().AddUObject(this, &ThisClass::OnItemButtonClicked, EquipmentButton);
@@ -105,13 +106,13 @@ void UShop::AddEquipmentButton(const FOffer& Offer)
 }
 
 // 添加角色按钮
-void UShop::AddCharacterButton(const FOffer& Offer)
+void UShop::AddCharacterButton(const FOffer& Offer, const FHumanCharacterMain& HumanCharacterMain)
 {
 	if (UItemButton* CharacterButton = CreateWidget<UItemButton>(this, CharacterButtonClass))
 	{
 		CharacterButton->Offer = Offer;
 		FText ButtonText = FText();
-		FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, Offer.Title.ToString(), ButtonText);
+		FText::FindTextInLiveTable_Advanced(CULTURE_HUMAN, HumanCharacterMain.ShowName, ButtonText);
 		CharacterButton->ItemName->SetText(ButtonText);
 		CharacterButton->Price->SetText(Offer.FormattedPrice);
 		CharacterButton->OnClicked().AddUObject(this, &ThisClass::OnItemButtonClicked, CharacterButton);

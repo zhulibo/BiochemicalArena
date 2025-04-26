@@ -84,8 +84,7 @@ protected:
 
 	void ApplyLoadout();
 	UFUNCTION(Server, Reliable)
-	void ServerSpawnEquipments(EEquipmentName Primary, EEquipmentName Secondary,
-		EEquipmentName Melee, EEquipmentName Throwing);
+	void ServerSpawnEquipments(EEquipmentName Primary, EEquipmentName Secondary, EEquipmentName Melee, EEquipmentName Throwing);
 	EEquipmentName GetEquipmentName(int32 LoadoutIndex, EEquipmentType EquipmentType);
 
 	UPROPERTY(ReplicatedUsing = OnRep_DefaultPrimary)
@@ -119,7 +118,6 @@ public:
 	FORCEINLINE UCombatComponent* GetCombatComponent() const { return CombatComponent; }
 	FORCEINLINE URecoilComponent* GetRecoilComponent() const { return RecoilComponent; }
 	FORCEINLINE UCrosshairComponent* GetCrosshairComponent() const { return CrosshairComponent; }
-	AEquipment* GetCurrentEquipment();
 	FVector GetHitTarget() const;
 	FORCEINLINE bool IsImmune() const { return bIsImmune; }
 

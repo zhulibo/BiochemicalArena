@@ -1,4 +1,4 @@
-#include "ServerDetail.h"
+#include "Lobby.h"
 
 #include "CommonTextBlock.h"
 #include "BiochemicalArena/PlayerControllers/MenuController.h"
@@ -15,9 +15,9 @@
 #include "BiochemicalArena/Utils/LibraryNotify.h"
 #include "Components/EditableTextBox.h"
 
-#define LOCTEXT_NAMESPACE "UServerDetail"
+#define LOCTEXT_NAMESPACE "ULobby"
 
-void UServerDetail::NativeOnInitialized()
+void ULobby::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
@@ -48,7 +48,7 @@ void UServerDetail::NativeOnInitialized()
 	}
 }
 
-UWidget* UServerDetail::NativeGetDesiredFocusTarget() const
+UWidget* ULobby::NativeGetDesiredFocusTarget() const
 {
 	if (EOSSubsystem)
 	{
@@ -72,7 +72,7 @@ UWidget* UServerDetail::NativeGetDesiredFocusTarget() const
 	return SwitchTeamButton;
 }
 
-void UServerDetail::NativeConstruct()
+void ULobby::NativeConstruct()
 {
 	Super::NativeConstruct();
 
@@ -93,13 +93,13 @@ void UServerDetail::NativeConstruct()
 	}
 }
 
-void UServerDetail::NativeDestruct()
+void ULobby::NativeDestruct()
 {
 	Super::NativeDestruct();
 }
 
 // 设置大厅属性
-void UServerDetail::SetUIAttr()
+void ULobby::SetUIAttr()
 {
 	if (EOSSubsystem == nullptr) return;
 
@@ -120,7 +120,7 @@ void UServerDetail::SetUIAttr()
 }
 
 // 设置按钮状态
-void UServerDetail::SetUIButtonState()
+void ULobby::SetUIButtonState()
 {
 	if (EOSSubsystem == nullptr) return;
 
@@ -167,7 +167,7 @@ void UServerDetail::SetUIButtonState()
 }
 
 // 更新玩家列表
-void UServerDetail::UpdatePlayerList()
+void ULobby::UpdatePlayerList()
 {
 	if (PlayerLineButtonClass == nullptr || Team1Container == nullptr || Team2Container == nullptr
 		|| EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr
@@ -257,7 +257,7 @@ void UServerDetail::UpdatePlayerList()
 	}
 }
 
-int32 UServerDetail::GetFocusedPlayerIndex(UCommonHierarchicalScrollBox* Container)
+int32 ULobby::GetFocusedPlayerIndex(UCommonHierarchicalScrollBox* Container)
 {
 	for (int i = 0; i < Container->GetChildrenCount(); ++i)
 	{
@@ -273,7 +273,7 @@ int32 UServerDetail::GetFocusedPlayerIndex(UCommonHierarchicalScrollBox* Contain
 	return 0;
 }
 
-void UServerDetail::InitMapComboBox()
+void ULobby::InitMapComboBox()
 {
 	MapComboBox->ClearOptions();
 
@@ -304,7 +304,7 @@ void UServerDetail::InitMapComboBox()
 }
 
 // 成员加入大厅事件
-void UServerDetail::OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
+void ULobby::OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoined)
 {
 	UpdatePlayerList();
 
@@ -318,7 +318,7 @@ void UServerDetail::OnLobbyMemberJoined(const FLobbyMemberJoined& LobbyMemberJoi
 	}
 }
 
-void UServerDetail::OnServerNameCommitted(const FText& Text, ETextCommit::Type CommitMethod)
+void ULobby::OnServerNameCommitted(const FText& Text, ETextCommit::Type CommitMethod)
 {
 	if (Text.ToString() == LastServerName.ToString()) return;
 	
@@ -332,7 +332,7 @@ void UServerDetail::OnServerNameCommitted(const FText& Text, ETextCommit::Type C
 	}
 }
 
-void UServerDetail::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+void ULobby::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnModeComboBoxChanged, %s"), *SelectedItem);
 
@@ -348,7 +348,7 @@ void UServerDetail::OnModeComboBoxChanged(FString SelectedItem, ESelectInfo::Typ
 	}
 }
 
-void UServerDetail::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
+void ULobby::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnMapComboBoxChanged, %s"), *SelectedItem);
 	// InitMapComboBox引起OnMapComboBoxChanged时，SelectedItem为空
@@ -375,7 +375,7 @@ void UServerDetail::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type
 }
 
 // 修改大厅属性完成事件
-void UServerDetail::OnModifyLobbyAttrComplete(bool bWasSuccessful)
+void ULobby::OnModifyLobbyAttrComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
@@ -387,7 +387,7 @@ void UServerDetail::OnModifyLobbyAttrComplete(bool bWasSuccessful)
 }
 
 // 大厅属性改变事件
-void UServerDetail::OnLobbyAttrChanged(const FLobbyAttributesChanged& LobbyAttributesChanged)
+void ULobby::OnLobbyAttrChanged(const FLobbyAttributesChanged& LobbyAttributesChanged)
 {
 	FString PlayerName = FString();
 	ETeam PlayerTeam = ETeam::NoTeam;
@@ -442,7 +442,7 @@ void UServerDetail::OnLobbyAttrChanged(const FLobbyAttributesChanged& LobbyAttri
 	}
 }
 
-void UServerDetail::OnSwitchTeamButtonClicked()
+void ULobby::OnSwitchTeamButtonClicked()
 {
 	if (EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return;
 	
@@ -459,7 +459,7 @@ void UServerDetail::OnSwitchTeamButtonClicked()
 	}
 }
 
-void UServerDetail::OnReadyButtonClicked()
+void ULobby::OnReadyButtonClicked()
 {
 	if (EOSSubsystem == nullptr || EOSSubsystem->CurrentLobby == nullptr) return;
 
@@ -478,7 +478,7 @@ void UServerDetail::OnReadyButtonClicked()
 }
 
 // 修改大厅成员属性完成事件
-void UServerDetail::OnModifyLobbyMemberAttrComplete(bool bWasSuccessful)
+void ULobby::OnModifyLobbyMemberAttrComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
@@ -491,7 +491,7 @@ void UServerDetail::OnModifyLobbyMemberAttrComplete(bool bWasSuccessful)
 }
 
 // 大厅成员属性改变事件
-void UServerDetail::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
+void ULobby::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged& LobbyMemberAttributesChanged)
 {
 	FString Msg = FString();
 	if (auto AddedAttribute = LobbyMemberAttributesChanged.AddedAttributes.Find(LOBBY_MEMBER_MSG))
@@ -521,7 +521,7 @@ void UServerDetail::OnLobbyMemberAttrChanged(const FLobbyMemberAttributesChanged
 	}
 }
 
-void UServerDetail::OnStartServerButtonClicked()
+void ULobby::OnStartServerButtonClicked()
 {
 	if (!CanStartServer()) return;
 
@@ -538,7 +538,7 @@ void UServerDetail::OnStartServerButtonClicked()
 	GetWorld()->ServerTravel(MapPath, ETravelType::TRAVEL_Absolute);
 }
 
-bool UServerDetail::CanStartServer()
+bool ULobby::CanStartServer()
 {
 	if (EOSSubsystem == nullptr || !EOSSubsystem->IsLobbyHost() || EOSSubsystem->CurrentLobby == nullptr) return false;
 
@@ -594,7 +594,7 @@ bool UServerDetail::CanStartServer()
 	return true;
 }
 
-void UServerDetail::OnJoinServerButtonClicked()
+void ULobby::OnJoinServerButtonClicked()
 {
 	if (EOSSubsystem == nullptr || EOSSubsystem->IsLobbyHost()) return;
 
@@ -615,7 +615,7 @@ void UServerDetail::OnJoinServerButtonClicked()
 }
 
 // 大厅房主改变事件
-void UServerDetail::OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
+void ULobby::OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderChanged)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnLobbyLeaderChanged"));
 	SetUIButtonState();
@@ -633,7 +633,7 @@ void UServerDetail::OnLobbyLeaderChanged(const FLobbyLeaderChanged& LobbyLeaderC
 }
 
 // 离开大厅
-void UServerDetail::OnBackButtonClicked()
+void ULobby::OnBackButtonClicked()
 {
 	if (EOSSubsystem)
 	{
@@ -644,7 +644,7 @@ void UServerDetail::OnBackButtonClicked()
 }
 
 // 离开大厅完成事件
-void UServerDetail::OnLeaveLobbyComplete(bool bWasSuccessful)
+void ULobby::OnLeaveLobbyComplete(bool bWasSuccessful)
 {
 	if (bWasSuccessful)
 	{
@@ -656,7 +656,7 @@ void UServerDetail::OnLeaveLobbyComplete(bool bWasSuccessful)
 }
 
 // 成员离开大厅事件
-void UServerDetail::OnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft)
+void ULobby::OnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft)
 {
 	UpdatePlayerList();
 
@@ -671,7 +671,7 @@ void UServerDetail::OnLobbyMemberLeft(const FLobbyMemberLeft& LobbyMemberLeft)
 }
 
 // 被踢出大厅事件
-void UServerDetail::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
+void ULobby::OnLobbyLeft(const FLobbyLeft& LobbyLeft)
 {
 	UE_LOG(LogTemp, Warning, TEXT("OnLobbyLeft"));
 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());

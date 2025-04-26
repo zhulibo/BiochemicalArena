@@ -32,7 +32,7 @@ protected:
 	void OnEnumerateFilesComplete(bool bWasSuccessful);
 	void OnReadFileComplete(bool bWasSuccessful, const FUserFileContentsRef& FileContents);
 	void InitPlayerConfig(class USaveGameLoadout* SaveGameLoadout);
-	bool HasEquipment(EEquipmentName EquipmentName);
+	bool HasEquipment(EEquipmentName EquipmentName, EEquipmentType EquipmentType);
 	bool HasHumanCharacter(EHumanCharacterName HumanCharacterName);
 
 	UPROPERTY()

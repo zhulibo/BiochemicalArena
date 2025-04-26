@@ -35,7 +35,9 @@ protected:
 	UFUNCTION()
 	void SpawnHumanCharacter(AController* Controller);
 
+	UPROPERTY()
 	TArray<class APlayerStart*> Team1PlayerStarts;
+	UPROPERTY()
 	TArray<APlayerStart*> Team2PlayerStarts;
 	AActor* FindCharacterPlayerStart(ETeam Team);
 	void AssignTeam(AController* Controller, ETeam Team);

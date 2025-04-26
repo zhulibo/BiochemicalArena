@@ -81,7 +81,7 @@ TArray<ABasePlayerState*> ABaseGameState::GetPlayerStates(ETeam Team)
 	}
 }
 
-void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState)
+void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* AttackerState, const FText& CauserName, ABasePlayerState* DamagedState)
 {
 	OnAddKillLog.Broadcast(AttackerState, CauserName, DamagedState);
 }

@@ -48,7 +48,7 @@ void URecoilComponent::IncRecoil()
 {
 	if (HumanCharacter == nullptr || HumanCharacter->GetCombatComponent() == nullptr) return;
 
-	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetCurShotEquipment();
+	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetUsingWeapon();
 	if (Weapon == nullptr) return;
 
 	// 从总后坐力中减去上次开火未及时应用的后坐力
@@ -138,7 +138,7 @@ void URecoilComponent::PollApplyRecoil(float DeltaSeconds)
 	if (RecoilVertTotal == 0.f && RecoilHorTotal == 0.f) return;
 
 	if (HumanCharacter == nullptr || HumanCharacter->GetCombatComponent() == nullptr) return;
-	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetCurShotEquipment();
+	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetUsingWeapon();
 	if (Weapon == nullptr) return;
 
 	if (RecoilIncCostTime >= Weapon->RecoilIncTime) return;
@@ -185,7 +185,7 @@ void URecoilComponent::PollRecoverRecoil(float DeltaSeconds)
 	if (RecoilDecCostTime >= RecoilDecTime) return;
 
 	if (HumanCharacter == nullptr || HumanCharacter->GetCombatComponent() == nullptr) return;
-	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetCurShotEquipment();
+	AWeapon* Weapon = HumanCharacter->GetCombatComponent()->GetUsingWeapon();
 	if (Weapon == nullptr) return;
 
 	// 累计回复后坐力耗时

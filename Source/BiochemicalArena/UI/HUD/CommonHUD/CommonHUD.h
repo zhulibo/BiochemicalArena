@@ -28,7 +28,7 @@ protected:
 	class UVerticalBox* KillLogContainer;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<class UKillLogLine> KillLogLineClass;
-	void OnAddKillLog(ABasePlayerState* AttackerState, const FString& CauserName, ABasePlayerState* DamagedState);
+	void OnAddKillLog(ABasePlayerState* AttackerState, const FText& CauserName, ABasePlayerState* DamagedState);
 
 	UPROPERTY(meta = (BindWidget))
 	class UCrosshair* Crosshair;

@@ -96,7 +96,7 @@ void UTextChat::SendMsg()
 				Msg
 			);
 
-			MsgEditableTextBox->SetText(FText::GetEmpty());
+			MsgEditableTextBox->SetText(FText());
 		}
 	}
 	// 菜单大厅聊天
@@ -113,7 +113,7 @@ void UTextChat::SendMsg()
 			{ LOBBY_MEMBER_MSG, Msg}
 		});
 
-		MsgEditableTextBox->SetText(FText::GetEmpty());
+		MsgEditableTextBox->SetText(FText());
 	}
 }
 

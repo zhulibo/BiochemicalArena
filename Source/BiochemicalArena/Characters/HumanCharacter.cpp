@@ -186,10 +186,10 @@ void AHumanCharacter::ServerSpawnEquipments_Implementation(EEquipmentName Primar
 	TSubclassOf<AEquipment> MeleeClass = nullptr;
 	TSubclassOf<AEquipment> ThrowingClass = nullptr;
 
-	FName PrimaryName =  FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Primary)));
-	FName SecondaryName =  FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Secondary)));
-	FName MeleeName =  FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Melee)));
-	FName ThrowingName =  FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Throwing)));
+	FName PrimaryName = FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Primary)));
+	FName SecondaryName = FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Secondary)));
+	FName MeleeName = FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Melee)));
+	FName ThrowingName = FName(ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(Throwing)));
 
 	// 近战模式只生成近战装备
 	if (MeleeGameState == nullptr) MeleeGameState = GetWorld()->GetGameState<AMeleeGameState>();
@@ -247,6 +247,7 @@ void AHumanCharacter::ServerSpawnEquipments_Implementation(EEquipmentName Primar
 		DefaultMelee = GetWorld()->SpawnActor<AMelee>(MeleeClass);
 		CombatComponent->LocalEquipEquipment(DefaultMelee);
 
+		// 近战模式默认切到近战武器
 		if (MeleeGameState == nullptr) MeleeGameState = GetWorld()->GetGameState<AMeleeGameState>();
 		if (MeleeGameState)
 		{
@@ -333,11 +334,11 @@ void AHumanCharacter::AimButtonPressed(const FInputActionValue& Value)
 {
 	if (CombatComponent == nullptr) return;
 
-	if (CombatComponent->GetCurShotEquipment())
+	if (CombatComponent->GetUsingWeapon())
 	{
 		CombatComponent->SetAiming(true);
 	}
-	else if (CombatComponent->CurrentEquipmentType == EEquipmentType::Melee)
+	else if (CombatComponent->CurEquipmentType == EEquipmentType::Melee)
 	{
 		CombatComponent->MeleeAttack(ECombatState::HeavyAttacking);
 	}
@@ -345,7 +346,7 @@ void AHumanCharacter::AimButtonPressed(const FInputActionValue& Value)
 
 void AHumanCharacter::AimButtonReleased(const FInputActionValue& Value)
 {
-	if (CombatComponent && CombatComponent->GetCurShotEquipment())
+	if (CombatComponent && CombatComponent->GetUsingWeapon())
 	{
 		CombatComponent->SetAiming(false);
 	}
@@ -356,24 +357,23 @@ void AHumanCharacter::FireButtonPressed(const FInputActionValue& Value)
 	if (CombatComponent == nullptr) return;
 
 	bCanSwitchLoadout = false;
-	
-	if (CombatComponent->GetCurShotEquipment())
+
+	switch (CombatComponent->GetCurEquipmentType())
 	{
+	case EEquipmentType::Primary:
 		CombatComponent->StartFire();
-	}
-	else if (CombatComponent->GetCurMeleeEquipment())
-	{
+	case EEquipmentType::Secondary:
+		CombatComponent->StartFire();
+	case EEquipmentType::Melee:
 		CombatComponent->MeleeAttack(ECombatState::LightAttacking);
-	}
-	else if (CombatComponent->GetCurThrowingEquipment())
-	{
+	case EEquipmentType::Throwing:
 		CombatComponent->Throw();
 	}
 }
 
 void AHumanCharacter::FireButtonReleased(const FInputActionValue& Value)
 {
-	if (CombatComponent && CombatComponent->GetCurShotEquipment())
+	if (CombatComponent && CombatComponent->GetUsingWeapon())
 	{
 		CombatComponent->StopFire();
 	}
@@ -381,7 +381,7 @@ void AHumanCharacter::FireButtonReleased(const FInputActionValue& Value)
 
 void AHumanCharacter::ReloadButtonPressed(const FInputActionValue& Value)
 {
-	if (CombatComponent && CombatComponent->GetCurShotEquipment())
+	if (CombatComponent && CombatComponent->GetUsingWeapon())
 	{
 		CombatComponent->Reload();
 	}
@@ -390,11 +390,11 @@ void AHumanCharacter::ReloadButtonPressed(const FInputActionValue& Value)
 void AHumanCharacter::DropButtonPressed(const FInputActionValue& Value)
 {
 	// 只有主副武器可以丢弃
-	if (CombatComponent && CombatComponent->GetCurShotEquipment())
+	if (CombatComponent && CombatComponent->GetUsingWeapon())
 	{
 		bCanSwitchLoadout = false;
-		
-		CombatComponent->DropEquipment(CombatComponent->CurrentEquipmentType);
+
+		CombatComponent->DropEquipment(CombatComponent->CurEquipmentType);
 		if (CombatComponent->GetLastEquipment())
 		{
 			CombatComponent->SwapEquipment(CombatComponent->LastEquipmentType);
@@ -446,7 +446,7 @@ void AHumanCharacter::ServerGivePickupEquipment_Implementation(APickupEquipment*
 	CombatComponent->MulticastDropEquipment2(Equipment->GetEquipmentType());
 
 	// 装备类型使用中，替换
-	if (CombatComponent->CurrentEquipmentType == Equipment->GetEquipmentType())
+	if (CombatComponent->CurEquipmentType == Equipment->GetEquipmentType())
 	{
 		CombatComponent->MulticastReplaceCurEquipment(Equipment);
 	}
@@ -623,12 +623,6 @@ void AHumanCharacter::OnRep_bIsImmune()
 	{
 		BasePlayerState->InitOverheadWidget();
 	}
-}
-
-AEquipment* AHumanCharacter::GetCurrentEquipment()
-{
-	if (CombatComponent) return CombatComponent->GetCurEquipment();
-	return nullptr;
 }
 
 FVector AHumanCharacter::GetHitTarget() const

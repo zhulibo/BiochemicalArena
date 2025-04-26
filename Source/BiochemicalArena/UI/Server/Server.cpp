@@ -8,7 +8,7 @@
 #include "BiochemicalArena/UI/Common/CommonButton.h"
 #include "Components/EditableTextBox.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
-#include "ServerDetail.h"
+#include "Lobby.h"
 #include "BiochemicalArena/BiochemicalArena.h"
 #include "BiochemicalArena/GameModes/Data/GameModeType.h"
 #include "BiochemicalArena/UI/Common/CommonComboBox.h"
@@ -68,10 +68,10 @@ void UServer::NativeOnActivated()
 {
 	Super::NativeOnActivated();
 
-	// 游戏结束退回菜单时，直接进入ServerDetail
+	// 游戏结束退回菜单时，直接进入Lobby
 	if (EOSSubsystem && EOSSubsystem->GetJoinedLobbies())
 	{
-		GoToServerDetail();
+		GoToLobby();
 	}
 }
 
@@ -283,7 +283,7 @@ void UServer::OnFindLobbiesComplete(bool bWasSuccessful, const TArray<TSharedRef
 // 重置查询条件
 void UServer::OnResetServerButtonClicked()
 {
-	ServerNameEditableTextBox->SetText(FText::GetEmpty());
+	ServerNameEditableTextBox->SetText(FText());
 	ModeComboBox->SetSelectedIndex(0);
 }
 
@@ -376,15 +376,15 @@ void UServer::OnJoinLobbyComplete(bool bWasSuccessful)
 
 void UServer::OnLobbyJoined(const FLobbyJoined& LobbyJoined)
 {
-	GoToServerDetail();
+	GoToLobby();
 }
 
-void UServer::GoToServerDetail()
+void UServer::GoToLobby()
 {
 	if (MenuController == nullptr) MenuController = Cast<AMenuController>(GetOwningPlayer());
 	if (MenuController)
 	{
-		MenuController->ServerStack->AddWidget(ServerDetailClass);
+		MenuController->ServerStack->AddWidget(LobbyClass);
 	}
 }
 

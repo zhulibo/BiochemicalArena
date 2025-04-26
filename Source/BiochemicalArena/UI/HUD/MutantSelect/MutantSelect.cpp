@@ -47,15 +47,12 @@ void UMutantSelect::NativeOnInitialized()
 
 			if (UMutantSelectButton* MutantSelectButton = CreateWidget<UMutantSelectButton>(this, MutantSelectButtonClass))
 			{
-				FText CharacterNameText = FText();
-				FString MutantCharacterName = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(ItemValue.MutantCharacterName));
-				FText::FindTextInLiveTable_Advanced(CULTURE_MUTANT, MutantCharacterName, CharacterNameText);
-				MutantSelectButton->CharacterNameText->SetText(CharacterNameText);
-
-				MutantSelectButton->CharacterDescText->SetText(FText::FromString(ItemValue.Desc));
-
+				FText NameText = FText();
+				FText::FindTextInLiveTable_Advanced(CULTURE_MUTANT, ItemValue.ShowName, NameText);
+				MutantSelectButton->NameText->SetText(NameText);
+				MutantSelectButton->DescText->SetText(FText::FromString(ItemValue.Desc));
+				MutantSelectButton->MutantCharacterName = ItemValue.MutantCharacterName;
 				MutantSelectButton->OnClicked().AddUObject(this, &ThisClass::OnMutantSelectButtonClicked, ItemValue.MutantCharacterName);
-
 				UScrollBoxSlot* NewSlot = Cast<UScrollBoxSlot>(MutantSelectButtonContainer->AddChild(MutantSelectButton));
 				if (NewSlot) NewSlot->SetPadding(FMargin(10, 0, 10, 0));
 			}
@@ -67,13 +64,11 @@ UWidget* UMutantSelect::NativeGetDesiredFocusTarget() const
 {
 	if (AMutantCharacter* MutantCharacter = Cast<AMutantCharacter>(GetOwningPlayerPawn()))
 	{
-		FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(MutantCharacter->MutantCharacterName));
-
 		for (int i = 0; i < MutantSelectButtonContainer->GetChildrenCount(); ++i)
 		{
 			if (UMutantSelectButton* MutantSelectButton = Cast<UMutantSelectButton>(MutantSelectButtonContainer->GetChildAt(i)))
 			{
-				if (MutantSelectButton->CharacterNameText->GetText().ToString() == EnumValue)
+				if (MutantSelectButton->MutantCharacterName == MutantCharacter->MutantCharacterName)
 				{
 					return MutantSelectButtonContainer->GetChildAt(i);
 				}

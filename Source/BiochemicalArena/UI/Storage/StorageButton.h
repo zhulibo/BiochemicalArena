@@ -16,6 +16,8 @@ class BIOCHEMICALARENA_API UStorageButton : public UCommonButtonBase
 public:
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* ButtonText;
+	UPROPERTY()
+	FString ShowName;
 
 	UPROPERTY()
 	EHumanCharacterName HumanCharacterName;
