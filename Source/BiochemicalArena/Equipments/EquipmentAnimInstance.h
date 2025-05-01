@@ -11,6 +11,9 @@ class BIOCHEMICALARENA_API UEquipmentAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
 
+public:
+	UEquipmentAnimInstance();
+
 protected:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 

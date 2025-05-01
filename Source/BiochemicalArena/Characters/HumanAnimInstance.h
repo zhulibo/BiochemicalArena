@@ -12,6 +12,8 @@ class BIOCHEMICALARENA_API UHumanAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 
 public:
+	UHumanAnimInstance();
+
 	UPROPERTY(BlueprintReadOnly)
 	EEquipmentName EquipmentName; // used for equipment idle animation
 

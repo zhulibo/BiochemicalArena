@@ -12,6 +12,8 @@ class BIOCHEMICALARENA_API UMutantAnimInstance : public UAnimInstance
 	GENERATED_BODY()
 
 public:
+	UMutantAnimInstance();
+
 	UPROPERTY(BlueprintReadOnly)
 	EMutantCharacterName MutantCharacterName; // used for idle animation
 

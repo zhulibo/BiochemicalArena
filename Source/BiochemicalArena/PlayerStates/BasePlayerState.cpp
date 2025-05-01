@@ -191,10 +191,7 @@ void ABasePlayerState::InitOverheadWidget()
 					{
 						if (UOverheadWidget* OverheadWidgetClass = Cast<UOverheadWidget>(OverheadWidget->GetUserWidgetObject()))
 						{
-							if (IsValid(OverheadWidgetClass))
-							{
-								OverheadWidgetClass->InitOverheadWidget();
-							}
+							OverheadWidgetClass->InitOverheadWidget();
 						}
 					}
 				}

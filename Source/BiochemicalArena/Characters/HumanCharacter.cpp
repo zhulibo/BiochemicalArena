@@ -176,8 +176,7 @@ void AHumanCharacter::ApplyLoadout()
 	);
 }
 
-void AHumanCharacter::ServerSpawnEquipments_Implementation(EEquipmentName Primary, EEquipmentName Secondary,
-	EEquipmentName Melee, EEquipmentName Throwing)
+void AHumanCharacter::ServerSpawnEquipments_Implementation(EEquipmentName Primary, EEquipmentName Secondary, EEquipmentName Melee, EEquipmentName Throwing)
 {
 	if (CombatComponent == nullptr) return;
 
@@ -201,6 +200,9 @@ void AHumanCharacter::ServerSpawnEquipments_Implementation(EEquipmentName Primar
 	}
 
 	// PrimaryName = TEXT("M870");
+	// SecondaryName = TEXT("DesertEagle");
+	// MeleeName = TEXT("MilitaryShovel");
+	ThrowingName = TEXT("Smoke");
 
 	if (PrimaryName.IsValid()) {
 		FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, PrimaryName);
@@ -512,7 +514,7 @@ void AHumanCharacter::HumanReceiveDamage(AActor* DamagedActor, float Damage, con
 		if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 		if (BaseController)
 		{
-			BaseMode->HumanReceiveDamage(this, BaseController, Damage, DamageType, AttackerController, DamageCauser);
+			BaseMode->HumanReceiveDamage(this, BaseController, FMath::RoundToInt(Damage), DamageType, AttackerController, DamageCauser);
 		}
 	}
 }

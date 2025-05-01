@@ -61,8 +61,7 @@ void UCommonHUD::OnAddKillLog(ABasePlayerState* AttackerState, const FText& Caus
 
 	if (KillLogContainer && KillLogLineClass)
 	{
-		UKillLogLine* KillLogLine = CreateWidget<UKillLogLine>(this, KillLogLineClass);
-		if (KillLogLine)
+		if (UKillLogLine* KillLogLine = CreateWidget<UKillLogLine>(this, KillLogLineClass))
 		{
 			if (LocalPlayerState == nullptr) LocalPlayerState = GetOwningPlayerState<ABasePlayerState>();
 			KillLogContainer->AddChild(KillLogLine);

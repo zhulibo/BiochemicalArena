@@ -42,5 +42,13 @@ public:
 	
 	UPROPERTY(EditAnywhere)
 	UMaterialInterface* MI_BloodDecal;
-	
+
+	// 闪光弹
+	UPROPERTY(EditAnywhere, Category = "Flashbang")
+	UTextureRenderTarget2D* RenderTarget;
+	UPROPERTY(EditAnywhere, Category = "Flashbang")
+	UMaterialInterface* MI_Flashbang;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Flashbang")
+	UMaterialParameterCollection* MPC_Flashbang;
+
 };

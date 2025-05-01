@@ -44,6 +44,7 @@ public:
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -65,6 +66,10 @@ protected:
 	class USpringArmComponent* CameraBoom;
 	UPROPERTY(VisibleAnywhere)
 	class UCameraComponent* Camera;
+	UPROPERTY(VisibleAnywhere)
+	USceneCaptureComponent2D* SceneCapture;
+	UPROPERTY()
+	UMaterialInstanceDynamic* FlashbangMID;
 	UPROPERTY(VisibleAnywhere)
 	class UWidgetComponent* OverheadWidget;
 	UPROPERTY()
@@ -150,6 +155,7 @@ protected:
 
 public:
 	FORCEINLINE UCameraComponent* GetCamera() const { return Camera; }
+	FORCEINLINE USceneCaptureComponent2D* GetSceneCapture() const { return SceneCapture; }
 	FORCEINLINE UWidgetComponent* GetOverheadWidget() const { return OverheadWidget; }
 	FORCEINLINE float GetAimPitch() const { return AimPitch; }
 	FORCEINLINE bool IsDead() const { return bIsDead; }

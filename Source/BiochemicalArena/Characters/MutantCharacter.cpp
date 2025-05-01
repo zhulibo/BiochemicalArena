@@ -530,7 +530,7 @@ void AMutantCharacter::MutantReceiveDamage(AActor* DamagedActor, float Damage, c
 		if (BaseController == nullptr) BaseController = Cast<ABaseController>(Controller);
 		if (BaseController)
 		{
-			MutationMode->MutantReceiveDamage(this, BaseController, Damage, DamageType, AttackerController, DamageCauser);
+			MutationMode->MutantReceiveDamage(this, BaseController, FMath::RoundToInt(Damage), DamageType, AttackerController, DamageCauser);
 		}
 	}
 }

@@ -7,6 +7,11 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 
+UMutantAnimInstance::UMutantAnimInstance()
+{
+	// bUseMultiThreadedAnimationUpdate = false;
+}
+
 void UMutantAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);

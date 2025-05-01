@@ -20,7 +20,7 @@ class BIOCHEMICALARENA_API ABaseGameState : public AGameState
 public:
 	virtual void AddToPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team);
 	virtual void RemoveFromPlayerStates(ABasePlayerState* BasePlayerState, ETeam Team);
-	TArray<ABasePlayerState*> GetPlayerStates(ETeam Team);
+	TArray<ABasePlayerState*> GetPlayerStates(TOptional<ETeam> Team);
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastAddKillLog(ABasePlayerState* AttackerState, const FText& CauserName, ABasePlayerState* DamagedState);

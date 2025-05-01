@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "Throwing.h"
-#include "Grenade.generated.h"
+#include "Smoke.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API AGrenade : public AThrowing
+class BIOCHEMICALARENA_API ASmoke : public AThrowing
 {
 	GENERATED_BODY()
 
 public:
-	AGrenade();
+	ASmoke();
 
 	virtual void ThrowOut() override;
 
@@ -22,12 +22,6 @@ protected:
 	UPROPERTY(EditAnywhere)
 	class UMetaSoundSource* ExplodeSound;
 
-	UPROPERTY()
-	float Damage = 500.f;
-	UPROPERTY()
-	float DamageInnerRadius = 100.f;
-	UPROPERTY()
-	float DamageOuterRadius = 400.f;
 	void Explode();
 
 };

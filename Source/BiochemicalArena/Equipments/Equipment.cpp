@@ -33,7 +33,7 @@ AEquipment::AEquipment()
 	EquipmentMesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	EquipmentMesh->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	EquipmentMesh->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	EquipmentMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
+	EquipmentMesh->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block); // 碰撞血液
 
 	OverlapSphere = CreateDefaultSubobject<USphereComponent>(TEXT("OverlapSphere"));
 	OverlapSphere->SetupAttachment(RootComponent);
@@ -111,8 +111,10 @@ void AEquipment::SetOwnerTeam()
 	if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
 	if (HumanCharacter)
 	{
-		ABasePlayerState* PlayerState = Cast<ABasePlayerState>(HumanCharacter->GetPlayerState());
-		if (PlayerState) OwnerTeam = PlayerState->GetTeam();
+		if (ABasePlayerState* PlayerState = Cast<ABasePlayerState>(HumanCharacter->GetPlayerState()))
+		{
+			OwnerTeam = PlayerState->GetTeam();
+		}
 	}
 }
 

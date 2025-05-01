@@ -2,19 +2,24 @@
 
 #include "CoreMinimal.h"
 #include "Throwing.h"
-#include "Grenade.generated.h"
+#include "Flashbang.generated.h"
 
 UCLASS()
-class BIOCHEMICALARENA_API AGrenade : public AThrowing
+class BIOCHEMICALARENA_API AFlashbang : public AThrowing
 {
 	GENERATED_BODY()
 
 public:
-	AGrenade();
+	AFlashbang();
 
 	virtual void ThrowOut() override;
 
 protected:
+	UPROPERTY()
+	class ABaseGameState* BaseGameState;
+	UPROPERTY()
+	class UAssetSubsystem* AssetSubsystem;
+
 	UPROPERTY(EditAnywhere)
 	class UNiagaraSystem* ExplodeEffect;
 	UPROPERTY()
@@ -23,11 +28,11 @@ protected:
 	class UMetaSoundSource* ExplodeSound;
 
 	UPROPERTY()
-	float Damage = 500.f;
+	float Radius = 1000.f;
 	UPROPERTY()
-	float DamageInnerRadius = 100.f;
+	float MaxFlashTime = 8.f;
 	UPROPERTY()
-	float DamageOuterRadius = 400.f;
+	float MaxCapTime = 12.f;
 	void Explode();
 
 };

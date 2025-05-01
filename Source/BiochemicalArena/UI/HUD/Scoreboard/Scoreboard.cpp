@@ -49,8 +49,7 @@ void UScoreboard::RefreshScoreBoard()
 		ScoreBoardContainer->ClearChildren();
 		
 		TArray<ABasePlayerState*> PlayerStates;
-		PlayerStates.Append(BaseGameState->GetPlayerStates(ETeam::Team1));
-		PlayerStates.Append(BaseGameState->GetPlayerStates(ETeam::Team2));
+		PlayerStates.Append(BaseGameState->GetPlayerStates({}));
 
 		// 删除空对象
 		PlayerStates.RemoveAll([](const ABasePlayerState* BasePlayerState) {

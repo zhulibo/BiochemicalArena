@@ -28,17 +28,20 @@ void AGrenade::ThrowOut()
 		{
 			FVector ThrowVector = CameraComponent->GetForwardVector();
 			ThrowVector.Z += 0.1;
-			ProjectileMovement->Velocity = ThrowVector * 2000.f;
+			ProjectileMovement->Velocity = ThrowVector * 1500.f;
 			ProjectileMovement->Activate();
 		}
 	}
 
 	FTimerHandle TimerHandle;
-	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::ExplodeDamage, 3.f);
+	GetWorldTimerManager().SetTimer(TimerHandle, this, &ThisClass::Explode, 4.f);
 }
 
-void AGrenade::ExplodeDamage()
+void AGrenade::Explode()
 {
+	// 不能直接销毁，同步到模拟端无法执行
+	SetLifeSpan(1.f);
+	
 	if (BaseController == nullptr)
 	{
 		if (HumanCharacter == nullptr) HumanCharacter = Cast<AHumanCharacter>(GetOwner());
@@ -48,14 +51,13 @@ void AGrenade::ExplodeDamage()
 	{
 		TArray<AActor*> IgnoreActors;
 		if (OwnerTeam == ETeam::NoTeam) SetOwnerTeam();
-		ETeam IgnoreTeam = OwnerTeam == ETeam::Team1 ? ETeam::Team2 : ETeam::Team1;
 		if (ABaseGameState* BaseGameState = GetWorld()->GetGameState<ABaseGameState>())
 		{
-			for (int32 i = 0; i < BaseGameState->GetPlayerStates(IgnoreTeam).Num(); ++i)
+			for (int32 i = 0; i < BaseGameState->GetPlayerStates(OwnerTeam).Num(); ++i)
 			{
-				if (BaseGameState->GetPlayerStates(IgnoreTeam)[i])
+				if (BaseGameState->GetPlayerStates(OwnerTeam)[i])
 				{
-					IgnoreActors.AddUnique(BaseGameState->GetPlayerStates(IgnoreTeam)[i]->GetPawn());
+					IgnoreActors.AddUnique(BaseGameState->GetPlayerStates(OwnerTeam)[i]->GetPawn());
 				}
 			}
 		}
@@ -63,7 +65,7 @@ void AGrenade::ExplodeDamage()
 		UGameplayStatics::ApplyRadialDamageWithFalloff(
 			this, // World context object
 			Damage, // BaseDamage
-			10.f, // MinimumDamage
+			100.f, // MinimumDamage
 			GetActorLocation(), // Origin
 			DamageInnerRadius, // DamageInnerRadius
 			DamageOuterRadius, // DamageOuterRadius

@@ -7,6 +7,7 @@
 #include "BiochemicalArena/Characters/HumanCharacter.h"
 #include "BiochemicalArena/Equipments/Equipment.h"
 #include "BiochemicalArena/Equipments/Data/DamageTypeFall.h"
+#include "BiochemicalArena/Equipments/Data/EquipmentType.h"
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
@@ -211,9 +212,9 @@ void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser
 			{
 				FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
 				FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, FName(EnumValue));
-				if (const FHumanCharacterMain* HumanCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
+				if (const FEquipmentMain* EquipmentMain = UDataRegistrySubsystem::Get()->GetCachedItem<FEquipmentMain>(DataRegistryId))
 				{
-					FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, HumanCharacterMain->ShowName, CauserName);
+					FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EquipmentMain->ShowName, CauserName);
 				}
 			}
 			break;
@@ -222,9 +223,9 @@ void ABaseMode::AddKillLog(ABasePlayerState* AttackerState, AActor* DamageCauser
 			{
 				FString EnumValue = ULibraryCommon::GetEnumValue(UEnum::GetValueAsString(CauserEquipment->GetEquipmentName()));
 				FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, FName(EnumValue));
-				if (const FHumanCharacterMain* HumanCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
+				if (const FEquipmentMain* EquipmentMain = UDataRegistrySubsystem::Get()->GetCachedItem<FEquipmentMain>(DataRegistryId))
 				{
-					FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, HumanCharacterMain->ShowName, CauserName);
+					FText::FindTextInLiveTable_Advanced(CULTURE_EQUIPMENT, EquipmentMain->ShowName, CauserName);
 				}
 			}
 			break;

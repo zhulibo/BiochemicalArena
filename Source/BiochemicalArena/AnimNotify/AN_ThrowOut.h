@@ -13,4 +13,7 @@ public:
 	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,
 		const FAnimNotifyEventReference& EventReference) override;
 
+	int LastUniqueID;
+	double LastTriggerTime;
+
 };

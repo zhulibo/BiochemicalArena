@@ -6,7 +6,7 @@ void UMultiCultureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	// 统一进行翻译，供FText::FindTextInLiveTable_Advanced查找使用。
 
-	// 需与 EHumanCharacterName 的值一致
+	// 需与 FHumanCharacterMain 中的ShowName一致
 #define LOCTEXT_NAMESPACE "Human"
 	LOCTEXT("SAS", "SAS");
 	LOCTEXT("SEAL", "SEAL");
@@ -14,7 +14,7 @@ void UMultiCultureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LOCTEXT("Test", "Test");
 #undef LOCTEXT_NAMESPACE
 
-	// 需与 EMutantCharacterName 的值一致
+	// 需与 FMutantCharacterMain 中的ShowName一致
 #define LOCTEXT_NAMESPACE "Mutant"
 	LOCTEXT("Tank", "Tank");
 	LOCTEXT("Ghost", "Ghost");
@@ -22,14 +22,27 @@ void UMultiCultureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LOCTEXT("Terminator", "Terminator");
 #undef LOCTEXT_NAMESPACE
 
-	// 需与 EEquipmentName 的值一致
+	// 需与 FEquipmentMain 中的ShowName一致
 #define LOCTEXT_NAMESPACE "Equipment"
 	LOCTEXT("AK47", "AK47");
 	LOCTEXT("AK47-Desert", "AK47-Desert");
+	LOCTEXT("PKM", "PKM");
+	LOCTEXT("M60", "M60");
 	LOCTEXT("M870", "M870");
+
 	LOCTEXT("Glock17", "Glock17");
+	LOCTEXT("DesertEagle", "DesertEagle");
+	
 	LOCTEXT("Kukri", "Kukri");
+	LOCTEXT("MilitaryShovel", "MilitaryShovel");
+	LOCTEXT("FireAxe", "FireAxe");
+	
 	LOCTEXT("Grenade", "Grenade");
+	LOCTEXT("Flashbang", "Flashbang");
+	LOCTEXT("Smoke", "Smoke");
+	
+	LOCTEXT("AK47-Cyclone", "AK47-Cyclone");
+	LOCTEXT("MG42", "MG42");
 #undef LOCTEXT_NAMESPACE
 
 	// 需与 EEquipmentType 的值一致

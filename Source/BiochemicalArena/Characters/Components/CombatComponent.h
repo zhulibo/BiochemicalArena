@@ -32,6 +32,10 @@ public:
 
 	void SetAttackCollisionEnabled(bool bIsEnabled);
 
+	UFUNCTION(Server, Reliable)
+	void ServerThrowOut();
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastThrowOut();
 	void ThrowOut();
 
 protected:

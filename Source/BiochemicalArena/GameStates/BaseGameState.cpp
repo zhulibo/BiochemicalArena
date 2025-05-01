@@ -68,16 +68,25 @@ void ABaseGameState::RemoveFromPlayerStates(ABasePlayerState* BasePlayerState, E
 	}
 }
 
-TArray<ABasePlayerState*> ABaseGameState::GetPlayerStates(ETeam Team)
+TArray<ABasePlayerState*> ABaseGameState::GetPlayerStates(TOptional<ETeam> Team)
 {
-	switch (Team)
+	if (Team.IsSet())
 	{
-	case ETeam::Team1:
-		return Team1PlayerStates;
-	case ETeam::Team2:
-		return Team2PlayerStates;
-	default:
-		return TArray<ABasePlayerState*>();
+		switch (Team.GetValue())
+		{
+		case ETeam::Team1:
+			return Team1PlayerStates;
+		case ETeam::Team2:
+			return Team2PlayerStates;
+		default:
+			return TArray<ABasePlayerState*>();
+		}
+	}
+	else
+	{
+		TArray<ABasePlayerState*> AllPlayerStates = Team1PlayerStates;
+		AllPlayerStates.Append(Team2PlayerStates);
+		return AllPlayerStates;
 	}
 }
 

@@ -19,6 +19,8 @@ public:
 
 	bool bIsAllowShow = true;
 	void ShowOverheadWidget(bool bIsShow);
+	
+	void PlayFlashbangEffect(float Speed);
 
 protected:
 	virtual void NativeOnInitialized() override;
@@ -58,5 +60,8 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UCommonLazyImage* HealthBarLine;
 	int32 GetHealthBarLineNum();
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	UWidgetAnimation* FadeIn;
 
 };

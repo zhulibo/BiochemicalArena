@@ -130,18 +130,15 @@ void UOverheadWidget::TraceOverheadWidget()
 		if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
 		if (BaseGameState)
 		{
-			for (int32 i = 0; i < BaseGameState->GetPlayerStates(ETeam::Team1).Num(); ++i)
+			if (BaseGameState)
 			{
-				if (BaseGameState->GetPlayerStates(ETeam::Team1)[i])
+				TArray<ABasePlayerState*> PlayerStates = BaseGameState->GetPlayerStates({});
+				for (int32 i = 0; i < PlayerStates.Num(); ++i)
 				{
-					IgnoreActors.AddUnique(BaseGameState->GetPlayerStates(ETeam::Team1)[i]->GetPawn());
-				}
-			}
-			for (int32 i = 0; i < BaseGameState->GetPlayerStates(ETeam::Team2).Num(); ++i)
-			{
-				if (BaseGameState->GetPlayerStates(ETeam::Team2)[i])
-				{
-					IgnoreActors.AddUnique(BaseGameState->GetPlayerStates(ETeam::Team2)[i]->GetPawn());
+					if (PlayerStates[i])
+					{
+						IgnoreActors.AddUnique(PlayerStates[i]->GetPawn());
+					}
 				}
 			}
 		}
@@ -286,4 +283,9 @@ void UOverheadWidget::ShowOverheadWidget(bool bIsShow)
 	bIsAllowShow = bIsShow;
 
 	SetVisibility(bIsAllowShow ? ESlateVisibility::Visible : ESlateVisibility::Hidden);
+}
+
+void UOverheadWidget::PlayFlashbangEffect(float Speed)
+{
+	PlayAnimationTimeRange(FadeIn, 0, 1, 1,  EUMGSequencePlayMode::Forward, Speed);
 }

@@ -30,6 +30,7 @@
 #include "Data/InputAsset.h"
 #include "Interfaces/InteractableTarget.h"
 #include "BiochemicalArena/Effects/BloodCollision.h"
+#include "Components/SceneCaptureComponent2D.h"
 #include "Net/UnrealNetwork.h"
 
 ABaseCharacter::ABaseCharacter()
@@ -46,6 +47,12 @@ ABaseCharacter::ABaseCharacter()
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+
+	SceneCapture = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("SceneCaptureComponent"));
+	SceneCapture->SetupAttachment(Camera);
+	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_FinalColorHDR;
+	SceneCapture->bCaptureEveryFrame = false;
+	SceneCapture->bCaptureOnMovement = false;
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(GetMesh(), TEXT("CameraSocket"));
@@ -65,6 +72,11 @@ void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, ControllerPitch);
+}
+
+void ABaseCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
 }
 
 void ABaseCharacter::BeginPlay()
@@ -176,6 +188,24 @@ void ABaseCharacter::PollSetMeshCollision()
 
 void ABaseCharacter::OnControllerReady()
 {
+	// 闪光弹
+	if (IsLocallyControlled())
+	{
+		if (AssetSubsystem == nullptr) AssetSubsystem = GetGameInstance()->GetSubsystem<UAssetSubsystem>();
+		if (AssetSubsystem && AssetSubsystem->CharacterAsset)
+		{
+			if (SceneCapture)
+			{
+				SceneCapture->TextureTarget = AssetSubsystem->CharacterAsset->RenderTarget;
+			}
+
+			FlashbangMID = UMaterialInstanceDynamic::Create(AssetSubsystem->CharacterAsset->MI_Flashbang, this);
+			if (FlashbangMID)
+			{
+				Camera->PostProcessSettings.AddBlendable(FlashbangMID, 1.f);
+			}
+		}
+	}
 }
 
 // 计算俯仰

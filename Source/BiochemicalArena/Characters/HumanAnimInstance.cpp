@@ -4,6 +4,13 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Components/CombatComponent.h"
 
+UHumanAnimInstance::UHumanAnimInstance()
+{
+	// 多线程动画更新开启时，在服务端播放非本地角色动画蒙太奇时，动画通知会触发两次。
+	// 性能影响较大，暂时在 UAN_ShellReload::Notify 中处理。
+	// bUseMultiThreadedAnimationUpdate = false;
+}
+
 void UHumanAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
