@@ -10,6 +10,7 @@
 #include "Components/WidgetComponent.h"
 #include "CommonLazyImage.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
+#include "BiochemicalArena/Equipments/Equipment.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -42,6 +43,7 @@ void UOverheadWidget::NativeConstruct()
 
 	SetPlayerName();
 
+	// 定时判断是否显示OverheadWidget
 	GetWorld()->GetTimerManager().SetTimer(TraceTimerHandle, this, &ThisClass::TraceOverheadWidget, .2f, true, .1f);
 
 	if (BaseCharacter)
@@ -121,15 +123,14 @@ void UOverheadWidget::TraceOverheadWidget()
 			return;
 		}
 
-		// double Time1 = FPlatformTime::Seconds();
-
 		// 射线检测玩家是否被阻挡
 		FCollisionQueryParams QueryParams;
-		// 忽略所有玩家
 		TArray<AActor*> IgnoreActors;
 		if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
 		if (BaseGameState)
 		{
+			QueryParams.AddIgnoredActors(BaseGameState->GetAllEquipments());
+
 			if (BaseGameState)
 			{
 				TArray<ABasePlayerState*> PlayerStates = BaseGameState->GetPlayerStates({});
@@ -143,14 +144,7 @@ void UOverheadWidget::TraceOverheadWidget()
 			}
 		}
 		QueryParams.AddIgnoredActors(IgnoreActors);
-
-		// double Time2 = FPlatformTime::Seconds();
-
 		GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECollisionChannel::ECC_Visibility, QueryParams);
-
-		// double Time3 = FPlatformTime::Seconds();
-		// UE_LOG(LogTemp, Warning, TEXT("IgnoreActors %f LineTraceSingleByChannel %f"), Time2 - Time1, Time3 - Time2);
-
 		if (HitResult.bBlockingHit)
 		{
 			SetVisibility(ESlateVisibility::Hidden);
@@ -212,8 +206,7 @@ void UOverheadWidget::InitOverheadWidget()
 				if (BaseGameState == nullptr) BaseGameState = GetWorld()->GetGameState<ABaseGameState>();
 				if (BaseGameState)
 				{
-					if (BaseGameState->GetMatchState() == FName(TEXT("WaitingPostMatch"))
-						|| BaseGameState->GetMatchState() == FName(TEXT("LeavingMap")))
+					if (BaseGameState->GetMatchState() == FName(TEXT("WaitingPostMatch")) || BaseGameState->GetMatchState() == FName(TEXT("LeavingMap")))
 					{
 						return;
 					}

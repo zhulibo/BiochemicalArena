@@ -24,7 +24,8 @@ enum class EEquipmentName : uint8 // 装备名字
 	Grenade,
 	Flashbang,
 	Smoke,
-
+	FireBottle,
+	
 	AK47_Cyclone,
 	MG42,
 

@@ -12,6 +12,13 @@
 #define C_WHITE FColor(255, 255, 255, 255)
 #define C_GREY FColor(120, 120, 120, 255)
 
+// tag
+#define TAG_BASE_CHARACTER FName(TEXT("BaseCharacter"))
+#define TAG_HUMAN_CHARACTER FName(TEXT("HumanCharacter"))
+#define TAG_MUTANT_CHARACTER FName(TEXT("MutantCharacter"))
+#define TAG_EQUIPMENT FName(TEXT("Equipment"))
+#define TAG_SMOKE_ACTOR FName(TEXT("SmokeActor"))
+
 // 地图路径
 #define MAP_LOGIN FString(TEXT("/Game/Maps/UI_Login"))
 #define MAP_MENU FString(TEXT("/Game/Maps/UI_Menu"))

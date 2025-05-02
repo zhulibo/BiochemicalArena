@@ -44,6 +44,8 @@ AEquipment::AEquipment()
 	OverlapSphere->OnComponentBeginOverlap.AddUniqueDynamic(this, &ThisClass::OnAreaSphereOverlap);
 
 	OwnerTeam = ETeam::NoTeam;
+
+	Tags.Add(TAG_EQUIPMENT);
 }
 
 void AEquipment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

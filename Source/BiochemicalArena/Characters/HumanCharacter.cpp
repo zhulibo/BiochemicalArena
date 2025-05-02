@@ -44,6 +44,8 @@ AHumanCharacter::AHumanCharacter()
 	CrosshairComponent = CreateDefaultSubobject<UCrosshairComponent>(TEXT("CrosshairComponent"));
 
 	BloodColor = C_RED;
+
+	Tags.Add(TAG_HUMAN_CHARACTER);
 }
 
 void AHumanCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -202,7 +204,11 @@ void AHumanCharacter::ServerSpawnEquipments_Implementation(EEquipmentName Primar
 	// PrimaryName = TEXT("M870");
 	// SecondaryName = TEXT("DesertEagle");
 	// MeleeName = TEXT("MilitaryShovel");
-	ThrowingName = TEXT("Smoke");
+	ThrowingName = TEXT("FireBottle");
+	if (HasAuthority() && IsLocallyControlled())
+	{
+		ThrowingName = TEXT("Smoke");
+	}
 
 	if (PrimaryName.IsValid()) {
 		FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, PrimaryName);

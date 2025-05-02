@@ -17,8 +17,6 @@ public:
 protected:
 	UPROPERTY(EditAnywhere)
 	class UNiagaraSystem* ExplodeEffect;
-	UPROPERTY()
-	class UNiagaraComponent* ExplodeEffectComponent;
 	UPROPERTY(EditAnywhere)
 	class UMetaSoundSource* ExplodeSound;
 

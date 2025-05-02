@@ -1,9 +1,12 @@
 #include "BaseGameState.h"
 
+#include "BiochemicalArena/BiochemicalArena.h"
+#include "BiochemicalArena/Equipments/Equipment.h"
 #include "BiochemicalArena/GameModes/MutationMode.h"
 #include "BiochemicalArena/PlayerControllers/BaseController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 void ABaseGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -18,6 +21,8 @@ void ABaseGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 void ABaseGameState::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GetWorld()->GetTimerManager().SetTimer(GetAllEquipmentsTimerHandle, this, &ThisClass::SetAllEquipments, 2.f, true);
 }
 
 void ABaseGameState::OnRep_MatchState()
@@ -98,4 +103,19 @@ void ABaseGameState::MulticastAddKillLog_Implementation(ABasePlayerState* Attack
 void ABaseGameState::MulticastSendMsg_Implementation(const EMsgType MsgType, const ETeam Team, const FString& PlayerName, const FString& Msg)
 {
 	OnReceiveMsg.Broadcast(MsgType, Team, PlayerName, Msg);
+}
+
+void ABaseGameState::SetAllEquipments()
+{
+	if (GetWorld())
+	{
+		AllEquipments.Empty();
+
+		// double Time1 = FPlatformTime::Seconds();
+
+		UGameplayStatics::GetAllActorsWithTag(GetWorld(), TAG_EQUIPMENT, AllEquipments);
+
+		// double Time2 = FPlatformTime::Seconds();
+		// UE_LOG(LogTemp, Warning, TEXT("Time %f"), Time2 - Time1);
+	}
 }

@@ -841,19 +841,6 @@ void UCombatComponent::MulticastThrow_Implementation()
 	}
 }
 
-void UCombatComponent::ServerThrowOut_Implementation()
-{
-	MulticastThrowOut();
-}
-
-void UCombatComponent::MulticastThrowOut_Implementation()
-{
-	if (HumanCharacter && !HumanCharacter->IsLocallyControlled())
-	{
-		ThrowOut();
-	}
-}
-
 void UCombatComponent::LocalThrow()
 {
 	if (CombatState == ECombatState::Ready)
@@ -870,6 +857,19 @@ void UCombatComponent::LocalThrow()
 
 			CombatState = ECombatState::Throwing;
 		}
+	}
+}
+
+void UCombatComponent::ServerThrowOut_Implementation()
+{
+	MulticastThrowOut();
+}
+
+void UCombatComponent::MulticastThrowOut_Implementation()
+{
+	if (HumanCharacter && !HumanCharacter->IsLocallyControlled())
+	{
+		ThrowOut();
 	}
 }
 

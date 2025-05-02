@@ -65,6 +65,8 @@ ABaseCharacter::ABaseCharacter()
 	GetCharacterMovement()->AirControlBoostMultiplier = 1;
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+
+	Tags.Add(TAG_BASE_CHARACTER);
 }
 
 void ABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -779,8 +781,7 @@ void ABaseCharacter::Landed(const FHitResult& Hit)
 		MulticastPlayOuchSound(DamageRate);
 
 		// 应用伤害
-		float TakenDamage = FMath::Clamp(GetMaxHealth() * DamageRate, 0.f, GetHealth());
-		UGameplayStatics::ApplyDamage(this, TakenDamage, Controller, this, UDamageTypeFall::StaticClass());
+		UGameplayStatics::ApplyDamage(this, GetMaxHealth() * DamageRate, Controller, this, UDamageTypeFall::StaticClass());
 	}
 }
 

@@ -8,6 +8,8 @@ AThrowing::AThrowing()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
+	CollisionSphere->SetSphereRadius(10.f);
+
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 	ProjectileMovement->SetIsReplicated(true);

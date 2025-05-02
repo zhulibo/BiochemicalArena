@@ -55,4 +55,12 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_Team2PlayerStates() {}
 
+	UPROPERTY()
+	TArray<AActor*> AllEquipments;
+	FTimerHandle GetAllEquipmentsTimerHandle;
+	void SetAllEquipments();
+
+public:
+	FORCEINLINE TArray<AActor*> GetAllEquipments() const { return AllEquipments; }
+	
 };
