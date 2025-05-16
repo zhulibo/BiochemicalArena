@@ -54,8 +54,6 @@ void UEOSSubsystem::Deinitialize()
 // 登录
 void UEOSSubsystem::Login(FPlatformUserId TempPlatformUserId, ECoolLoginType LoginType, FString Id, FString Token)
 {
-	// TODO 删除此定时器
-	GetWorld()->GetTimerManager().ClearTimer(TickNumTimerHandle);
 	GetWorld()->GetTimerManager().SetTimer(TickNumTimerHandle, this, &ThisClass::ChangeLobbyMemberTickNum, 2.f, true);
 
 	if (AuthPtr == nullptr) return;

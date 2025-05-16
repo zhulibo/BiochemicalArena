@@ -20,7 +20,7 @@ enum class EMutantCharacterName : uint8
 	Tank,
 	Ghost,
 	Smoker,
-	Terminator,
+	Cutter,
 
 	None
 };
@@ -37,7 +37,7 @@ struct FHumanCharacterMain : public FTableRowBase
 	FString ShowName;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AHumanCharacter> HumanCharacterClass;
+	TSoftClassPtr<class AHumanCharacter> HumanCharacterClass;
 
 	/**
 	 * Must be the same as the OfferId in dev portal,
@@ -67,7 +67,7 @@ struct FMutantCharacterMain : public FTableRowBase
 	FString ShowName;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AMutantCharacter> MutantCharacterClass; // TODO TSoftClassPtr
+	TSoftClassPtr<class AMutantCharacter> MutantCharacterClass;
 
 	UPROPERTY(EditAnywhere)
 	float LightAttackDamage = 0.f;

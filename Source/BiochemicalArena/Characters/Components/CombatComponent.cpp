@@ -279,6 +279,10 @@ void UCombatComponent::MulticastSwapEquipment_Implementation(EEquipmentType Equi
 		LocalSwapEquipment(EquipmentType);
 	}
 }
+void UCombatComponent::MulticastSwapEquipment2_Implementation(EEquipmentType EquipmentType)
+{
+	LocalSwapEquipment(EquipmentType);
+}
 
 void UCombatComponent::LocalSwapEquipment(EEquipmentType EquipmentType)
 {
@@ -716,6 +720,11 @@ void UCombatComponent::DropEquipment(EEquipmentType EquipmentType)
 void UCombatComponent::ServerDropEquipment_Implementation(EEquipmentType EquipmentType)
 {
 	MulticastDropEquipment(EquipmentType);
+
+	if (HumanCharacter)
+	{
+		HumanCharacter->OnServerDropEquipment();
+	}
 }
 
 void UCombatComponent::MulticastDropEquipment_Implementation(EEquipmentType EquipmentType)

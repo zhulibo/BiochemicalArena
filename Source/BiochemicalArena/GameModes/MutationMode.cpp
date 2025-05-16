@@ -15,6 +15,7 @@
 #include "BiochemicalArena/Equipments/Pickups/Pickup.h"
 #include "BiochemicalArena/Equipments/Projectiles/ProjectileBullet.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/System/DataAssetManager.h"
 #include "BiochemicalArena/System/DevSetting.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "GameFramework/PlayerStart.h"
@@ -506,7 +507,7 @@ void AMutationMode::SpawnMutantCharacter(AController* Controller, ESpawnMutantRe
 	FDataRegistryId DataRegistryId(DR_MUTANT_CHARACTER_MAIN, FName(CharacterName));
 	if (const FMutantCharacterMain* MutantCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FMutantCharacterMain>(DataRegistryId))
 	{
-		CharacterClass = MutantCharacterMain->MutantCharacterClass;
+		CharacterClass = UDataAssetManager::Get().GetSubclass(MutantCharacterMain->MutantCharacterClass);
 	}
 	if (CharacterClass == nullptr) return;
 

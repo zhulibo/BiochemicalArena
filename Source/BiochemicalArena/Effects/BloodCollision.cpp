@@ -12,7 +12,6 @@ void UBloodCollision::ReceiveParticleData_Implementation(const TArray<FBasicPart
 		// TODO 只让碰撞事件触发一次
 		// if (PositionIDs.Contains(ParticleData.Position)) continue;
 		// PositionIDs.Add(ParticleData.Position);
-
 		int64 TempX = FMath::RoundToInt(ParticleData.Position.X);
 		if (PositionXs.Contains(TempX)) continue;
 		PositionXs.Add(TempX);

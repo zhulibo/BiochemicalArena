@@ -367,8 +367,7 @@ void ULobby::OnMapComboBoxChanged(FString SelectedItem, ESelectInfo::Type Select
 		}
 		if (UpdatedAttributes.Num() > 0)
 		{
-			// TODO bug UpdatedAttributes中模式在前地图在后
-			// OnLobbyAttrChanged中返回的数据却是反向的
+			// TODO UpdatedAttributes中模式在前地图在后，但OnLobbyAttrChanged中返回的数据却是反向的
 			EOSSubsystem->ModifyLobbyAttr(UpdatedAttributes);
 		}
 	}

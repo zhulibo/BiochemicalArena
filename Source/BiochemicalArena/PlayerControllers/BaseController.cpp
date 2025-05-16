@@ -178,6 +178,8 @@ void ABaseController::HandleMatchHasStarted()
 
 void ABaseController::HandleMatchHasEnded()
 {
+	OnMatchEnd.Broadcast();
+	
 	ChangeAnnouncement.Broadcast(LOCTEXT("GameOver", "Game over"));
 }
 

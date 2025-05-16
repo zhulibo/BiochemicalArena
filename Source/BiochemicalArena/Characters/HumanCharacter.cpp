@@ -20,6 +20,7 @@
 #include "BiochemicalArena/PlayerControllers/MutationController.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/System/AssetSubsystem.h"
+#include "BiochemicalArena/System/DataAssetManager.h"
 #include "BiochemicalArena/System/Storage/SaveGameLoadout.h"
 #include "BiochemicalArena/System/Storage/StorageSubsystem.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
@@ -204,38 +205,38 @@ void AHumanCharacter::ServerSpawnEquipments_Implementation(EEquipmentName Primar
 	// PrimaryName = TEXT("M870");
 	// SecondaryName = TEXT("DesertEagle");
 	// MeleeName = TEXT("MilitaryShovel");
-	ThrowingName = TEXT("FireBottle");
+	// ThrowingName = TEXT("FireBottle");
 	if (HasAuthority() && IsLocallyControlled())
 	{
-		ThrowingName = TEXT("Smoke");
+		PrimaryName = TEXT("M870");
 	}
 
 	if (PrimaryName.IsValid()) {
 		FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, PrimaryName);
 		if (const FEquipmentMain* EquipmentMain = UDataRegistrySubsystem::Get()->GetCachedItem<FEquipmentMain>(DataRegistryId))
 		{
-			PrimaryClass = EquipmentMain->EquipmentClass;
+			PrimaryClass = UDataAssetManager::Get().GetSubclass(EquipmentMain->EquipmentClass);
 		}
 	}
 	if (SecondaryName.IsValid()) {
 		FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, SecondaryName);
 		if (const FEquipmentMain* EquipmentMain = UDataRegistrySubsystem::Get()->GetCachedItem<FEquipmentMain>(DataRegistryId))
 		{
-			SecondaryClass = EquipmentMain->EquipmentClass;
+			SecondaryClass = UDataAssetManager::Get().GetSubclass(EquipmentMain->EquipmentClass);
 		}
 	}
 	if (MeleeName.IsValid()) {
 		FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, MeleeName);
 		if (const FEquipmentMain* EquipmentMain = UDataRegistrySubsystem::Get()->GetCachedItem<FEquipmentMain>(DataRegistryId))
 		{
-			MeleeClass = EquipmentMain->EquipmentClass;
+			MeleeClass = UDataAssetManager::Get().GetSubclass(EquipmentMain->EquipmentClass);
 		}
 	}
 	if (ThrowingName.IsValid()) {
 		FDataRegistryId DataRegistryId(DR_EQUIPMENT_MAIN, ThrowingName);
 		if (const FEquipmentMain* EquipmentMain = UDataRegistrySubsystem::Get()->GetCachedItem<FEquipmentMain>(DataRegistryId))
 		{
-			ThrowingClass = EquipmentMain->EquipmentClass;
+			ThrowingClass = UDataAssetManager::Get().GetSubclass(EquipmentMain->EquipmentClass);
 		}
 	}
 
@@ -400,34 +401,40 @@ void AHumanCharacter::DropButtonPressed(const FInputActionValue& Value)
 	// 只有主副武器可以丢弃
 	if (CombatComponent && CombatComponent->GetUsingWeapon())
 	{
-		bCanSwitchLoadout = false;
-
 		CombatComponent->DropEquipment(CombatComponent->CurEquipmentType);
-		if (CombatComponent->GetLastEquipment())
-		{
-			CombatComponent->SwapEquipment(CombatComponent->LastEquipmentType);
-		}
-		else
-		{
-			CombatComponent->SwapEquipment(EEquipmentType::Melee);
-		}
 
-		ServerDetectOverlappingEquipment();
+		bCanSwitchLoadout = false;
 	}
 }
 
-// 检测重叠装备
-void AHumanCharacter::ServerDetectOverlappingEquipment_Implementation()
+void AHumanCharacter::OnServerDropEquipment()
 {
+	if (bIsDead || CombatComponent == nullptr) return;
+
+	// 如果脚下有同类型武器直接拾取使用
 	TArray<AActor*> OverlappingActors;
 	GetOverlappingActors(OverlappingActors, AEquipment::StaticClass());
 	for (AActor* OverlappingActor : OverlappingActors)
 	{
 		if (AEquipment* Equipment = Cast<AEquipment>(OverlappingActor))
 		{
-			EquipOverlappingEquipment(Equipment);
-			break;
+			if (CombatComponent->CurEquipmentType == Equipment->GetEquipmentType())
+			{
+				CombatComponent->MulticastReplaceCurEquipment(Equipment);
+			}
+
+			return;
 		}
+	}
+	
+	// 否则切换至其它装备
+	if (CombatComponent->GetLastEquipment())
+	{
+		CombatComponent->MulticastSwapEquipment2(CombatComponent->LastEquipmentType);
+	}
+	else
+	{
+		CombatComponent->MulticastSwapEquipment2(EEquipmentType::Melee);
 	}
 }
 

@@ -11,6 +11,7 @@
 #include "BiochemicalArena/GameStates/BaseGameState.h"
 #include "BiochemicalArena/PlayerStates/BasePlayerState.h"
 #include "BiochemicalArena/PlayerStates/TeamType.h"
+#include "BiochemicalArena/System/DataAssetManager.h"
 #include "BiochemicalArena/System/EOSSubsystem.h"
 #include "BiochemicalArena/UI/TextChat/TextChat.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
@@ -118,7 +119,7 @@ void ABaseMode::SpawnHumanCharacter(AController* Controller)
 	FDataRegistryId DataRegistryId(DR_HUMAN_CHARACTER_MAIN, FName(CharacterName));
 	if (const FHumanCharacterMain* HumanCharacterMain = UDataRegistrySubsystem::Get()->GetCachedItem<FHumanCharacterMain>(DataRegistryId))
 	{
-		CharacterClass = HumanCharacterMain->HumanCharacterClass;
+		CharacterClass = UDataAssetManager::Get().GetSubclass(HumanCharacterMain->HumanCharacterClass);
 	}
 	if (CharacterClass == nullptr) return;
 

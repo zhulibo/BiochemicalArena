@@ -23,6 +23,8 @@ public:
 	template<typename AssetType>
 	static TSubclassOf<AssetType> GetSubclass(const TSoftClassPtr<AssetType>& AssetPointer, bool bKeepInMemory = true);
 
+	void UnloadTrackedAsset(const UObject* Asset);
+	
 protected:
 	virtual void StartInitialLoading() override;
 	

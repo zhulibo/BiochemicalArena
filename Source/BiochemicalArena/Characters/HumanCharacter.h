@@ -32,6 +32,8 @@ public:
 	UPROPERTY()
 	bool bCanSwitchLoadout = true;
 
+	void OnServerDropEquipment();
+
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastMutationDead(bool bNeedSpawn);
 	UFUNCTION(NetMulticast, Reliable)
@@ -77,8 +79,6 @@ protected:
 	void DropButtonPressed(const FInputActionValue& Value);
 	void SwapLastEquipmentButtonPressed(const FInputActionValue& Value);
 
-	UFUNCTION(Server, Reliable)
-	void ServerDetectOverlappingEquipment();
 
 	virtual void OnControllerReady() override;
 

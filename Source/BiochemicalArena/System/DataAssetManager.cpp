@@ -44,3 +44,12 @@ void UDataAssetManager::AddLoadedAsset(const UObject* Asset)
 		LoadedAssets.Add(Asset);
 	}
 }
+
+void UDataAssetManager::UnloadTrackedAsset(const UObject* Asset)
+{
+	if (Asset)
+	{
+		FScopeLock Lock(&LoadedAssetsCritical);
+		LoadedAssets.Remove(Asset);
+	}
+}

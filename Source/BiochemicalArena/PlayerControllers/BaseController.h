@@ -10,6 +10,7 @@ enum class ETeam : uint8;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FChangeCrosshairSpread, float Spread);
 DECLARE_MULTICAST_DELEGATE_OneParam(FChangeAnnouncement, FText Text);
+DECLARE_MULTICAST_DELEGATE(FOnMatchEnd);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnMatchCountdownChange, int32 CountdownTime);
 DECLARE_MULTICAST_DELEGATE_OneParam(FShowScoreboard, bool bIsShow);
 DECLARE_MULTICAST_DELEGATE(FShowPauseMenu);
@@ -27,7 +28,6 @@ DECLARE_MULTICAST_DELEGATE(FOnInteractEnded);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnHUDStateChange, EHUDState HUDState);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewTargetChange, AActor* ViewTarget);
 
-// TODO Try GameModeBase::SwapPlayerControllers(), separate human and mutant controller, mode controller as child class.
 UCLASS()
 class BIOCHEMICALARENA_API ABaseController : public APlayerController
 {
@@ -42,6 +42,7 @@ public:
 
 	FChangeCrosshairSpread ChangeCrosshairSpread;
 	FChangeAnnouncement ChangeAnnouncement;
+	FOnMatchEnd OnMatchEnd;
 	FOnMatchCountdownChange OnMatchCountdownChange;
 	FShowScoreboard ShowScoreboard;
 	FShowPauseMenu ShowPauseMenu;

@@ -26,9 +26,9 @@ protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-
+	
 	UPROPERTY()
-	class ABaseGameState* BaseGameState;
+	TObjectPtr<class ABaseGameState> BaseGameState;
 
 	// 拥有此OverheadWidget的角色
 	UPROPERTY()
@@ -43,6 +43,10 @@ protected:
 	ABasePlayerState* LocalBasePlayerState;
 	UPROPERTY()
 	ABaseCharacter* LocalBaseCharacter;
+
+	void OnMatchEnd();
+	UPROPERTY()
+	bool bCanUseSetTimerForNextTick = true;
 
 	UPROPERTY(meta = (BindWidget))
 	class UCommonTextBlock* PlayerName;

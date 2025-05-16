@@ -116,7 +116,7 @@ void ATeamDeadMatchMode::HandleSpawn(AController* Controller)
 	if (TeamDeadMatchGameState == nullptr) TeamDeadMatchGameState = GetGameState<ATeamDeadMatchGameState>();
 	if (TeamDeadMatchGameState)
 	{
-		// TODO 从EOS中获得队伍
+		// TODO 从EOS中获得队伍 ABasePlayerState::ServerSetAccountId
 		ETeam Team = TeamDeadMatchGameState->GetPlayerStates(ETeam::Team1).Num() > TeamDeadMatchGameState->GetPlayerStates(ETeam::Team2).Num() ? ETeam::Team2 : ETeam::Team1;
 		AssignTeam(Controller, Team);
 	}

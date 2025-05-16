@@ -23,8 +23,6 @@ void UAbilityTask_MutantTankSkill::EndSkill()
 
 void UAbilityTask_MutantTankSkill::OnDestroy(bool bInOwnerFinished)
 {
-	// TODO
-	// 清除定时器
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle);
 
 	Super::OnDestroy(bInOwnerFinished);

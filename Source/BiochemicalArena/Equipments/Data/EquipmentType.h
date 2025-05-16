@@ -85,7 +85,7 @@ struct FEquipmentMain : public FTableRowBase
 	EEquipmentType EquipmentType = EEquipmentType::None;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<class AEquipment> EquipmentClass; // TODO TSoftClassPtr
+	TSoftClassPtr<class AEquipment> EquipmentClass;
 
 	/**
 	 * Must be the same as the OfferId in dev portal,

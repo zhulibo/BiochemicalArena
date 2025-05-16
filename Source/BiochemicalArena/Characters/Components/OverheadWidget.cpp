@@ -10,7 +10,6 @@
 #include "Components/WidgetComponent.h"
 #include "CommonLazyImage.h"
 #include "BiochemicalArena/Characters/HumanCharacter.h"
-#include "BiochemicalArena/Equipments/Equipment.h"
 #include "BiochemicalArena/Utils/LibraryCommon.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -19,6 +18,12 @@ void UOverheadWidget::NativeOnInitialized()
 	Super::NativeOnInitialized();
 
 	UE_LOG(LogTemp, Warning, TEXT("NativeOnInitialized"));
+	
+	LocalBaseController = Cast<ABaseController>(GetWorld()->GetFirstPlayerController());
+	if (LocalBaseController)
+	{
+		LocalBaseController->OnMatchEnd.AddUObject(this, &ThisClass::OnMatchEnd);
+	}
 }
 
 void UOverheadWidget::NativeConstruct()
@@ -40,12 +45,12 @@ void UOverheadWidget::NativeConstruct()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("NativeConstruct 3"));
 	}
-
-	SetPlayerName();
-
+	
 	// 定时判断是否显示OverheadWidget
 	GetWorld()->GetTimerManager().SetTimer(TraceTimerHandle, this, &ThisClass::TraceOverheadWidget, .2f, true, .1f);
 
+	SetPlayerName();
+	
 	if (BaseCharacter)
 	{
 		if (!BaseCharacter->IsLocallyControlled())
@@ -79,24 +84,6 @@ void UOverheadWidget::NativeDestruct()
 	GetWorld()->GetTimerManager().ClearTimer(TraceTimerHandle);
 
 	Super::NativeDestruct();
-}
-
-// 设置用户名
-void UOverheadWidget::SetPlayerName()
-{
-	if (BaseCharacter)
-	{
-		if (BasePlayerState == nullptr) BasePlayerState = Cast<ABasePlayerState>(BaseCharacter->GetPlayerState());
-		if (BasePlayerState)
-		{
-			PlayerName->SetText(FText::FromString(ULibraryCommon::ObfuscatePlayerName(BasePlayerState->GetPlayerName(), this)));
-			return;
-		}
-	}
-
-	GetWorld()->GetTimerManager().SetTimerForNextTick([this]() {
-		SetPlayerName();
-	});
 }
 
 // 判断是否显示OverheadWidget
@@ -154,6 +141,32 @@ void UOverheadWidget::TraceOverheadWidget()
 			SetVisibility(ESlateVisibility::Visible);
 		}
 	}
+}
+
+void UOverheadWidget::OnMatchEnd()
+{
+	bCanUseSetTimerForNextTick = false;
+}
+
+// 设置用户名
+void UOverheadWidget::SetPlayerName()
+{
+	if (!GetWorld()) return;
+	
+	if (BaseCharacter)
+	{
+		if (BasePlayerState == nullptr) BasePlayerState = Cast<ABasePlayerState>(BaseCharacter->GetPlayerState());
+		if (BasePlayerState)
+		{
+			PlayerName->SetText(FText::FromString(ULibraryCommon::ObfuscatePlayerName(BasePlayerState->GetPlayerName(), this)));
+			return;
+		}
+	}
+
+	if (!bCanUseSetTimerForNextTick) return;
+	GetWorld()->GetTimerManager().SetTimerForNextTick([this]() {
+		SetPlayerName();
+	});
 }
 
 void UOverheadWidget::InitOverheadWidget()
@@ -219,6 +232,7 @@ void UOverheadWidget::InitOverheadWidget()
 		}
 	}
 
+	if (!bCanUseSetTimerForNextTick) return;
 	GetWorld()->GetTimerManager().SetTimerForNextTick([this]() {
 		InitOverheadWidget();
 	});

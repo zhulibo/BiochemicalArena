@@ -100,6 +100,8 @@ protected:
 	void ServerSwapEquipment(EEquipmentType EquipmentType);
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSwapEquipment(EEquipmentType EquipmentType);
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSwapEquipment2(EEquipmentType EquipmentType);
 	void LocalSwapEquipment(EEquipmentType EquipmentType);
 	void PreLocalSwapEquipment();
 	void PlaySwapOutMontage(AEquipment* NewEquipment);
