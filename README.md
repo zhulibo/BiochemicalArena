@@ -1,6 +1,6 @@
-## Biochemical Arena
+## Mutate Arena
 
-Biochemical Arena is an online multiplayer first-person shooter game, the main gameplay is mutation mode.
+Mutate Arena is an online multiplayer first-person shooter game, the main gameplay is mutation mode.
 
 ## Github
 

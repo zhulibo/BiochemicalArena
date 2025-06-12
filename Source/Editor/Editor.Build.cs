@@ -21,7 +21,7 @@ public class Editor : ModuleRules
                 "Engine",
                 "Slate",
                 "SlateCore",
-                "BiochemicalArena",
+                "MutateArena",
                 "ToolMenus",
             }
         );
