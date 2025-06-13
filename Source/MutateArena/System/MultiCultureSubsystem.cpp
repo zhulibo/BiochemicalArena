@@ -24,24 +24,24 @@ void UMultiCultureSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// 需与 FEquipmentMain 中的ShowName一致
 #define LOCTEXT_NAMESPACE "Equipment"
 	LOCTEXT("AK47", "AK47");
-	LOCTEXT("AK47-Desert", "AK47-Desert");
+	LOCTEXT("AK47 Desert", "AK47 Desert");
 	LOCTEXT("M870", "M870");
 	LOCTEXT("M60", "M60");
 	LOCTEXT("PKM", "PKM");
 
 	LOCTEXT("Glock17", "Glock17");
-	LOCTEXT("DesertEagle", "DesertEagle");
-	
+	LOCTEXT("Desert Eagle", "Desert Eagle");
+
 	LOCTEXT("Kukri", "Kukri");
-	LOCTEXT("MilitaryShovel", "MilitaryShovel");
-	LOCTEXT("FireAxe", "FireAxe");
+	LOCTEXT("Military Shovel", "Military Shovel");
+	LOCTEXT("Fire Axe", "Fire Axe");
 	
 	LOCTEXT("Grenade", "Grenade");
 	LOCTEXT("Flashbang", "Flashbang");
 	LOCTEXT("Smoke", "Smoke");
-	LOCTEXT("FireBottle", "FireBottle");
+	LOCTEXT("Fire Bottle", "Fire Bottle");
 
-	LOCTEXT("AK47-Cyclone", "AK47-Cyclone");
+	LOCTEXT("AK47 Cyclone", "AK47 Cyclone");
 	LOCTEXT("MG42", "MG42");
 #undef LOCTEXT_NAMESPACE
 

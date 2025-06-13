@@ -8,7 +8,7 @@
 UENUM(BlueprintType)
 enum class EEquipmentName : uint8 // 装备名字
 {
-// 主
+	// 主
 	AK47,
 	AK47_Desert,
 	
@@ -18,24 +18,25 @@ enum class EEquipmentName : uint8 // 装备名字
 	
 	PKM,
 	
-// 副
+	// 副
 	Glock17,
 	
 	DesertEagle,
 	
-// 近战
+	// 近战
 	Kukri,
 	
 	MilitaryShovel,
 	
-// 投掷
 	FireAxe,
+	
+	// 投掷
 	Grenade,
 	Flashbang,
 	Smoke,
 	FireBottle,
 	
-// 补给箱
+	// 补给箱
 	AK47_Cyclone,
 	MG42,
 
